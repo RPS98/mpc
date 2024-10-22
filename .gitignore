@@ -1,0 +1,10 @@
+build/
+.vscode/
+install/
+log/
+logs/
+doxygen/
+.cache/
+*.csv
+__pycache__/
+mpc_generated_code/
