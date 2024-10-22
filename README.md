@@ -51,6 +51,10 @@ chmod +x $ACADOS_ROOT_DIR/bin/t_renderer
 The MPC is implemented in Python and C++. The Python code generates the C code for the MPC. To generate the C code, run the following command:
 
 ```bash
+export PYTHONPATH=$PYTHONPATH:"<path_to_this_repo>"
+```
+
+```bash
 python3 mpc/export_c_code.py
 ```
 
