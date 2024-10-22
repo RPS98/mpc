@@ -6,7 +6,7 @@ This repo implements a Model Predictive Controller (MPC) for a quadrotor, using 
 
 Follow the instructions in the [Acados documentation](https://docs.acados.org/installation/index.html) to compile the library.
 
-1. Clone the repository
+#### 1. Clone the repository
 
 ```bash
 git clone https://github.com/acados/acados.git
@@ -14,7 +14,7 @@ cd acados
 git submodule update --recursive --init
 ```
 
-2. Build the library
+#### 2. Build the library
 
 ```bash
 mkdir -p build
@@ -24,7 +24,7 @@ cmake -DACADOS_WITH_QPOASES=ON ..
 make install -j4
 ```
 
-3. Export the path to the library
+#### 3. Export the path to the library
 
 ```bash
 export ACADOS_ROOT_DIR="<path_to_acados_folder>"
@@ -33,12 +33,25 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:"$ACADOS_ROOT_DIR/acados/lib"
 export ACADOS_SOURCE_DIR="$ACADOS_ROOT_DIR/acados"
 ```
 
+#### 4. Install tera_renderer
+
+For manual installation follow these instructions:
+
+ 1. Download binaries from https://github.com/acados/tera_renderer/releases/download/v0.0.34/t_renderer-v0.0.34-linux
+ 2. Copy them in /home/rafa/acados/bin
+ 3. Strip the version and platform from the binaries: as t_renderer-v0.0.34-X -> t_renderer)
+ 4. Enable execution privilege on the file "t_renderer" with:
+
+```bash
+chmod +x $ACADOS_ROOT_DIR/bin/t_renderer
+```
+
 ## Generate C code for MPC
 
 The MPC is implemented in Python and C++. The Python code generates the C code for the MPC. To generate the C code, run the following command:
 
 ```bash
-python3 mpc/mpc_controller.py
+python3 mpc/export_c_code.py
 ```
 
 ## Test the MPC using the Python interface or the C++ interface

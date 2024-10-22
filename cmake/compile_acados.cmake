@@ -1,49 +1,70 @@
-# We do it beacuse we want acados to make the install properly, to generate the include folder
+# Check if ACADOS_SOURCE_DIR is not set
+if(NOT DEFINED ENV{ACADOS_SOURCE_DIR})
+  MESSAGE(STATUS "ACADOS_SOURCE_DIR not found, cloning it")
 
-# Copy acados folder to build directory
-if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/acados")
-    file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/acados" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+  # Check if acados is already built
+  include(FetchContent)
+  FetchContent_Declare(
+    acados
+    GIT_REPOSITORY https://github.com/acados/acados.git
+    GIT_TAG v0.4.0
+  )
+  # FetchContent_MakeAvailable(acados) # We need the make install
+  FetchContent_Populate(acados)
+  set(ENV{ACADOS_SOURCE_DIR} "${acados_SOURCE_DIR}")
 endif()
 
-# Build acados in its own build directory
-set(ACADOS_DIR "${CMAKE_CURRENT_BINARY_DIR}/acados")
-set(ACADOS_BUILD_DIR "${ACADOS_DIR}/build")
-
+# Check if acados is already built if folder ${acados_SOURCE_DIR}/build exists
+set(ACADOS_BUILD_DIR "$ENV{ACADOS_SOURCE_DIR}/build")
 if(NOT EXISTS "${ACADOS_BUILD_DIR}")
-  message(STATUS "Building acados")
+  MESSAGE(STATUS "Building acados at ${ACADOS_BUILD_DIR}")
   file(MAKE_DIRECTORY "${ACADOS_BUILD_DIR}")
 
   # Run CMake and make for acados
   execute_process(COMMAND cmake ..
                   WORKING_DIRECTORY "${ACADOS_BUILD_DIR}"
                   RESULT_VARIABLE result)
-
+  
   if(result)
       message(FATAL_ERROR "Failed to configure acados")
   endif()
-
+  
   execute_process(COMMAND make install -j14
                   WORKING_DIRECTORY "${ACADOS_BUILD_DIR}"
                   RESULT_VARIABLE result)
-
+  
   if(result)
       message(FATAL_ERROR "Failed to build acados")
   endif()
-
-else()
-  message(STATUS "acados already built")
 endif()
 
-# Export acados include directories
-set(ACADOS_INCLUDE_DIRS "${ACADOS_DIR}/include")
-set(ACADOS_LIB
-  "${ACADOS_DIR}/lib/libacados.so"
-  "${ACADOS_DIR}/lib/libblasfeo.so"
-  "${ACADOS_DIR}/lib/libhpipm.so"
-)
-set(ENV{ACADOS_SOURCE_DIR} "${ACADOS_DIR}")
+# Check Tera is installed in acados
+set(TERA_RENDERER_NAME "t_renderer")
+set(TERA_RENDERER_PATH "$ENV{ACADOS_SOURCE_DIR}/bin/${TERA_RENDERER_NAME}")
+if(NOT EXISTS ${TERA_RENDERER_PATH})
+  set(TERA_RENDERER_URL "https://github.com/acados/tera_renderer/releases/download/v0.0.34/t_renderer-v0.0.34-linux")
+  file(DOWNLOAD ${TERA_RENDERER_URL} ${TERA_RENDERER_PATH} SHOW_PROGRESS)
+  # execute_process(COMMAND chmod +x ${TERA_RENDERER_PATH}
+  #                 RESULT_VARIABLE result)
+  
+  if(result)
+      message(FATAL_ERROR "Failed to make executable ${TERA_RENDERER_PATH}")
+  endif()
+endif()
+  
+# Compile acados on acados_SOURCE_DIR
+set(ENV{LD_LIBRARY_PATH} "$ENV{ACADOS_SOURCE_DIR}/lib:$ENV{LD_LIBRARY_PATH}")
+set(ENV{PYTHONPATH} "$ENV{ACADOS_SOURCE_DIR}/interfaces/acados_template:$ENV{PYTHONPATH}")
 
-# Include acados headers
+# Export acados include directories
+set(ACADOS_INCLUDE_DIRS "$ENV{ACADOS_SOURCE_DIR}/include")
+set(ACADOS_LIB
+  "$ENV{ACADOS_SOURCE_DIR}/lib/libacados.so"
+  "$ENV{ACADOS_SOURCE_DIR}/lib/libblasfeo.so"
+  "$ENV{ACADOS_SOURCE_DIR}/lib/libhpipm.so"
+)
+
+# # Include acados headers
 include_directories(
   ${ACADOS_INCLUDE_DIRS}
 	${ACADOS_INCLUDE_DIRS}/blasfeo/include/
@@ -51,5 +72,3 @@ include_directories(
 	${ACADOS_INCLUDE_DIRS}/acados/
 	${ACADOS_INCLUDE_DIRS}/qpOASES_e/
 )
-
-

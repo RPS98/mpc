@@ -43,9 +43,6 @@ import numpy as np
 from mpc.mpc_controller_lib.drone_model import CaControl, CaState, get_acados_model
 
 
-CODE_EXPORT_DIR = 'mpc_generated_code'
-
-
 @dataclass
 class AcadosMPCParams:
     """
@@ -94,17 +91,18 @@ class AcadosMPCSolver:
     def __init__(
             self,
             mpc_params: AcadosMPCParams,
-            model_params: AcadosModelParams) -> None:
+            model_params: AcadosModelParams,
+            export_dir: str = 'mpc_generated_code') -> None:
         """
         Initialize the Acados MPC controller.
 
         :param mpc_params(MPCParams): MPC parameters.
         :param model_params(ModelParams): Model parameters.
+        :param export_dir(str): Export directory for the generated code.
         """
         self.mpc_params = mpc_params
         self.model_params = model_params
-
-        self.acados_integrator = None
+        self.export_directory = export_dir
 
         # Acados model
         self.acados_model = get_acados_model()
@@ -195,8 +193,8 @@ class AcadosMPCSolver:
         solver_options.integrator_type = 'ERK'
 
         # Create solver
-        ocp.code_export_directory = CODE_EXPORT_DIR + '/mpc_generated_code'
-        ocp.json_file = CODE_EXPORT_DIR + '/acados_ocp.json'
+        ocp.code_export_directory = self.export_directory + '/mpc_generated_code'
+        ocp.json_file = self.export_directory + '/acados_ocp.json'
 
         self._solver = AcadosOcpSolver(
             ocp,
@@ -274,8 +272,8 @@ class AcadosMPCSolver:
         acados_sim.solver_options.T = simulation_time
 
         # Create integrator
-        acados_sim.code_export_directory = CODE_EXPORT_DIR + '/mpc_generated_code'
-        json_file = CODE_EXPORT_DIR + '/acados_sim.json'
+        acados_sim.code_export_directory = self.export_directory + '/mpc_generated_code'
+        json_file = self.export_directory + '/acados_sim.json'
         self.acados_integrator = AcadosSimSolver(
             acados_sim,
             json_file=json_file,

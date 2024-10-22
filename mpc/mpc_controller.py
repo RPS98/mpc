@@ -119,16 +119,18 @@ class MPC(mpc_lib.AcadosMPCSolver):
     """MPC."""
 
     def __init__(self,
-                 params: MPCParams) -> None:
+                 params: MPCParams,
+                 export_dir: str = 'mpc_generated_code') -> None:
         """
         Initialize the MPC.
 
         :param params(MPCParams): MPC Parameters.
+        :param export_dir(str): Export directory for the generated code.
         """
         acados_mpc_params, acados_model_params = self._process_params(params)
 
         # Initialize the AcadosMPCSolver
-        super().__init__(acados_mpc_params, acados_model_params)
+        super().__init__(acados_mpc_params, acados_model_params, export_dir)
 
         # Set the parameters
         self.update_params(params)
@@ -227,6 +229,3 @@ if __name__ == '__main__':
     N = mpc_params.prediction_steps
     dt = Tf / N
     integrator = mpc.export_integrador(dt)
-
-    mpc.update_mpc_params(mpc_params)
-    # [0:196]
