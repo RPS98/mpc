@@ -33,7 +33,7 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:"$ACADOS_ROOT_DIR/acados/lib"
 export ACADOS_SOURCE_DIR="$ACADOS_ROOT_DIR/acados"
 ```
 
-## Generate de MPC C code
+## Generate C code for MPC
 
 The MPC is implemented in Python and C++. The Python code generates the C code for the MPC. To generate the C code, run the following command:
 
@@ -41,6 +41,20 @@ The MPC is implemented in Python and C++. The Python code generates the C code f
 python3 mpc/mpc_controller.py
 ```
 
-## Test the MPC using the Python interface
+## Test the MPC using the Python interface or the C++ interface
 
-Once the C code is generated, you can test the MPC using the Python interface. For that, see the [README](examples/python/README.md) in the `examples` folder.
+Once the C code is generated, you can test the MPC using the Python interface or the C++ interface.
+
+```bash
+python3 examples/integrator_example.py
+```
+
+```bash
+./build/examples/acados_mpc_integrator_example
+```
+
+You can check the results in the `mpc_log.csv` file, and plot them with:
+
+```bash
+python3 examples/utils/plot_results.py
+```
