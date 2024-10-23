@@ -2,6 +2,16 @@
 
 This repo implements a Model Predictive Controller (MPC) for a quadrotor, using [Acados](https://docs.acados.org/index.html#) library. The MPC is implemented in Python and C++.
 
+
+## Installation
+
+Clone this repository:
+
+```bash
+git clone hhttps://github.com/RPS98/mpc.git
+cd mpc
+```
+
 ## Compile acados
 
 Follow the instructions in the [Acados documentation](https://docs.acados.org/installation/index.html) to compile the library.
@@ -58,20 +68,12 @@ export PYTHONPATH=$PYTHONPATH:"<path_to_this_repo>"
 python3 mpc/export_c_code.py
 ```
 
-## Test the MPC using the Python interface or the C++ interface
+## Build this repository
 
-Once the C code is generated, you can test the MPC using the Python interface or the C++ interface.
-
-```bash
-python3 examples/integrator_example.py
-```
+To build this repostory, follow the instructions from the root folder:
 
 ```bash
-./build/examples/acados_mpc_integrator_example
-```
-
-You can check the results in the `mpc_log.csv` file, and plot them with:
-
-```bash
-python3 examples/utils/plot_results.py
+mkdir -p build
+cd build
+make -j4
 ```

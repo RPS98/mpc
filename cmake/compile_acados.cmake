@@ -57,18 +57,22 @@ set(ENV{LD_LIBRARY_PATH} "$ENV{ACADOS_SOURCE_DIR}/lib:$ENV{LD_LIBRARY_PATH}")
 set(ENV{PYTHONPATH} "$ENV{ACADOS_SOURCE_DIR}/interfaces/acados_template:$ENV{PYTHONPATH}")
 
 # Export acados include directories
-set(ACADOS_INCLUDE_DIRS "$ENV{ACADOS_SOURCE_DIR}/include")
+set(ACADOS_INCLUDE_DIRS 
+  $ENV{ACADOS_SOURCE_DIR}/interfaces/
+  $ENV{ACADOS_SOURCE_DIR}/include
+	$ENV{ACADOS_SOURCE_DIR}/include/blasfeo/include/
+	$ENV{ACADOS_SOURCE_DIR}/include/hpipm/include/
+	$ENV{ACADOS_SOURCE_DIR}/include/acados/
+	$ENV{ACADOS_SOURCE_DIR}/include/qpOASES_e/
+)
+
 set(ACADOS_LIB
-  "$ENV{ACADOS_SOURCE_DIR}/lib/libacados.so"
-  "$ENV{ACADOS_SOURCE_DIR}/lib/libblasfeo.so"
-  "$ENV{ACADOS_SOURCE_DIR}/lib/libhpipm.so"
+  $ENV{ACADOS_SOURCE_DIR}/lib/libacados.so
+  $ENV{ACADOS_SOURCE_DIR}/lib/libblasfeo.so
+  $ENV{ACADOS_SOURCE_DIR}/lib/libhpipm.so
 )
 
 # # Include acados headers
 include_directories(
   ${ACADOS_INCLUDE_DIRS}
-	${ACADOS_INCLUDE_DIRS}/blasfeo/include/
-	${ACADOS_INCLUDE_DIRS}/hpipm/include/
-	${ACADOS_INCLUDE_DIRS}/acados/
-	${ACADOS_INCLUDE_DIRS}/qpOASES_e/
 )

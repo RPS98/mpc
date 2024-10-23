@@ -34,8 +34,8 @@
  * @author Rafael Perez-Segui <r.psegui@upm.es>
  */
 
-#ifndef INCLUDE_ACADOS_MPC_ACADOS_MPC_DATATYPE_HPP_
-#define INCLUDE_ACADOS_MPC_ACADOS_MPC_DATATYPE_HPP_
+#ifndef ACADOS_MPC_ACADOS_MPC_DATATYPE_HPP_
+#define ACADOS_MPC_ACADOS_MPC_DATATYPE_HPP_
 
 #include <mpc_generated_code/acados_sim_solver_mpc.h>
 #include <mpc_generated_code/acados_solver_mpc.h>
@@ -340,4 +340,4 @@ struct MPCOnlineParams {
 
 }  // namespace acados_mpc
 
-#endif  // INCLUDE_ACADOS_MPC_ACADOS_MPC_DATATYPE_HPP_
+#endif  // ACADOS_MPC_ACADOS_MPC_DATATYPE_HPP_

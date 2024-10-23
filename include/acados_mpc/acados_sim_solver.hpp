@@ -34,8 +34,8 @@
  * @author Rafael Perez-Segui <r.psegui@upm.es>
  */
 
-#ifndef INCLUDE_ACADOS_MPC_ACADOS_SIM_SOLVER_HPP_
-#define INCLUDE_ACADOS_MPC_ACADOS_SIM_SOLVER_HPP_
+#ifndef ACADOS_MPC_ACADOS_SIM_SOLVER_HPP_
+#define ACADOS_MPC_ACADOS_SIM_SOLVER_HPP_
 
 #include <acados_c/external_function_interface.h>
 #include <acados_c/ocp_nlp_interface.h>
@@ -113,4 +113,4 @@ private:
 };
 }  // namespace acados_mpc
 
-#endif  // INCLUDE_ACADOS_MPC_ACADOS_SIM_SOLVER_HPP_
+#endif  // ACADOS_MPC_ACADOS_SIM_SOLVER_HPP_

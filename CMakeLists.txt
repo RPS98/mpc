@@ -44,14 +44,16 @@ add_library(${PROJECT_NAME} SHARED ${SOURCE_CPP_FILES})
 target_include_directories(${PROJECT_NAME}
   PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<BUILD_INTERFACE:${ACADOS_INCLUDE_DIRS}
+  $<BUILD_INTERFACE:${ACADOS_C_GENERATED_CODE_INCLUDE_DIRS}
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
 )
 
 # Link the library with acados and other dependencies
 target_link_libraries(${PROJECT_NAME}
   ${PROJECT_DEPENDENCIES}
-  ${ACADOS_C_GENERATED_CODE_LIB}
   ${ACADOS_LIB}
+  ${ACADOS_C_GENERATED_CODE_LIB}
 )
 
 # Tests
