@@ -48,8 +48,8 @@ export ACADOS_SOURCE_DIR="$ACADOS_ROOT_DIR/acados"
 For manual installation follow these instructions:
 
  1. Download binaries from https://github.com/acados/tera_renderer/releases/download/v0.0.34/t_renderer-v0.0.34-linux
- 2. Copy them in /home/rafa/acados/bin
- 3. Strip the version and platform from the binaries: as t_renderer-v0.0.34-X -> t_renderer)
+ 2. Copy them in <path_to_acados_folder>/acados/bin
+ 3. Strip the version and platform from the binaries: as t_renderer-v0.0.34-X -> t_renderer
  4. Enable execution privilege on the file "t_renderer" with:
 
 ```bash

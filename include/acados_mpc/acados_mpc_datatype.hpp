@@ -93,7 +93,7 @@ struct Control {
  * @brief Reference yref
  */
 struct Reference {
-  std::array<double, MPC_N *(MPC_NX + MPC_NU)> data;
+  std::array<double, MPC_N*(MPC_NX + MPC_NU)> data;
   std::size_t size = MPC_N * (MPC_NX + MPC_NU);
 
   /**
@@ -107,7 +107,7 @@ struct Reference {
    * @param index index of the stage.
    * @return double* data.
    */
-  double *get_data(const int index);
+  double* get_data(const int index);
 
   /**
    * @brief Get the data at index
@@ -115,7 +115,7 @@ struct Reference {
    * @param index index of the stage.
    * @return const double* data.
    */
-  const double *get_data(const int index) const;
+  const double* get_data(const int index) const;
 
   /**
    * @brief Get the data at index
@@ -134,13 +134,22 @@ struct Reference {
   void set_data(const int index, const double value);
 
   /**
+   * @brief Set the data at index of the stage and value
+   *
+   * @param ref_index index of the stage.
+   * @param value_index index of the value.
+   * @param state state.
+   */
+  void set_data(const int ref_index, const int value_index, const double value);
+
+  /**
    * @brief Set the state at index
    *
    * @param index index of the stage.
    * @param state state.
    * @param control control.
    */
-  void set_state(const int index, const State &state, const Control &control = Control());
+  void set_state(const int index, const State& state, const Control& control = Control());
 };
 
 /**
@@ -162,28 +171,28 @@ struct MPCGains {
    *
    * @return double* W.
    */
-  double *get_W();
+  double* get_W();
 
   /**
    * @brief Get the W matrix
    *
    * @return const double* W.
    */
-  const double *get_W() const;
+  const double* get_W() const;
 
   /**
    * @brief Get the We matrix
    *
    * @return double* We.
    */
-  double *get_We();
+  double* get_We();
 
   /**
    * @brief Get the We matrix
    *
    * @return const double* We.
    */
-  const double *get_We() const;
+  const double* get_We() const;
 
   /**
    * @brief Set the W matrix at index
@@ -245,28 +254,28 @@ struct MPCBounds {
    *
    * @return double* lbx.
    */
-  double *get_lbx();
+  double* get_lbx();
 
   /**
    * @brief Get the lbx array
    *
    * @return const double* lbx.
    */
-  const double *get_lbx() const;
+  const double* get_lbx() const;
 
   /**
    * @brief Get the ubx array
    *
    * @return double* ubx.
    */
-  double *get_ubx();
+  double* get_ubx();
 
   /**
    * @brief Get the ubx array
    *
    * @return const double* ubx.
    */
-  const double *get_ubx() const;
+  const double* get_ubx() const;
 
   /**
    * @brief Set the lbx at index
@@ -304,14 +313,14 @@ struct MPCOnlineParams {
    *
    * @return double* data.
    */
-  double *get_data();
+  double* get_data();
 
   /**
    * @brief Get the data
    *
    * @return const double* data.
    */
-  const double *get_data() const;
+  const double* get_data() const;
 
   /**
    * @brief Get the data at index
@@ -319,7 +328,7 @@ struct MPCOnlineParams {
    * @param index index.
    * @return double* data.
    */
-  double *get_data(const int index);
+  double* get_data(const int index);
 
   /**
    * @brief Get the data at index
@@ -327,7 +336,7 @@ struct MPCOnlineParams {
    * @param index index.
    * @return const double* data.
    */
-  const double *get_data(const int index) const;
+  const double* get_data(const int index) const;
 
   /**
    * @brief Set the data at index

@@ -102,6 +102,12 @@ void Reference::set_data(const int index, const double value) {
   data[index] = value;
 }
 
+void Reference::set_data(const int ref_index, const int value_index, const double value) {
+  CHECK_MPC_INDEX(ref_index, MPC_N);
+  CHECK_MPC_INDEX(value_index, (MPC_NX + MPC_NU));
+  data[ref_index * (MPC_NX + MPC_NU) + value_index] = value;
+}
+
 void Reference::set_state(const int index, const State &state, const Control &control) {
   CHECK_MPC_INDEX(index, MPC_N);
 

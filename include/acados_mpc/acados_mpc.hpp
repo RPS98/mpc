@@ -108,7 +108,7 @@ public:
   /**
    * @brief Get the number of prediction steps.
    */
-  inline double get_prediction_steps() const { return MPC_N; }
+  inline int get_prediction_steps() const { return MPC_N; }
 
   /**
    * @brief Get the prediction horizon in seconds.
@@ -125,28 +125,28 @@ public:
   /**
    * @brief Get the MPCData pointer to modify the data.
    */
-  MPCData *get_data() { return &mpc_data_; }
+  MPCData* get_data() { return &mpc_data_; }
 
   /**
    * @brief Get the MPCGains pointer to modify the gains.
    *
    * update_gains() must be called to update the gains.
    */
-  MPCGains *get_gains() { return &gains_; }
+  MPCGains* get_gains() { return &gains_; }
 
   /**
    * @brief Get the MPCBounds pointer to modify the bounds.
    *
    * update_bounds() must be called to update the bounds.
    */
-  MPCBounds *get_bounds() { return &bounds_; }
+  MPCBounds* get_bounds() { return &bounds_; }
 
   /**
    * @brief Get the MPCOnlineParams pointer to modify the online parameters.
    *
    * update_online_params() must be called to update the online parameters.
    */
-  MPCOnlineParams *get_online_params() { return &p_params_; }
+  MPCOnlineParams* get_online_params() { return &p_params_; }
 
   // Setters
 
@@ -208,12 +208,12 @@ private:
 
 private:
   // acados
-  mpc_solver_capsule *capsule_ = nullptr;
-  ocp_nlp_in *nlp_in_          = nullptr;
-  ocp_nlp_out *nlp_out_        = nullptr;
-  ocp_nlp_solver *nlp_solver_  = nullptr;
-  ocp_nlp_config *nlp_config_  = nullptr;
-  ocp_nlp_dims *nlp_dims_      = nullptr;
+  mpc_solver_capsule* capsule_ = nullptr;
+  ocp_nlp_in* nlp_in_          = nullptr;
+  ocp_nlp_out* nlp_out_        = nullptr;
+  ocp_nlp_solver* nlp_solver_  = nullptr;
+  ocp_nlp_config* nlp_config_  = nullptr;
+  ocp_nlp_dims* nlp_dims_      = nullptr;
 
   // Internal variables
   int status_;
