@@ -40,53 +40,6 @@ import numpy as np
 import mpc.mpc_controller_lib.acados_solver as mpc_lib
 
 
-@dataclass
-class MPCParams:
-    """
-    MPC parameters.
-
-    :param prediction_horizon (float): Prediction horizon in seconds.
-    :param prediction_steps (int): Number of prediction steps.
-    :param state_weight (AcadosStateWeight): State weight Q.
-    :param control_weight (AcadosControlWeight): Control weight R.
-    :param mass (float): Mass (kg).
-    :param max_thrust (float): Maximum thrust (N).
-    :param min_thrust (float): Minimum thrust (N).
-    :param max_w_xy (float): Maximum angular velocity in xy (rad/s).
-    :param min_w_xy (float): Minimum angular velocity in xy (rad/s).
-    :param max_w_z (float): Maximum angular velocity in z (rad/s).
-    :param min_w_z (float): Minimum angular velocity in z (rad/s).
-    :param gravity (float): Gravity (m/s^2).
-    """
-    prediction_horizon: float
-    prediction_steps: int
-    Q: np.ndarray
-    R: np.ndarray
-
-    mass: float
-    max_thrust: float
-    min_thrust: float
-    max_w_xy: float
-    min_w_xy: float
-    max_w_z: float
-    min_w_z: float
-    gravity: float = 9.81
-
-    def __str__(self):
-        return (f'prediction_horizon: {self.prediction_horizon}\n'
-                f'prediction_steps: {self.prediction_steps}\n'
-                f'Q: \n{self.Q}\n'
-                f'R: \n{self.R}\n'
-                f'mass: {self.mass}\n'
-                f'max_thrust: {self.max_thrust}\n'
-                f'min_thrust: {self.min_thrust}\n'
-                f'max_w_xy: {self.max_w_xy}\n'
-                f'min_w_xy: {self.min_w_xy}\n'
-                f'max_w_z: {self.max_w_z}\n'
-                f'min_w_z: {self.min_w_z}\n'
-                f'gravity: {self.gravity}')
-
-
 class Trajectory:
     """Trajectory."""
 
@@ -119,21 +72,20 @@ class MPC(mpc_lib.AcadosMPCSolver):
     """MPC."""
 
     def __init__(self,
-                 params: MPCParams,
+                 prediction_steps: int,
+                 prediction_horizon: float,
+                 params: mpc_lib.AcadosMPCParams,
                  export_dir: str = 'mpc_generated_code') -> None:
         """
         Initialize the MPC.
 
-        :param params(MPCParams): MPC Parameters.
+        :param prediction_steps(int): Prediction steps.
+        :param prediction_horizon(float): Prediction horizon (seconds).
+        :param mpc_params(MPCParams): MPC parameters.
         :param export_dir(str): Export directory for the generated code.
         """
-        acados_mpc_params, acados_model_params = self._process_params(params)
-
         # Initialize the AcadosMPCSolver
-        super().__init__(acados_mpc_params, acados_model_params, export_dir)
-
-        # Set the parameters
-        self.update_params(params)
+        super().__init__(prediction_steps, prediction_horizon, params, export_dir)
 
         # Internal variables
         self.thrust = 0.0  # Thrust (N)
@@ -158,55 +110,24 @@ class MPC(mpc_lib.AcadosMPCSolver):
         u = self.compute_control_action(state, trajectory[:-1, :], trajectory[-1, :])
         return u
 
-    @staticmethod
-    def _process_params(params: MPCParams) -> tuple:
-        """
-        Convert MPC params to AcadosMPCParams and AcadosModelParams objects.
-
-        :param params(MPCParams): MPC Parameters.
-        
-        :return: AcadosMPCParams, AcadosModelParams.
-        """
-        # AcadosMPCParams
-        acados_mpc_params = mpc_lib.AcadosMPCParams(
-            prediction_horizon=params.prediction_horizon,
-            prediction_steps=params.prediction_steps,
-            Q=params.Q,
-            R=params.R,
-        )
-
-        # AcadosModelParams
-        acados_model_params = mpc_lib.AcadosModelParams(
-            mass=params.mass,
-            max_thrust=params.max_thrust,
-            min_thrust=params.min_thrust,
-            max_w_xy=params.max_w_xy,
-            min_w_xy=params.min_w_xy,
-            max_w_z=params.max_w_z,
-            min_w_z=params.min_w_z,
-            gravity=params.gravity
-        )
-
-        return acados_mpc_params, acados_model_params
-
     # Getters and Setters
-    def update_params(self, params: MPCParams) -> None:
+    def update_params(self, mpc_params: mpc_lib.AcadosMPCParams) -> None:
         """
         Update the MPC Parameters.
 
-        :param params(MPCParams): MPC Parameters.
+        :param mpc_params(mpc_lib.AcadosMPCParams): MPC Parameters.
         """
-        acados_mpc_params, acados_model_params = self._process_params(params)
-
-        self.update_mpc_params(acados_mpc_params)
-        self.update_model_params(acados_model_params)
+        self.update_mpc_params(mpc_params)
 
 
 if __name__ == '__main__':
-    mpc_params = MPCParams(
-        prediction_horizon=0.5,
-        prediction_steps=100,
+    mpc_params = mpc_lib.AcadosMPCParams(
         Q=mpc_lib.CaState.get_cost_matrix(
+            position_weight=3000*np.ones(3),
+            orientation_weight=1.0*np.ones(4),
+            linear_velocity_weight=0.0*np.ones(3)
+        ),
+        Qe=mpc_lib.CaState.get_cost_matrix(
             position_weight=3000*np.ones(3),
             orientation_weight=1.0*np.ones(4),
             linear_velocity_weight=0.0*np.ones(3)
@@ -215,17 +136,17 @@ if __name__ == '__main__':
             thrust_weight=np.array([1.0]),
             angular_velocity_weight=1.0*np.ones(3)
         ),
-        mass=1.0,
-        max_thrust=30.0,
-        min_thrust=1.0,
-        max_w_xy=4*np.pi,
-        min_w_xy=-4*np.pi,
-        max_w_z=4*np.pi,
-        min_w_z=-4*np.pi
+        lbu=np.array([0.5, -4*np.pi, -4*np.pi, -4*np.pi]),
+        ubu=np.array([30.0, 4*np.pi, 4*np.pi, 4*np.pi]),
+        p=np.array([1.0])
     )
 
-    mpc = MPC(mpc_params)
-    Tf = mpc_params.prediction_horizon
-    N = mpc_params.prediction_steps
+    mpc = MPC(
+        prediction_steps=100,
+        prediction_horizon=0.5,
+        params=mpc_params
+    )
+    Tf = mpc.prediction_horizon
+    N = mpc.prediction_steps
     dt = Tf / N
     integrator = mpc.export_integrador(dt)

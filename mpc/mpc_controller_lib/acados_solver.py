@@ -46,41 +46,35 @@ from mpc.mpc_controller_lib.drone_model import CaControl, CaState, get_acados_mo
 @dataclass
 class AcadosMPCParams:
     """
-    MPC parameters.
-
-    :param prediction_horizon (float): Prediction horizon in seconds.
-    :param prediction_steps (int): Number of prediction steps.
-    :param state_weight (AcadosStateWeight): State weight Q.
-    :param control_weight (AcadosControlWeight): Control weight R.
-    """
-    prediction_horizon: float
-    prediction_steps: int
-    Q: np.ndarray
-    R: np.ndarray
-
-
-@dataclass
-class AcadosModelParams:
-    """
     Model parameters.
 
-    :param mass (float): Mass (kg).
-    :param max_thrust (float): Maximum thrust (N).
-    :param min_thrust (float): Minimum thrust (N).
-    :param max_w_xy (float): Maximum angular velocity in xy (rad/s).
-    :param min_w_xy (float): Minimum angular velocity in xy (rad/s).
-    :param max_w_z (float): Maximum angular velocity in z (rad/s).
-    :param min_w_z (float): Minimum angular velocity in z (rad/s).
-    :param gravity (float): Gravity (m/s^2).
+    :param Q (np.ndarray): State weight matrix.
+    [x, y, z, qw, qx, qy, qz, vx, vy, vz]
+    :param Qe (np.ndarray): Terminal state weight matrix.
+    [x, y, z, qw, qx, qy, qz, vx, vy, vz]
+    :param R (np.ndarray): Control weight matrix.
+    [thrust, w_x, w_y, w_z]
+    :param lbu (np.ndarray): Lower bounds on control input.
+    [thrust, w_x, w_y, w_z]_min
+    :param ubu (np.ndarray): Upper bounds on control input.
+    [thrust, w_x, w_y, w_z]_max
+    :param p (np.ndarray): Parameter vector.
+    [mass]
     """
-    mass: float
-    max_thrust: float
-    min_thrust: float
-    max_w_xy: float
-    min_w_xy: float
-    max_w_z: float
-    min_w_z: float
-    gravity: float = 9.81
+    Q: np.ndarray = np.zeros((10, 10))
+    Qe: np.ndarray = np.zeros((10, 10))
+    R: np.ndarray = np.zeros((4, 4))
+    lbu: np.ndarray = np.zeros(4)
+    ubu: np.ndarray = np.zeros(4)
+    p: np.ndarray = np.zeros(1)
+
+    def __str__(self):
+        return (f'Q: \n{self.Q}\n'
+                f'Qe: \n{self.Qe}\n'
+                f'R: \n{self.R}\n'
+                f'lbu: {self.lbu}\n'
+                f'ubu: {self.ubu}\n'
+                f'p: {self.p}')
 
 
 class AcadosMPCSolver:
@@ -90,18 +84,19 @@ class AcadosMPCSolver:
 
     def __init__(
             self,
+            prediction_steps: int,
+            prediction_horizon: float,
             mpc_params: AcadosMPCParams,
-            model_params: AcadosModelParams,
             export_dir: str = 'mpc_generated_code') -> None:
         """
         Initialize the Acados MPC controller.
 
+        :param prediction_steps(int): Prediction steps.
+        :param prediction_horizon(float): Prediction horizon (seconds).
         :param mpc_params(MPCParams): MPC parameters.
-        :param model_params(ModelParams): Model parameters.
         :param export_dir(str): Export directory for the generated code.
         """
         self.mpc_params = mpc_params
-        self.model_params = model_params
         self.export_directory = export_dir
 
         # Acados model
@@ -112,12 +107,12 @@ class AcadosMPCSolver:
         ocp.model = self.acados_model
 
         # initial values for parameter vector - can be updated stagewise
-        ocp.parameter_values = np.array([self.model_params.mass])
+        ocp.parameter_values = self.mpc_params.p
 
         # Initial state and control
         x0 = CaState.get_state()
         u0 = CaControl.get_control(
-            thrust=model_params.mass * model_params.gravity)
+            thrust=self.mpc_params.p[0] * 9.81)
 
         # Cost
         cost = ocp.cost
@@ -125,7 +120,7 @@ class AcadosMPCSolver:
         # weight matrix at intermediate shooting nodes (1 to N-1)
         cost.W = scipy.linalg.block_diag(self.mpc_params.Q, self.mpc_params.R)
         # weight matrix at terminal shooting node (N)
-        cost.W_e = self.mpc_params.Q
+        cost.W_e = self.mpc_params.Qe
 
         # reference at intermediate shooting nodes (1 to N-1)
         cost.yref = np.concatenate([x0, u0])
@@ -160,26 +155,18 @@ class AcadosMPCSolver:
         # initial state
         constraints.x0 = x0
         # lower bounds on u at shooting nodes (0 to N-1)
-        constraints.lbu = np.array([
-            self.model_params.min_thrust,
-            self.model_params.min_w_xy,
-            self.model_params.min_w_xy,
-            self.model_params.min_w_z])
+        constraints.lbu = self.mpc_params.lbu
         # upper bounds on u at shooting nodes (0 to N-1)
-        constraints.ubu = np.array([
-            self.model_params.max_thrust,
-            self.model_params.max_w_xy,
-            self.model_params.max_w_xy,
-            self.model_params.max_w_z])
+        constraints.ubu = self.mpc_params.ubu
         # matrix coefficient for bounds on u at shooting nodes
         constraints.Jbu = np.identity(4)
 
         # Solver options
         solver_options = ocp.solver_options
         # number of shooting intervals
-        solver_options.N_horizon = self.mpc_params.prediction_steps
+        solver_options.N_horizon = prediction_steps
         # prediction horizon
-        solver_options.tf = self.mpc_params.prediction_horizon
+        solver_options.tf = prediction_horizon
         # QP solver to be used in the NLP solver. String in (
         # ‘PARTIAL_CONDENSING_HPIPM’, ‘FULL_CONDENSING_QPOASES’, ‘FULL_CONDENSING_HPIPM’,
         # ‘PARTIAL_CONDENSING_QPDUNES’, ‘PARTIAL_CONDENSING_OSQP’, ‘FULL_CONDENSING_DAQP’).
@@ -209,57 +196,36 @@ class AcadosMPCSolver:
 
     def update_mpc_params(self, mpc_params: AcadosMPCParams) -> None:
         """
-        Update the MPC parameters: Q and R.
+        Update the MPC parameters.
 
         :param mpc_params(MPCParams): MPC parameters.
         """
-        # Update Solver cost:
+        # Update Solver constraints:
         self.mpc_params = mpc_params
+
+        # lower bounds on u at shooting nodes (0 to N-1)
+        # upper bounds on u at shooting nodes (0 to N-1)
+        for node in range(self.N):
+            self.solver.constraints_set(node, 'lbu', self.mpc_params.lbu)
+            self.solver.constraints_set(node, 'ubu', self.mpc_params.ubu)
+
+        # initial values for parameter vector - can be updated stagewise
+        for i in range(self.N+1):
+            self.solver.set(i, 'p', self.mpc_params.p)
 
         # weight matrix at intermediate shooting nodes (1 to N-1)
         for node in range(1, self.N):
             self.solver.cost_set(node, 'W', scipy.linalg.block_diag(self.mpc_params.Q, self.mpc_params.R))
 
         # weight matrix at terminal shooting node (N)
-        self.solver.cost_set(self.N, 'W', self.mpc_params.Q)
-
-    def update_model_params(self, model_params: AcadosModelParams) -> None:
-        """
-        Update the model parameters.
-
-        :param model_params(ModelParams): Model parameters.
-        """
-        # Update Solver constraints:
-        self.model_params = model_params
-
-        # lower bounds on u at shooting nodes (0 to N-1)
-        lbu = np.array([
-            self.model_params.min_thrust,
-            self.model_params.min_w_xy,
-            self.model_params.min_w_xy,
-            self.model_params.min_w_z])
-        # upper bounds on u at shooting nodes (0 to N-1)
-        ubu = np.array([
-            self.model_params.max_thrust,
-            self.model_params.max_w_xy,
-            self.model_params.max_w_xy,
-            self.model_params.max_w_z])
-        
-        for node in range(self.N):
-            self.solver.constraints_set(node, 'lbu', lbu)
-            self.solver.constraints_set(node, 'ubu', ubu)
-
-        
-        # initial values for parameter vector - can be updated stagewise
-        for i in range(self.N+1):
-            self.solver.set(i, 'p', np.array([model_params.mass]))
+        self.solver.cost_set(self.N, 'W', self.mpc_params.Qe)
         
 
     def export_integrador(self, simulation_time):
         # Acados Sim
         acados_sim = AcadosSim()
         acados_sim.model = self.acados_model
-        acados_sim.parameter_values = np.array([self.model_params.mass])
+        acados_sim.parameter_values = self.mpc_params.p
 
         # Solver options
         # integrator type. String in (‘ERK’, ‘IRK’, ‘GNSF’, ‘DISCRETE’, ‘LIFTED_IRK’).
@@ -434,48 +400,34 @@ class AcadosMPCSolver:
 
 
 if __name__ == '__main__':
+
     mpc_params = AcadosMPCParams(
-        prediction_horizon=0.5,
-        prediction_steps=20,
         Q=CaState.get_cost_matrix(
             position_weight=1*np.ones(3),
             orientation_weight=0*np.ones(4),
             linear_velocity_weight=0.0*np.ones(3)
         ),
-        R=CaControl.get_cost_matrix(
-            thrust_weight=1e-2,
-            angular_velocity_weight=1e-2*np.ones(3)
-        )
-    )
-
-    model_params = AcadosModelParams(
-        mass=1.0,
-        gravity=9.81,
-        max_thrust=30.0,
-        min_thrust=0.2,
-        max_w_xy=1.0,
-        min_w_xy=-1.0,
-        max_w_z=1.0,
-        min_w_z=-1.0)
-    
-    mpc = AcadosMPCSolver(
-        mpc_params=mpc_params,
-        model_params=model_params)
-
-    # Update params
-    mpc_params = AcadosMPCParams(
-        prediction_horizon=0.5,
-        prediction_steps=20,
-        Q=CaState.get_cost_matrix(
-            position_weight=2*np.ones(3),
+        Qe=CaState.get_cost_matrix(
+            position_weight=1*np.ones(3),
             orientation_weight=0*np.ones(4),
             linear_velocity_weight=0.0*np.ones(3)
         ),
         R=CaControl.get_cost_matrix(
-            thrust_weight=1e-2,
+            thrust_weight=np.array([1e-2]),
             angular_velocity_weight=1e-2*np.ones(3)
-        )
+        ),
+        lbu=np.array([0.2, -1.0, -1.0, -1.0]),
+        ubu=np.array([30.0, 1.0, 1.0, 1.0]),
+        p=np.array([1.0])
     )
+    
+    mpc = AcadosMPCSolver(
+        prediction_steps=100,
+        prediction_horizon=0.5,
+        mpc_params=mpc_params
+    )
+
+    mpc.update_mpc_params(mpc_params)
 
     # Compute the control
     u = mpc.compute_control_action(

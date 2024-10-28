@@ -56,7 +56,6 @@ State::State() {
 }
 
 void State::set_data(const int index, const double value) {
-  CHECK_MPC_INDEX(index, MPC_NX);
   CHECK_MPC_INDEX(index, size);
   data[index] = value;
 }
@@ -64,7 +63,6 @@ void State::set_data(const int index, const double value) {
 Control::Control() { data.fill(0.0); }
 
 void Control::set_data(const int index, const double value) {
-  CHECK_MPC_INDEX(index, MPC_NU);
   CHECK_MPC_INDEX(index, MPC_NU);
   data[index] = value;
 }
@@ -143,9 +141,25 @@ void MPCGains::set_We(const int index, const double value) {
   We[index * MPC_NX + index] = value;
 }
 
+void MPCGains::set_gains(const MPCGains &gains) {
+  for (size_t i = 0; i < W.size(); ++i) {
+    W[i] = gains.W[i];
+  }
+
+  for (size_t i = 0; i < We.size(); ++i) {
+    We[i] = gains.We[i];
+  }
+}
+
 void MPCGains::set_Q(const int index, const double value) {
   CHECK_MPC_INDEX(index, MPC_NX);
   set_W(index, value);
+}
+
+void MPCGains::set_Q(const std::array<double, MPC_NX> &Q) {
+  for (size_t i = 0; i < Q.size(); ++i) {
+    set_Q(i, Q[i]);
+  }
 }
 
 void MPCGains::set_R(const int index, const double value) {
@@ -153,29 +167,63 @@ void MPCGains::set_R(const int index, const double value) {
   set_W(MPC_NX + index, value);
 }
 
+void MPCGains::set_R(const std::array<double, MPC_NU> &R) {
+  for (size_t i = 0; i < R.size(); ++i) {
+    set_R(i, R[i]);
+  }
+}
+
 void MPCGains::set_Q_end(const int index, const double value) { set_We(index, value); }
 
+void MPCGains::set_Q_end(const std::array<double, MPC_NX> &Qe) {
+  for (size_t i = 0; i < Qe.size(); ++i) {
+    set_Q_end(i, Qe[i]);
+  }
+}
+
 MPCBounds::MPCBounds() {
-  lbx.fill(0.0);
-  ubx.fill(0.0);
+  lbu.fill(0.0);
+  ubu.fill(0.0);
 }
 
-double *MPCBounds::get_lbx() { return lbx.data(); }
+double *MPCBounds::get_lbu() { return lbu.data(); }
 
-const double *MPCBounds::get_lbx() const { return lbx.data(); }
+const double *MPCBounds::get_lbu() const { return lbu.data(); }
 
-double *MPCBounds::get_ubx() { return ubx.data(); }
+double *MPCBounds::get_ubu() { return ubu.data(); }
 
-const double *MPCBounds::get_ubx() const { return ubx.data(); }
+const double *MPCBounds::get_ubu() const { return ubu.data(); }
 
-void MPCBounds::set_lbx(const int index, const double value) {
-  CHECK_MPC_INDEX(index, MPC_NU);
-  lbx[index] = value;
+void MPCBounds::set_bounds(const MPCBounds &bounds) {
+  for (size_t i = 0; i < lbu.size(); ++i) {
+    lbu[i] = bounds.lbu[i];
+  }
+
+  for (size_t i = 0; i < ubu.size(); ++i) {
+    ubu[i] = bounds.ubu[i];
+  }
 }
 
-void MPCBounds::set_ubx(const int index, const double value) {
+void MPCBounds::set_lbu(const std::array<double, MPC_NU> &lbu) {
+  for (size_t i = 0; i < lbu.size(); ++i) {
+    set_lbu(i, lbu[i]);
+  }
+}
+
+void MPCBounds::set_lbu(const int index, const double value) {
   CHECK_MPC_INDEX(index, MPC_NU);
-  ubx[index] = value;
+  lbu[index] = value;
+}
+
+void MPCBounds::set_ubu(const std::array<double, MPC_NU> &ubu) {
+  for (size_t i = 0; i < ubu.size(); ++i) {
+    set_ubu(i, ubu[i]);
+  }
+}
+
+void MPCBounds::set_ubu(const int index, const double value) {
+  CHECK_MPC_INDEX(index, MPC_NU);
+  ubu[index] = value;
 }
 
 MPCOnlineParams::MPCOnlineParams() { data.fill(0.0); }
@@ -192,6 +240,18 @@ double *MPCOnlineParams::get_data(const int index) {
 const double *MPCOnlineParams::get_data(const int index) const {
   CHECK_MPC_INDEX(index, MPC_NP);
   return &data[index];
+}
+
+void MPCOnlineParams::set_online_params(const MPCOnlineParams &params) {
+  for (size_t i = 0; i < data.size(); ++i) {
+    set_data(i, params.data[i]);
+  }
+}
+
+void MPCOnlineParams::set_data(const std::array<double, MPC_NP> &data) {
+  for (size_t i = 0; i < data.size(); ++i) {
+    set_data(i, data[i]);
+  }
 }
 
 void MPCOnlineParams::set_data(const int index, const double value) {

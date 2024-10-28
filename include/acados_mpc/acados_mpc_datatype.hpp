@@ -51,6 +51,7 @@ namespace acados_mpc {
  * @brief State x
  */
 struct State {
+  static constexpr size_t Nx = MPC_NX;
   std::array<double, MPC_NX> data;
   std::size_t size = MPC_NX;
 
@@ -72,6 +73,7 @@ struct State {
  * @brief Control u
  */
 struct Control {
+  static constexpr size_t Nu = MPC_NU;
   std::array<double, MPC_NU> data;
   std::size_t size = MPC_NU;
 
@@ -93,6 +95,7 @@ struct Control {
  * @brief Reference yref
  */
 struct Reference {
+  static constexpr size_t Nyref = (MPC_NX + MPC_NU);
   std::array<double, MPC_N*(MPC_NX + MPC_NU)> data;
   std::size_t size = MPC_N * (MPC_NX + MPC_NU);
 
@@ -158,6 +161,9 @@ struct Reference {
  * Gains Q, R and Qe for the MPC.
  */
 struct MPCGains {
+  static constexpr size_t Nq  = MPC_NX;
+  static constexpr size_t Nqe = MPC_NX;
+  static constexpr size_t Nr  = MPC_NU;
   std::array<double, (MPC_NX + MPC_NU) * (MPC_NX + MPC_NU)> W;
   std::array<double, MPC_NX * MPC_NX> We;
 
@@ -211,12 +217,27 @@ struct MPCGains {
   void set_We(const int index, const double value);
 
   /**
+   * @brief Set the Q, Qe and R matrix
+   *
+   * @param index index of the diagonal.
+   * @param value value.
+   */
+  void set_gains(const MPCGains& gains);
+
+  /**
    * @brief Set the Q matrix at index
    *
    * @param index index of the diagonal.
    * @param value value.
    */
   void set_Q(const int index, const double value);
+
+  /**
+   * @brief Set the Q matrix
+   *
+   * @param Q std::array<double, MPC_NX> Q.
+   */
+  void set_Q(const std::array<double, MPC_NX>& Q);
 
   /**
    * @brief Set the R matrix at index
@@ -227,22 +248,37 @@ struct MPCGains {
   void set_R(const int index, const double value);
 
   /**
+   * @brief Set the R matrix
+   *
+   * @param R std::array<double, MPC_NU> R.
+   */
+  void set_R(const std::array<double, MPC_NU>& R);
+
+  /**
    * @brief Set the Qe matrix at index
    *
    * @param index index of the diagonal.
    * @param value value.
    */
   void set_Q_end(const int index, const double value);
+
+  /**
+   * @brief Set the Qe matrix
+   *
+   * @param Qe std::array<double, MPC_NX> Qe.
+   */
+  void set_Q_end(const std::array<double, MPC_NX>& Qe);
 };
 
 /**
  * @brief MPCBounds
  *
- * Bounds lbx and ubx for the MPC.
+ * Bounds lbu and ubu for the MPC.
  */
 struct MPCBounds {
-  std::array<double, MPC_NU> lbx;
-  std::array<double, MPC_NU> ubx;
+  static constexpr size_t Nu = MPC_NU;
+  std::array<double, MPC_NU> lbu;
+  std::array<double, MPC_NU> ubu;
 
   /**
    * @brief Constructor
@@ -250,48 +286,69 @@ struct MPCBounds {
   MPCBounds();
 
   /**
-   * @brief Get the lbx array
+   * @brief Get the lbu array
    *
-   * @return double* lbx.
+   * @return double* lbu.
    */
-  double* get_lbx();
+  double* get_lbu();
 
   /**
-   * @brief Get the lbx array
+   * @brief Get the lbu array
    *
-   * @return const double* lbx.
+   * @return const double* lbu.
    */
-  const double* get_lbx() const;
+  const double* get_lbu() const;
 
   /**
-   * @brief Get the ubx array
+   * @brief Get the ubu array
    *
-   * @return double* ubx.
+   * @return double* ubu.
    */
-  double* get_ubx();
+  double* get_ubu();
 
   /**
-   * @brief Get the ubx array
+   * @brief Get the ubu array
    *
-   * @return const double* ubx.
+   * @return const double* ubu.
    */
-  const double* get_ubx() const;
+  const double* get_ubu() const;
 
   /**
-   * @brief Set the lbx at index
+   * @brief Set the bounds
+   *
+   * @param bounds bounds.
+   */
+  void set_bounds(const MPCBounds& bounds);
+
+  /**
+   * @brief Set the lbu
+   *
+   * @param lbu lbu.
+   */
+  void set_lbu(const std::array<double, MPC_NU>& lbu);
+
+  /**
+   * @brief Set the lbu at index
    *
    * @param index index.
    * @param value value.
    */
-  void set_lbx(const int index, const double value);
+  void set_lbu(const int index, const double value);
 
   /**
-   * @brief Set the ubx at index
+   * @brief Set the ubu
+   *
+   * @param ubu ubu.
+   */
+  void set_ubu(const std::array<double, MPC_NU>& ubu);
+
+  /**
+   * @brief Set the ubu at index
    *
    * @param index index.
    * @param value value.
    */
-  void set_ubx(const int index, const double value);
+  void set_ubu(const int index, const double value);
 };
 
 /**
@@ -300,6 +357,7 @@ struct MPCBounds {
  * Online parameters p for the MPC.
  */
 struct MPCOnlineParams {
+  static constexpr size_t Np = MPC_NP;
   std::array<double, MPC_NP> data;
   std::size_t size = MPC_NP;
 
@@ -337,6 +395,21 @@ struct MPCOnlineParams {
    * @return const double* data.
    */
   const double* get_data(const int index) const;
+
+  /**
+   * @brief Set the data at index
+   *
+   * @param index index.
+   * @param value value.
+   */
+  void set_online_params(const MPCOnlineParams& params);
+
+  /**
+   * @brief Set the data
+   *
+   * @param data data.
+   */
+  void set_data(const std::array<double, MPC_NP>& data);
 
   /**
    * @brief Set the data at index

@@ -122,10 +122,10 @@ void MPC::update_bounds() {
   // upper bounds on u at shooting nodes (0 to N-1)
   for (int i = 0; i < MPC_N; i++) {
     status_ = ocp_nlp_constraints_model_set(nlp_config_, nlp_dims_, nlp_in_, i, "lbu",
-                                            bounds_.lbx.data());
+                                            bounds_.lbu.data());
     validateStatus(status_);
     status_ = ocp_nlp_constraints_model_set(nlp_config_, nlp_dims_, nlp_in_, i, "ubu",
-                                            bounds_.ubx.data());
+                                            bounds_.ubu.data());
     validateStatus(status_);
   }
 }

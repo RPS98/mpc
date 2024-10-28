@@ -88,10 +88,10 @@ TEST(acados_mpc, test_acados_datatypes) {
 
   EXPECT_NO_THROW(MPCBounds());
   auto bounds = MPCBounds();
-  EXPECT_NO_THROW(bounds.get_lbx());
-  EXPECT_NO_THROW(bounds.get_ubx());
-  EXPECT_NO_THROW(bounds.set_lbx(0, 0.0));
-  EXPECT_NO_THROW(bounds.set_ubx(0, 0.0));
+  EXPECT_NO_THROW(bounds.get_lbu());
+  EXPECT_NO_THROW(bounds.get_ubu());
+  EXPECT_NO_THROW(bounds.set_lbu(0, 0.0));
+  EXPECT_NO_THROW(bounds.set_ubu(0, 0.0));
 
   EXPECT_NO_THROW(MPCOnlineParams());
   auto p_params = MPCOnlineParams();

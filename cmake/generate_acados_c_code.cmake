@@ -1,13 +1,24 @@
 set(C_GEN_CODE_FOLDER "mpc_generated_code")
 set(BUILD_C_GENERATED_CODE "${CMAKE_CURRENT_BINARY_DIR}/${C_GEN_CODE_FOLDER}")
 
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${C_GEN_CODE_FOLDER}")
+if(EXISTS $ENV{ACADOS_C_SOURCE_DIR}/${C_GEN_CODE_FOLDER})
+  message(STATUS "Copying generated c code usign env path $ENV{ACADOS_C_SOURCE_DIR}/${C_GEN_CODE_FOLDER}")
+  # Copy to build directory
+  file(COPY "$ENV{ACADOS_C_SOURCE_DIR}"
+    DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+
+# Check if it is generated in the source directory
+elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${C_GEN_CODE_FOLDER}")
+  message(STATUS "Copying generated c code from ${CMAKE_CURRENT_SOURCE_DIR}/${C_GEN_CODE_FOLDER}")
+
   # Copy to build directory
   file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/${C_GEN_CODE_FOLDER}"
     DESTINATION "${BUILD_C_GENERATED_CODE}")
-  
+
+# Generate the code
 else()
   # Generate c code in build directory
+  message(STATUS "Generating c code in ${BUILD_C_GENERATED_CODE}")
   set(ENV{PYTHONPATH} "${CMAKE_CURRENT_SOURCE_DIR}:$ENV{PYTHONPATH}")
   execute_process(
     COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/mpc/export_c_code.py -d ${BUILD_C_GENERATED_CODE}
