@@ -44,8 +44,8 @@ set(TERA_RENDERER_PATH "$ENV{ACADOS_SOURCE_DIR}/bin/${TERA_RENDERER_NAME}")
 if(NOT EXISTS ${TERA_RENDERER_PATH})
   set(TERA_RENDERER_URL "https://github.com/acados/tera_renderer/releases/download/v0.0.34/t_renderer-v0.0.34-linux")
   file(DOWNLOAD ${TERA_RENDERER_URL} ${TERA_RENDERER_PATH} SHOW_PROGRESS)
-  # execute_process(COMMAND chmod +x ${TERA_RENDERER_PATH}
-  #                 RESULT_VARIABLE result)
+  execute_process(COMMAND chmod +x ${TERA_RENDERER_PATH}
+                  RESULT_VARIABLE result)
   
   if(result)
       message(FATAL_ERROR "Failed to make executable ${TERA_RENDERER_PATH}")
