@@ -29,7 +29,7 @@ if(NOT EXISTS "${ACADOS_BUILD_DIR}")
       message(FATAL_ERROR "Failed to configure acados")
   endif()
   
-  execute_process(COMMAND make install -j14
+  execute_process(COMMAND make install
                   WORKING_DIRECTORY "${ACADOS_BUILD_DIR}"
                   RESULT_VARIABLE result)
   

@@ -34,17 +34,14 @@ __authors__ = 'Rafael Pérez Seguí'
 __copyright__ = 'Copyright (c) 2022 Universidad Politécnica de Madrid'
 __license__ = 'BSD-3-Clause'
 
-from dataclasses import dataclass
-
 from acados_template import AcadosModel
 import casadi as ca
 import numpy as np
 
 
 class CaBase():
-    """
-    Base class for CasADi structures (State or Control).
-    """
+    """Base class for CasADi structures (State or Control)."""
+
     def __init__(self, names_shapes):
         """
         Initialize a CasADi structure with symbolic variables and index mappings.
@@ -53,16 +50,16 @@ class CaBase():
         """
         self._params_index = {}
         self._vector = []
-        
+
         current_index = 0
         for name, shape in names_shapes:
             symbol = ca.SX.sym(f'{name}', *shape)
             self._params_index[name] = slice(current_index, current_index + shape[0])
             self._vector.append(symbol)
             current_index += shape[0]
-        
+
         self._vector = ca.vertcat(*self._vector)
-    
+
     @property
     def vector(self):
         """
@@ -101,19 +98,16 @@ class CaBase():
         if value.shape[0] != expected_shape:
             raise ValueError(f'{name} must have shape ({expected_shape}, 1)')
         self._vector[self._params_index[name]] = value
-    
+
     def __str__(self):
         return f'{self._vector}'
 
 
 class CaState(CaBase):
-    """
-    CasADi state.
-    """
+    """CasADi state."""
+
     def __init__(self):
-        """
-        Multirotor MPC State x = [position, orientation, linear_velocity].
-        """
+        """Multirotor MPC State x = [position, orientation, linear_velocity]."""
         super().__init__([
             ('x_p', (3,)),  # position
             ('x_q', (4,)),  # orientation
@@ -135,9 +129,9 @@ class CaState(CaBase):
         :return (np.array): The initial state.
         """
         if orientation[0] == 0:
-            raise ValueError("Quaternion malformed: w==0")
+            raise ValueError('Quaternion malformed: w==0')
         return np.concatenate((position, orientation, linear_velocity))
-    
+
     @staticmethod
     def get_cost_matrix(
             position_weight: np.array = np.ones(3),
@@ -152,7 +146,8 @@ class CaState(CaBase):
 
         :return (np.array): The cost matrix Q.
         """
-        return np.diag(np.concatenate((position_weight, orientation_weight, linear_velocity_weight)))
+        return np.diag(np.concatenate((
+            position_weight, orientation_weight, linear_velocity_weight)))
 
     @property
     def position(self) -> ca.SX:
@@ -210,13 +205,10 @@ class CaState(CaBase):
 
 
 class CaControl(CaBase):
-    """
-    CasADi control.
-    """
+    """CasADi control."""
+
     def __init__(self):
-        """
-        Multirotor control signals u = [thrust, angular_velocity].
-        """
+        """Multirotor control signals u = [thrust, angular_velocity]."""
         super().__init__([
             ('u_t', (1,)),  # thrust
             ('u_w', (3,))   # angular_velocity
@@ -235,7 +227,7 @@ class CaControl(CaBase):
         :return (np.array): The initial control.
         """
         return np.concatenate((np.array([thrust]), angular_velocity))
-    
+
     @staticmethod
     def get_cost_matrix(
             thrust_weight: np.array = np.ones(1),
@@ -288,9 +280,7 @@ class CaControl(CaBase):
 
 
 class CaDynamics(CaBase):
-    """
-    CasADi dynamics.
-    """
+    """CasADi dynamics."""
 
     def __init__(
             self,
@@ -349,7 +339,6 @@ class CaDynamics(CaBase):
         return 0.5 * CaDynamics.quaternion_multiply(
             quaternion, w_q)
 
-
     @staticmethod
     def quaternion_multiply(q1: ca.SX, q2: ca.SX) -> ca.SX:
         """
@@ -362,7 +351,6 @@ class CaDynamics(CaBase):
 
         :return (ca.SX): The resulting quaternion [qw, qx, qy, qz].
         """
-
         qw1 = q1[0]
         qx1 = q1[1]
         qy1 = q1[2]
@@ -405,7 +393,7 @@ class CaDynamics(CaBase):
         acceleration_world = CaDynamics.apply_rotation(
             quaternion,
             acceleration_body_frame)
-        
+
         v_dot = acceleration_world - ca.vertcat(0, 0, gravity)
 
         return v_dot
@@ -438,7 +426,7 @@ class CaDynamics(CaBase):
             q_conj)
 
         return ca.vertcat(v_rotated[1], v_rotated[2], v_rotated[3])
-    
+
     @staticmethod
     def apply_inverse_rotation(q: ca.SX, v: ca.SX) -> ca.SX:
         """
@@ -474,9 +462,9 @@ class CaDynamics(CaBase):
         Calculate the inverse of a quaternion.
 
         q_inv = q_conjugate / q_norm^2
-        
+
         :param q (np.array): The input quaternion [q_w, q_x, q_y, q_z].
-        
+
         :return (np.array): The inverse quaternion.
         """
         q_conjugate = np.array([q[0], -q[1], -q[2], -q[3]])
@@ -504,15 +492,14 @@ class CaDynamics(CaBase):
         q_error = CaDynamics.quaternion_multiply(
             q_desired,
             ca.vertcat(q_current[0], -q_current[1], -q_current[2], -q_current[3]))
-        
+
         # Project the error to the 3D space to get z-axis error
         q_norm = ca.sqrt(q_error[0] ** 2 + q_error[3] ** 2 + 1e-3)
         v_error = ca.vertcat(
             q_error[0] * q_error[1] - q_error[2] * q_error[3],
             q_error[0] * q_error[2] + q_error[1] * q_error[3],
             q_error[3]) / q_norm
-        return v_error 
-
+        return v_error
 
     @property
     def f_expl(self) -> ca.SX:
@@ -522,7 +509,7 @@ class CaDynamics(CaBase):
         :return (ca.SX): The explicit dynamics.
         """
         return self._f_expl
-    
+
     @property
     def xdot(self) -> ca.SX:
         """
@@ -540,7 +527,7 @@ class CaDynamics(CaBase):
         :return (ca.SX): The state x.
         """
         return self._x.vector
-    
+
     @property
     def state(self) -> ca.SX:
         """
@@ -558,7 +545,7 @@ class CaDynamics(CaBase):
         :return (ca.SX): The control u.
         """
         return self._u.vector
-    
+
     @property
     def control(self) -> ca.SX:
         """
@@ -567,7 +554,7 @@ class CaDynamics(CaBase):
         :return (CaControl): The control.
         """
         return self._u
-    
+
     @property
     def p(self) -> ca.SX:
         """
@@ -579,9 +566,7 @@ class CaDynamics(CaBase):
 
 
 def get_acados_model():
-    """
-    Initialize the Acados multirotor model.
-    """
+    """Initialize the Acados multirotor model."""
     model_name = 'mpc'
 
     # System Dynamics

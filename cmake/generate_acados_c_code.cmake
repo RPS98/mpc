@@ -20,8 +20,9 @@ else()
   # Generate c code in build directory
   message(STATUS "Generating c code in ${BUILD_C_GENERATED_CODE}")
   set(ENV{PYTHONPATH} "${CMAKE_CURRENT_SOURCE_DIR}:$ENV{PYTHONPATH}")
+  set(MPC_CONFIG_FILE "${CMAKE_CURRENT_SOURCE_DIR}/mpc_config.yaml")
   execute_process(
-    COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/mpc/export_c_code.py -d ${BUILD_C_GENERATED_CODE}
+    COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/mpc/mpc_controller.py -d ${BUILD_C_GENERATED_CODE} -c ${MPC_CONFIG_FILE}
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     RESULT_VARIABLE result
   )

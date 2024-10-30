@@ -77,3 +77,14 @@ mkdir -p build
 cd build
 make -j4
 ```
+
+## Example of the MPC using acados sim solver
+
+You can run the MPC using the Python interface, from the root folder:
+
+```bash
+python3 examples/run_example.py
+```
+
+> [!NOTE] 
+> [dynamic_trajectory_generator](https://github.com/miferco97/dynamic_trajectory_generator.git) dependency is required to run the example. Clone the repository and add the path to the LD_LIBRARY_PATH.

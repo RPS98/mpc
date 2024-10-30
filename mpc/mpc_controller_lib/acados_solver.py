@@ -38,9 +38,9 @@ from dataclasses import dataclass
 
 from acados_template import AcadosOcp, AcadosOcpSolver, AcadosSim, AcadosSimSolver
 import casadi as ca
-import scipy.linalg
-import numpy as np
 from mpc.mpc_controller_lib.drone_model import CaControl, CaState, get_acados_model
+import numpy as np
+import scipy.linalg
 
 
 @dataclass
@@ -61,6 +61,7 @@ class AcadosMPCParams:
     :param p (np.ndarray): Parameter vector.
     [mass]
     """
+
     Q: np.ndarray = np.zeros((10, 10))
     Qe: np.ndarray = np.zeros((10, 10))
     R: np.ndarray = np.zeros((4, 4))
@@ -78,9 +79,7 @@ class AcadosMPCParams:
 
 
 class AcadosMPCSolver:
-    """
-    Acados Solver for Model Predictive Controller.
-    """
+    """Acados Solver for Model Predictive Controller."""
 
     def __init__(
             self,
@@ -176,7 +175,8 @@ class AcadosMPCSolver:
         solver_options.nlp_solver_type = 'SQP_RTI'
         # Hessian approximation. String in (‘GAUSS_NEWTON’, ‘EXACT’). Default: ‘GAUSS_NEWTON’.
         solver_options.hessian_approx = 'GAUSS_NEWTON'
-        # Integrator type. String in (‘ERK’, ‘IRK’, ‘GNSF’, ‘DISCRETE’, ‘LIFTED_IRK’). Default: ‘ERK’.
+        # Integrator type. String in (‘ERK’, ‘IRK’, ‘GNSF’, ‘DISCRETE’, ‘LIFTED_IRK’).
+        # Default: ‘ERK’.
         solver_options.integrator_type = 'ERK'
 
         # Create solver
@@ -215,13 +215,13 @@ class AcadosMPCSolver:
 
         # weight matrix at intermediate shooting nodes (1 to N-1)
         for node in range(1, self.N):
-            self.solver.cost_set(node, 'W', scipy.linalg.block_diag(self.mpc_params.Q, self.mpc_params.R))
+            self.solver.cost_set(node, 'W', scipy.linalg.block_diag(
+                self.mpc_params.Q, self.mpc_params.R))
 
         # weight matrix at terminal shooting node (N)
         self.solver.cost_set(self.N, 'W', self.mpc_params.Qe)
-        
 
-    def export_integrador(self, simulation_time):
+    def export_integrador(self, simulation_time) -> AcadosSimSolver:
         # Acados Sim
         acados_sim = AcadosSim()
         acados_sim.model = self.acados_model
@@ -255,11 +255,12 @@ class AcadosMPCSolver:
 
         :return: The predicted state of the system.
         """
-        states = np.zeros((self.solver.acados_ocp.solver_options.N_horizon+1, self.solver.get(0, "x").shape[0]))
+        states = np.zeros((
+            self.solver.acados_ocp.solver_options.N_horizon+1, self.solver.get(0, 'x').shape[0]))
         for i in range(self.solver.acados_ocp.solver_options.N_horizon+1):
-            states[i, :] = self.solver.get(i, "x")
+            states[i, :] = self.solver.get(i, 'x')
         return states
-    
+
     @property
     def controls(self):
         """
@@ -267,9 +268,10 @@ class AcadosMPCSolver:
 
         :return: The predicted control input of the system.
         """
-        controls = np.zeros((self.solver.acados_ocp.solver_options.N_horizon, self.solver.get(0, "u").shape[0]))
+        controls = np.zeros((
+            self.solver.acados_ocp.solver_options.N_horizon, self.solver.get(0, 'u').shape[0]))
         for i in range(self.solver.acados_ocp.solver_options.N_horizon):
-            controls[i, :] = self.solver.get(i, "u")
+            controls[i, :] = self.solver.get(i, 'u')
         return controls
 
     def _set_state(self, state: np.ndarray) -> None:
@@ -278,8 +280,8 @@ class AcadosMPCSolver:
 
         :param state: The current state of the system.
         """
-        self.solver.set(0, "lbx", state)
-        self.solver.set(0, "ubx", state)
+        self.solver.set(0, 'lbx', state)
+        self.solver.set(0, 'ubx', state)
 
     def _set_references(self, yref: np.ndarray, yref_e: np.ndarray) -> None:
         """
@@ -298,7 +300,7 @@ class AcadosMPCSolver:
         for i in range(self.N):
             self.solver.set(i, 'yref', yref[i, :])
         self.solver.set(self.N, 'yref', yref_e)
-        
+
     def evaluate(
             self,
             state: np.ndarray,
@@ -312,7 +314,7 @@ class AcadosMPCSolver:
         for the system (matrix of size [N, state_dim]).
         :param reference_trajectory_final: The final reference trajectory for the system
         (matrix of size [state_dim]).
-        
+
         :return: The control action u0.
         """
         # Set the reference trajectory
@@ -320,15 +322,15 @@ class AcadosMPCSolver:
 
         # Set current state
         self._set_state(state)
-        
+
         # Solve the MPC problem
         status = self.solver.solve()
         if status != 0:
-            print(f"MPC Solver failed with status {status}")
+            print(f'MPC Solver failed with status {status}')
             return None
 
         return self.controls[0]
-    
+
     def compute_control_action(
             self,
             state: np.ndarray,
@@ -342,36 +344,34 @@ class AcadosMPCSolver:
         for the system (matrix of size [N, state_dim]).
         :param reference_trajectory_final: The final reference trajectory for the system
         (matrix of size [state_dim]).
-        
+
         :return: The control action u0.
         """
         # Set the reference trajectory
         self._set_references(reference_trajectory_intermediate, reference_trajectory_final)
-        
+
         # Solve the MPC problem
         return self.solver.solve_for_x0(state)
 
     @property
     def solver(self):
         return self._solver
-    
+
     @property
     def prediction_horizon(self):
         return self.solver.acados_ocp.solver_options.tf
-    
+
     @property
     def prediction_steps(self):
         return self.solver.acados_ocp.solver_options.N_horizon
-    
+
     @property
     def evaluation_time(self):
         return self.solver.acados_ocp.solver_options.shooting_nodes
 
     @property
     def N(self):
-        """
-        Index of maximum shooting node.
-        """
+        """Index of maximum shooting node."""
         return self.solver.acados_ocp.solver_options.N_horizon
 
     def get_empty_reference(self):
@@ -381,7 +381,7 @@ class AcadosMPCSolver:
         :return: An empty reference trajectory.
         """
         return np.zeros((self.N, self.x_dim + self.u_dim))
-    
+
     def get_empty_end_reference(self):
         """
         Get an empty final reference trajectory.
@@ -389,7 +389,7 @@ class AcadosMPCSolver:
         :return: An empty final reference trajectory.
         """
         return np.zeros(self.x_dim)
-    
+
     def get_empty_state(self):
         """
         Get an empty state.
@@ -420,7 +420,7 @@ if __name__ == '__main__':
         ubu=np.array([30.0, 1.0, 1.0, 1.0]),
         p=np.array([1.0])
     )
-    
+
     mpc = AcadosMPCSolver(
         prediction_steps=100,
         prediction_horizon=0.5,

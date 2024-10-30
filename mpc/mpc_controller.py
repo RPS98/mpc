@@ -34,10 +34,11 @@ __authors__ = 'Rafael Pérez Seguí'
 __copyright__ = 'Copyright (c) 2022 Universidad Politécnica de Madrid'
 __license__ = 'BSD-3-Clause'
 
-from dataclasses import dataclass, field
+import argparse
 
-import numpy as np
 import mpc.mpc_controller_lib.acados_solver as mpc_lib
+from mpc.read_config import read_mpc_params
+import numpy as np
 
 
 class Trajectory:
@@ -45,7 +46,7 @@ class Trajectory:
 
     def __init__(self):
         self.trajectory = np.array([])
-    
+
     def add_waypoint(
             self,
             state) -> None:
@@ -93,7 +94,7 @@ class MPC(mpc_lib.AcadosMPCSolver):
 
     def trajectory_to_acro(
             self,
-            state : np.ndarray,
+            state: np.ndarray,
             trajectory: Trajectory,
             ) -> np.ndarray:
         """
@@ -121,31 +122,25 @@ class MPC(mpc_lib.AcadosMPCSolver):
 
 
 if __name__ == '__main__':
-    mpc_params = mpc_lib.AcadosMPCParams(
-        Q=mpc_lib.CaState.get_cost_matrix(
-            position_weight=3000*np.ones(3),
-            orientation_weight=1.0*np.ones(4),
-            linear_velocity_weight=0.0*np.ones(3)
-        ),
-        Qe=mpc_lib.CaState.get_cost_matrix(
-            position_weight=3000*np.ones(3),
-            orientation_weight=1.0*np.ones(4),
-            linear_velocity_weight=0.0*np.ones(3)
-        ),
-        R=mpc_lib.CaControl.get_cost_matrix(
-            thrust_weight=np.array([1.0]),
-            angular_velocity_weight=1.0*np.ones(3)
-        ),
-        lbu=np.array([0.5, -4*np.pi, -4*np.pi, -4*np.pi]),
-        ubu=np.array([30.0, 4*np.pi, 4*np.pi, 4*np.pi]),
-        p=np.array([1.0])
-    )
+    parser = argparse.ArgumentParser(description='MPC code exporter.')
+    parser.add_argument('--config_file', '-c', type=str, default='mpc_config.yaml',
+                        help='Configuration file. Default: mpc_config.yaml')
+    parser.add_argument('--export_dir', '-d', type=str, default='mpc_generated_code',
+                        help='Export directory. Default: mpc_generated_code')
+
+    args = parser.parse_args()
+    yaml_file = args.config_file
+    export_dir = args.export_dir
+
+    yaml_data = read_mpc_params(yaml_file)
 
     mpc = MPC(
-        prediction_steps=100,
-        prediction_horizon=0.5,
-        params=mpc_params
+        prediction_steps=yaml_data.N_horizon,
+        prediction_horizon=yaml_data.tf,
+        params=yaml_data.mpc_params,
+        export_dir=export_dir
     )
+
     Tf = mpc.prediction_horizon
     N = mpc.prediction_steps
     dt = Tf / N
