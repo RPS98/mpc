@@ -63,8 +63,6 @@ void MPC::initializeSolver() {
   nlp_solver_ = mpc_acados_get_nlp_solver(capsule_);
   nlp_config_ = mpc_acados_get_nlp_config(capsule_);
   nlp_dims_   = mpc_acados_get_nlp_dims(capsule_);
-
-  prediction_time_step_ = get_prediction_horizon() / get_prediction_steps();
 }
 
 void MPC::setSolverState() {

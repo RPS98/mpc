@@ -49,7 +49,7 @@ TEST(acados_mpc, test_acados_mpc) {
 
   EXPECT_NO_THROW(mpc.solve());
   EXPECT_NO_THROW(mpc.get_prediction_steps());
-  EXPECT_NO_THROW(mpc.get_prediction_horizon());
+  EXPECT_NO_THROW(mpc.get_prediction_time_horizon());
   EXPECT_NO_THROW(mpc.get_prediction_time_step());
   EXPECT_NO_THROW(mpc.get_data());
   EXPECT_NO_THROW(mpc.get_gains());

@@ -111,16 +111,16 @@ public:
   inline int get_prediction_steps() const { return MPC_N; }
 
   /**
-   * @brief Get the prediction horizon in seconds.
+   * @brief Get the prediction time horizon in seconds.
+   *
+   * It is the prediction steps multiplied by the prediction time step.
    */
-  inline double get_prediction_horizon() const { return *nlp_in_->Ts; }
+  inline double get_prediction_time_horizon() const { return MPC_N * *nlp_in_->Ts; }
 
   /**
    * @brief Get the prediction time step in seconds.
-   *
-   * It is calculated as prediction_horizon / prediction_steps.
    */
-  inline double get_prediction_time_step() const { return prediction_time_step_; }
+  inline double get_prediction_time_step() const { return *nlp_in_->Ts; }
 
   /**
    * @brief Get the MPCData pointer to modify the data.

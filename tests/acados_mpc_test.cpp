@@ -45,8 +45,10 @@ void test_acados_mpc() {
   MPCSimSolver mpc_sim_solver;
   double prediction_steps = mpc.get_prediction_steps();
   std::cout << "Prediction steps: " << prediction_steps << std::endl;
-  double prediction_horizon = mpc.get_prediction_horizon();
-  std::cout << "Prediction horizon: " << prediction_horizon << std::endl;
+  double prediction_time_horizon = mpc.get_prediction_time_horizon();
+  std::cout << "Prediction time horizon: " << prediction_time_horizon << std::endl;
+  double prediction_time_step = mpc.get_prediction_time_step();
+  std::cout << "Prediction time steps: " << prediction_time_step << std::endl;
 }
 
 }  // namespace acados_mpc
