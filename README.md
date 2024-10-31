@@ -56,6 +56,12 @@ For manual installation follow these instructions:
 chmod +x $ACADOS_ROOT_DIR/bin/t_renderer
 ```
 
+#### 5. Install acados_template
+
+```bash
+pip install -e <acados_root>/interfaces/acados_template
+```
+
 ## Generate C code for MPC
 
 The MPC is implemented in Python and C++. The Python code generates the C code for the MPC. To generate the C code, run the following command:
