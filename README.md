@@ -65,7 +65,7 @@ export PYTHONPATH=$PYTHONPATH:"<path_to_this_repo>"
 ```
 
 ```bash
-python3 mpc/export_c_code.py
+python3 mpc/mpc_controller.py
 ```
 
 ## Build this repository
