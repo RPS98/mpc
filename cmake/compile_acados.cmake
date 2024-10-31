@@ -36,6 +36,11 @@ if(NOT EXISTS "${ACADOS_BUILD_DIR}")
   if(result)
       message(FATAL_ERROR "Failed to build acados")
   endif()
+
+  # Install dependencies
+  execute_process(COMMAND pip install -e interfaces/acados_template
+    WORKING_DIRECTORY "$ENV{ACADOS_SOURCE_DIR}"
+    RESULT_VARIABLE result)
 endif()
 
 # Check Tera is installed in acados
