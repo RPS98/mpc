@@ -89,7 +89,7 @@ make -j4
 You can run the MPC using the Python interface, from the root folder:
 
 ```bash
-python3 examples/run_example.py
+python3 example/run_example.py
 ```
 
 > [!NOTE] 

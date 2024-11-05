@@ -37,7 +37,7 @@ __license__ = 'BSD-3-Clause'
 from dataclasses import dataclass
 import os
 
-from mpc_controller_lib.acados_solver import AcadosMPCParams
+from mpc.mpc_controller_lib.acados_solver import AcadosMPCParams
 import numpy as np
 import yaml
 

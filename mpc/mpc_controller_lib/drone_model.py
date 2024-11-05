@@ -337,7 +337,7 @@ class CaDynamics(CaBase):
             w_qz)
 
         return 0.5 * CaDynamics.quaternion_multiply(
-            quaternion, w_q)
+            CaDynamics.normalize_quaternion(quaternion), w_q)
 
     @staticmethod
     def quaternion_multiply(q1: ca.SX, q2: ca.SX) -> ca.SX:
@@ -391,7 +391,7 @@ class CaDynamics(CaBase):
         # Compute inverse rotation
         acceleration_body_frame = ca.vertcat(0, 0, thrust / mass)
         acceleration_world = CaDynamics.apply_rotation(
-            quaternion,
+            CaDynamics.normalize_quaternion(quaternion),
             acceleration_body_frame)
 
         v_dot = acceleration_world - ca.vertcat(0, 0, gravity)
@@ -468,7 +468,7 @@ class CaDynamics(CaBase):
         :return (np.array): The inverse quaternion.
         """
         q_conjugate = np.array([q[0], -q[1], -q[2], -q[3]])
-        q_norm_sq = np.dot(q, q)
+        q_norm_sq = CaDynamics.normalize_quaternion(q) ** 2
         return q_conjugate / q_norm_sq
 
     @staticmethod
@@ -500,6 +500,18 @@ class CaDynamics(CaBase):
             q_error[0] * q_error[2] + q_error[1] * q_error[3],
             q_error[3]) / q_norm
         return v_error
+    
+    @staticmethod
+    def normalize_quaternion(q: ca.SX) -> ca.SX:
+        """
+        Normalize a quaternion.
+
+        :param q (ca.SX): The quaternion to normalize.
+
+        :return (ca.SX): The normalized quaternion.
+        """
+        q_norm = ca.sqrt(q[0] ** 2 + q[1] ** 2 + q[2] ** 2 + q[3] ** 2)
+        return q / q_norm
 
     @property
     def f_expl(self) -> ca.SX:
@@ -565,7 +577,7 @@ class CaDynamics(CaBase):
         return self._p
 
 
-def get_acados_model():
+def get_acados_model() -> AcadosModel:
     """Initialize the Acados multirotor model."""
     model_name = 'mpc'
 
@@ -597,15 +609,25 @@ def get_acados_model():
 if __name__ == '__main__':
     # Create a state
     x = CaState()
-    print(x)
+    print('State:    ', x)
 
     # Create a control
     u = CaControl()
-    print(u)
+    print('Control:  ', u)
 
     # Create dynamics
     dynamics = CaDynamics(x, u)
-    print(dynamics)
+    print('Dynamics: ', dynamics)
 
     # Create an Acados model
     acados_model = get_acados_model()
+    
+    def format_output(label, expr):
+        print(f'{label}:')
+        terms = ca.vertsplit(expr, 1)
+        for term in terms:
+            print(f'    {term}')
+        print()
+
+    format_output('f_impl', acados_model.f_impl_expr)
+    format_output('f_expl', acados_model.f_expl_expr)
