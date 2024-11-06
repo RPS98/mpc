@@ -469,6 +469,8 @@ class CaDynamics(CaBase):
         """
         q_conjugate = np.array([q[0], -q[1], -q[2], -q[3]])
         q_norm_sq = CaDynamics.normalize_quaternion(q) ** 2
+        if q_norm_sq == 0:
+            q_norm_sq = 1e-3
         return q_conjugate / q_norm_sq
 
     @staticmethod

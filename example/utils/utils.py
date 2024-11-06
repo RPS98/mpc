@@ -42,7 +42,6 @@ import utils.trajectory_generator as dtb
 import yaml
 
 
-
 def euler_to_quaternion(roll: float, pitch: float, yaw: float) -> np.ndarray:
     """
     Convert Euler angles to a quaternion.
@@ -87,7 +86,7 @@ def compute_path_facing(velocity: np.ndarray) -> list:
     pitch, roll = 0.0, 0.0
 
     q = euler_to_quaternion(roll, pitch, yaw)
-    return np.array([q.w, q.x, q.y, q.z])
+    return np.array([q[0], q[1], q[2], q[3]])
 
 
 class YamlData:

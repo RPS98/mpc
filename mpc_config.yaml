@@ -1,9 +1,9 @@
 mpc:
   N_horizon: 100 # Prediction steps
-  tf: 0.5 # Prediction horizon in seconds
-  Q: [3000.0, 3000.0, 3000.0, 1.0, 1.0, 1.0, 100.0, 0.01, 0.01, 0.01] # Weight for internal states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
-  Qe: [3000.0, 3000.0, 3000.0, 1.0, 1.0, 1.0, 100.0, 0.01, 0.01, 0.01] # Weight for end states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
-  R: [1.0, 1.0, 1.0, 1.0] # Weight for control inputs: [thrust, wx, wy, wz]
-  lbu: [0.0, -12.0, -12.0, -12.0] # Lower bounds for control inputs: [thrust, wx, wy, wz]
-  ubu: [30.0, 12.0, 12.0, 12.0] # Upper bounds for control inputs: [thrust, wx, wy, wz]
+  tf: 1.0 # Prediction horizon in seconds
+  Q: [50.0, 50.0, 3000.0, 50.0, 1.0, 1.0, 50.0, 0.1, 0.1, 0.1] # Weight for internal states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
+  Qe: [50.0, 50.0, 3000.0, 50.0, 1.0, 1.0, 50.0, 0.1, 0.1, 0.1] # Weight for end states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
+  R: [1.0, 1.0, 1.0, 10.0] # Weight for control inputs: [thrust, wx, wy, wz]
+  lbu: [0.0, -5.0, -5.0, -4.0] # Lower bounds for control inputs: [thrust, wx, wy, wz]
+  ubu: [20.0, 5.0, 5.0, 4.0] # Upper bounds for control inputs: [thrust, wx, wy, wz]
   p: [1.0] # Online parameter: [mass]

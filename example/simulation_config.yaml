@@ -1,10 +1,9 @@
 sim_config:
-  trajectory_generator_max_speed: 2.0 # m/s
+  trajectory_generator_max_speed: 1.5 # m/s
   trajectory_generator_waypoints:
-  - [ 0.0,  0.0, 1.0]
-  - [ 3.0, -3.0, 2.0]
-  - [ 3.0,  3.0, 2.0]
+  - [3.0, 3.0, 2.0]
+  - [-3.0, 3.0, 2.0]
   - [-3.0, -3.0, 2.0]
-  - [-3.0,  3.0, 2.0]
-  - [ 0.0,  0.0, 2.0]
+  - [3.0, -3.0, 2.0]
+  - [3.0, 3.0, 2.0]
   path_facing: True

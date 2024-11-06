@@ -49,7 +49,7 @@ class YamlMPCParams:
     mpc_params: AcadosMPCParams = AcadosMPCParams()  # MPC parameters
 
 
-def read_mpc_params(file_path: str):
+def read_mpc_params(file_path: str) -> YamlMPCParams:
     """
     Read YAML configuration file and populate YamlData object.
 
