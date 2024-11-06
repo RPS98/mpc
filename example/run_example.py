@@ -39,6 +39,7 @@ from functools import wraps
 from mpc.mpc_controller import MPC, mpc_lib
 from mpc.read_config import read_mpc_params
 import numpy as np
+import time
 from tqdm import tqdm
 from utils.plot_results import plotSim3D
 from utils.utils import euler_to_quaternion, get_trajectory_generator, read_yaml_params
@@ -89,6 +90,7 @@ def test_trajectory_controller(
     min_time = trajectory_generator.get_min_time()
     max_time = trajectory_generator.get_max_time()
 
+    mpc_solve_times = np.zeros(0)
     state_history = np.zeros(7)
     reference_history = np.zeros(7)
     while t < max_time:
@@ -103,7 +105,10 @@ def test_trajectory_controller(
             trajectory_point = trajectory_generator.evaluate_trajectory(t_eval)
             reference_trajectory[i, :] = trajectory_point_to_mpc_reference(trajectory_point)
             t_eval += tf
+
+        current_time = time.time()
         u = mpc.evaluate(x, reference_trajectory[:-1], reference_trajectory[-1][:mpc.x_dim])
+        mpc_solve_times = np.append(mpc_solve_times, time.time() - current_time)
 
         integrator.set('x', x)
         integrator.set('u', u)
@@ -120,6 +125,7 @@ def test_trajectory_controller(
         reference_history = np.vstack((reference_history, reference_trajectory[0][:7]))
 
         pbar.update(tf)
+    print(f'MPC solve time mean: {np.mean(mpc_solve_times)}')
     plotSim3D(state_history, reference_history)
 
 
