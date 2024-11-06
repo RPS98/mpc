@@ -88,11 +88,20 @@ void MPC::setSolverRefenceEnd() {
   validateStatus(status_);
 }
 
+void MPC::setSolverOnlineParams() {
+  // initial values for parameter vector - can be updated stagewise
+  for (int i = 0; i <= MPC_N + 1; i++) {
+    ocp_nlp_in_set(nlp_config_, nlp_dims_, nlp_in_, i, "parameter_values",
+                   mpc_data_.p_params.get_data());
+  }
+}
+
 int MPC::solve() {
   // Set solver state and reference
   setSolverState();
   setSolverRefence();
   setSolverRefenceEnd();
+  setSolverOnlineParams();
 
   // Solve OCP
   status_ = mpc_acados_solve(capsule_);
@@ -125,13 +134,6 @@ void MPC::update_bounds() {
     status_ = ocp_nlp_constraints_model_set(nlp_config_, nlp_dims_, nlp_in_, i, "ubu",
                                             bounds_.ubu.data());
     validateStatus(status_);
-  }
-}
-
-void MPC::update_online_params() {
-  // initial values for parameter vector - can be updated stagewise
-  for (int i = 0; i < MPC_N + 1; i++) {
-    ocp_nlp_in_set(nlp_config_, nlp_dims_, nlp_in_, i, "parameter_values", p_params_.get_data());
   }
 }
 

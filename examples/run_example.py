@@ -42,7 +42,7 @@ import numpy as np
 import time
 from tqdm import tqdm
 from utils.plot_results import plotSim3D
-from utils.utils import euler_to_quaternion, get_trajectory_generator, read_yaml_params
+from utils.utils import euler_to_quaternion, get_trajectory_generator, read_yaml_params, CsvLogger
 
 
 def trajectory_point_to_mpc_reference(trajectory_point):
@@ -58,14 +58,14 @@ def trajectory_point_to_mpc_reference(trajectory_point):
 
 def progress_bar(func):
     @wraps(func)
-    def wrapper(mpc, simulator, trajectory_generator, *args, **kwargs):
+    def wrapper(mpc, simulator, trajectory_generator, logger, *args, **kwargs):
         sim_max_t = trajectory_generator.get_max_time()
 
         pbar = tqdm(total=sim_max_t, desc=f'Progress {func.__name__}', unit='iter',
                     bar_format='{l_bar}{bar} | {n:.4f}/{total:.2f} '
                     '[{elapsed}<{remaining}, {rate_fmt}]')
 
-        result = func(mpc, simulator, trajectory_generator, pbar, *args, **kwargs)
+        result = func(mpc, simulator, trajectory_generator, logger, pbar, *args, **kwargs)
 
         pbar.close()
         return result
@@ -77,10 +77,12 @@ def test_trajectory_controller(
         mpc: MPC,
         integrator: mpc_lib.AcadosSimSolver,
         trajectory_generator,
+        logger: CsvLogger,
         pbar):
     """Test trajectory controller."""
     x = mpc_lib.CaState.get_state()
     u = mpc_lib.CaControl.get_control()
+    y = mpc_lib.CaState.get_state()
 
     prediction_steps = mpc.prediction_steps
     prediction_horizon = mpc.prediction_horizon
@@ -93,6 +95,8 @@ def test_trajectory_controller(
     mpc_solve_times = np.zeros(0)
     state_history = np.zeros(7)
     reference_history = np.zeros(7)
+
+    logger.save(t, x, y , u)
     while t < max_time:
         t_eval = t
         reference_trajectory = np.zeros((prediction_steps+1, mpc.x_dim))
@@ -124,6 +128,13 @@ def test_trajectory_controller(
         state_history = np.vstack((state_history, x[:7]))
         reference_history = np.vstack((reference_history, reference_trajectory[0][:7]))
 
+        # Log data
+        y = mpc_lib.CaState.get_state(
+            position=reference_trajectory[0][0:3],
+            orientation=reference_trajectory[0][3:7],
+            linear_velocity=reference_trajectory[0][7:10])
+        logger.save(t, x, y, u)
+
         pbar.update(tf)
     print(f'MPC solve time mean: {np.mean(mpc_solve_times)}')
     plotSim3D(state_history, reference_history)
@@ -131,10 +142,14 @@ def test_trajectory_controller(
 
 if __name__ == '__main__':
     # Params
-    simulation_yaml = read_yaml_params('example/simulation_config.yaml')
+    simulation_yaml = read_yaml_params('examples/simulation_config.yaml')
 
     # MPC Params
     yaml_data = read_mpc_params('mpc_config.yaml')
+
+    # Logger
+    file_name = 'mpc_log.csv'
+    logger = CsvLogger(file_name)
 
     mpc = MPC(
         prediction_steps=yaml_data.N_horizon,
@@ -158,4 +173,5 @@ if __name__ == '__main__':
     test_trajectory_controller(
         mpc,
         integrator,
-        trajectory_generator)
+        trajectory_generator,
+        logger)

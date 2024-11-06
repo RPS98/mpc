@@ -89,8 +89,26 @@ make -j4
 You can run the MPC using the Python interface, from the root folder:
 
 ```bash
-python3 example/run_example.py
+python3 examples/run_example.py
 ```
 
 > [!NOTE] 
 > [dynamic_trajectory_generator](https://github.com/miferco97/dynamic_trajectory_generator.git) dependency is required to run the example. Clone the repository and add the path to the LD_LIBRARY_PATH.
+
+
+## Example of the MPC using acados sim solver with C++ interface
+
+You can build the C++ interface and run the MPC using the C++ interface, from the root folder:
+
+```bash
+mkdir -p build
+cd build
+cmake ..
+make -j4 -DBUILD_EXAMPLES=ON
+```
+
+You can run the example:
+
+```bash
+./build/examples/acados_mpc_run_example
+```

@@ -51,16 +51,13 @@ BENCHMARK(BM_TEST_INIT)->Threads(1)->Repetitions(10);
 static void BM_TEST_UpdateGains(benchmark::State &state) {
   // Perform setup here
   acados_mpc::MPC mpc;
-  acados_mpc::MPCGains gains;
-  acados_mpc::MPCBounds bounds;
-  acados_mpc::MPCOnlineParams p_params;
+  acados_mpc::Gains gains;
+  acados_mpc::Bounds bounds;
   for (auto _ : state) {
     mpc.get_gains()->set_gains(gains);
     mpc.get_bounds()->set_bounds(bounds);
-    mpc.get_online_params()->set_online_params(p_params);
     mpc.update_bounds();
     mpc.update_gains();
-    mpc.update_online_params();
   }
 }
 BENCHMARK(BM_TEST_UpdateGains)->Threads(1)->Repetitions(10);

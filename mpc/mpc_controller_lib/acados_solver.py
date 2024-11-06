@@ -59,7 +59,7 @@ class AcadosMPCParams:
     :param ubu (np.ndarray): Upper bounds on control input.
     [thrust, w_x, w_y, w_z]_max
     :param p (np.ndarray): Parameter vector.
-    [mass]
+    [mass, qw_ref, qx_ref, qy_ref, qz_ref]
     """
 
     Q: np.ndarray = np.zeros((10, 10))
@@ -67,7 +67,7 @@ class AcadosMPCParams:
     R: np.ndarray = np.zeros((4, 4))
     lbu: np.ndarray = np.zeros(4)
     ubu: np.ndarray = np.zeros(4)
-    p: np.ndarray = np.zeros(1)
+    p: np.ndarray = np.zeros(5)
 
     def __str__(self):
         return (f'Q: \n{self.Q}\n'
@@ -109,7 +109,14 @@ class AcadosMPCSolver:
         ocp.parameter_values = self.mpc_params.p
 
         # Initial state and control
-        x0 = CaState.get_state()
+        x0 = CaState.get_state(
+            position=np.array([0.0, 0.0, 0.0]),
+            orientation=np.array([1.0, 0.0, 0.0, 0.0]),
+            linear_velocity=np.array([0.0, 0.0, 0.0]),
+        )
+        x0_position = x0[:3]
+        x0_orientation = x0[3:7]
+        x0_linear_velocity = x0[7:10]
         u0 = CaControl.get_control(
             thrust=self.mpc_params.p[0] * 9.81)
 
@@ -122,9 +129,18 @@ class AcadosMPCSolver:
         cost.W_e = self.mpc_params.Qe
 
         # reference at intermediate shooting nodes (1 to N-1)
-        cost.yref = np.concatenate([x0, u0])
+        cost.yref = np.concatenate([
+            x0_position, # Position reference
+            np.zeros(3), # Attitude reference
+            x0_linear_velocity, # Linear velocity reference
+            u0  # Control reference
+        ])
         # reference at terminal shooting node (N)
-        cost.yref_e = x0
+        cost.yref_e = np.concatenate([
+            x0_position, # Position reference
+            np.zeros(3), # Attitude reference
+            x0_linear_velocity, # Linear velocity reference
+        ])
 
         # # For linear least squares cost
         # # Set up the cost type
@@ -146,8 +162,8 @@ class AcadosMPCSolver:
         cost.cost_type = 'NONLINEAR_LS'
         cost.cost_type_e = 'NONLINEAR_LS'
         # CasADi expression for nonlinear least squares
-        ocp.model.cost_y_expr = ca.vertcat(ocp.model.x, ocp.model.u)
-        ocp.model.cost_y_expr_e = ocp.model.x
+        # ocp.model.cost_y_expr = ca.vertcat(ocp.model.x, ocp.model.u)
+        # ocp.model.cost_y_expr_e = ocp.model.x
 
         # Constraints
         constraints = ocp.constraints
@@ -294,12 +310,52 @@ class AcadosMPCSolver:
         """
         # Check the size of the reference and adjust as needed
         if yref.shape[1] != (self.x_dim + self.u_dim):
-            # Add u0 to the reference trajectory: [yref, u0]
             yref = np.concatenate([yref, np.tile(self.u0, (yref.shape[0], 1))], axis=1)
+            # u0 = np.zeros(4)
+            # yref = np.concatenate([yref, np.tile(u0, (yref.shape[0], 1))], axis=1)
 
         for i in range(self.N):
-            self.solver.set(i, 'yref', yref[i, :])
-        self.solver.set(self.N, 'yref', yref_e)
+            position = yref[i, :3]
+            orientation = yref[i, 3:7]
+            linear_velocity = yref[i, 7:10]
+            actuation = yref[i, 10:14]
+
+            y_ref = np.concatenate([
+                position,
+                np.zeros(3),  # Attitude reference
+                linear_velocity,
+                actuation
+            ])
+
+            # self.solver.set(i, 'yref', yref[i, :])
+            self.solver.set(i, 'yref', y_ref)
+            
+            # Set orientation in online params
+            p = np.concatenate([
+                np.array([self.mpc_params.p[0]]),  # Mass
+                orientation  # Orientation
+            ])
+            self.solver.set(i, 'p', p)
+
+        position = yref_e[0:3]
+        orientation = yref_e[3:7]
+        linear_velocity = yref_e[7:10]
+
+        y_ref_e = np.concatenate([
+            position,
+            np.zeros(3),  # Attitude reference
+            linear_velocity,
+        ])
+        # self.solver.set(self.N, 'yref', yref_e)
+        self.solver.set(self.N, 'yref', y_ref_e)
+
+        # Set orientation in online params
+        p = np.concatenate([
+            np.array([self.mpc_params.p[0]]),  # Mass
+            orientation  # Orientation
+        ])
+        self.solver.set(self.N, 'p', p)
+
 
     def evaluate(
             self,

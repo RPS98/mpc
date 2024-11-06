@@ -54,10 +54,8 @@ TEST(acados_mpc, test_acados_mpc) {
   EXPECT_NO_THROW(mpc.get_data());
   EXPECT_NO_THROW(mpc.get_gains());
   EXPECT_NO_THROW(mpc.get_bounds());
-  EXPECT_NO_THROW(mpc.get_online_params());
   EXPECT_NO_THROW(mpc.update_gains());
   EXPECT_NO_THROW(mpc.update_bounds());
-  EXPECT_NO_THROW(mpc.update_online_params());
 }
 
 TEST(acados_mpc, test_acados_datatypes) {
@@ -76,8 +74,13 @@ TEST(acados_mpc, test_acados_datatypes) {
   EXPECT_NO_THROW(reference.set_data(0, 0.0));
   EXPECT_NO_THROW(reference.set_state(0, State(), Control()));
 
-  EXPECT_NO_THROW(MPCGains());
-  auto gains = MPCGains();
+  EXPECT_NO_THROW(ReferenceEnd());
+  auto reference_end = ReferenceEnd();
+  EXPECT_NO_THROW(reference_end.get_data());
+  EXPECT_NO_THROW(reference_end.set_data(0, 0.0));
+
+  EXPECT_NO_THROW(Gains());
+  auto gains = Gains();
   EXPECT_NO_THROW(gains.get_W());
   EXPECT_NO_THROW(gains.get_We());
   EXPECT_NO_THROW(gains.set_W(0, 0.0));
@@ -86,15 +89,15 @@ TEST(acados_mpc, test_acados_datatypes) {
   EXPECT_NO_THROW(gains.set_R(0, 0.0));
   EXPECT_NO_THROW(gains.set_Q_end(0, 0.0));
 
-  EXPECT_NO_THROW(MPCBounds());
-  auto bounds = MPCBounds();
+  EXPECT_NO_THROW(Bounds());
+  auto bounds = Bounds();
   EXPECT_NO_THROW(bounds.get_lbu());
   EXPECT_NO_THROW(bounds.get_ubu());
   EXPECT_NO_THROW(bounds.set_lbu(0, 0.0));
   EXPECT_NO_THROW(bounds.set_ubu(0, 0.0));
 
-  EXPECT_NO_THROW(MPCOnlineParams());
-  auto p_params = MPCOnlineParams();
+  EXPECT_NO_THROW(OnlineParams());
+  auto p_params = OnlineParams();
   EXPECT_NO_THROW(p_params.get_data());
   EXPECT_NO_THROW(p_params.get_data(0));
   EXPECT_NO_THROW(p_params.set_data(0, 0.0));

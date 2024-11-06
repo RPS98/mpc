@@ -95,9 +95,9 @@ struct Control {
  * @brief Reference yref
  */
 struct Reference {
-  static constexpr size_t Nyref = (MPC_NX + MPC_NU);
-  std::array<double, MPC_N*(MPC_NX + MPC_NU)> data;
-  std::size_t size = MPC_N * (MPC_NX + MPC_NU);
+  static constexpr size_t Nyref = MPC_NY;
+  std::array<double, MPC_N * MPC_NY> data;
+  std::size_t size = MPC_N * MPC_NY;
 
   /**
    * @brief Constructor
@@ -155,22 +155,54 @@ struct Reference {
   void set_state(const int index, const State& state, const Control& control = Control());
 };
 
-/**
- * @brief MPCGains
- *
- * Gains Q, R and Qe for the MPC.
- */
-struct MPCGains {
-  static constexpr size_t Nq  = MPC_NX;
-  static constexpr size_t Nqe = MPC_NX;
-  static constexpr size_t Nr  = MPC_NU;
-  std::array<double, (MPC_NX + MPC_NU) * (MPC_NX + MPC_NU)> W;
-  std::array<double, MPC_NX * MPC_NX> We;
+struct ReferenceEnd {
+  std::array<double, MPC_NYN> data;
+  std::size_t size = MPC_NYN;
 
   /**
    * @brief Constructor
    */
-  MPCGains();
+  ReferenceEnd();
+
+  /**
+   * @brief Get the data
+   *
+   * @return double* data.
+   */
+  double* get_data();
+
+  /**
+   * @brief Get the data
+   *
+   * @return const double* data.
+   */
+  const double* get_data() const;
+
+  /**
+   * @brief Set the data at index
+   *
+   * @param index index.
+   * @param value value.
+   */
+  void set_data(const int index, const double value);
+};
+
+/**
+ * @brief Gains
+ *
+ * Gains Q, R and Qe for the MPC.
+ */
+struct Gains {
+  static constexpr size_t Nq  = MPC_NYN;
+  static constexpr size_t Nqe = MPC_NYN;
+  static constexpr size_t Nr  = (MPC_NY - MPC_NYN);
+  std::array<double, MPC_NY * MPC_NY> W;
+  std::array<double, MPC_NYN * MPC_NYN> We;
+
+  /**
+   * @brief Constructor
+   */
+  Gains();
 
   /**
    * @brief Get the W matrix
@@ -222,7 +254,7 @@ struct MPCGains {
    * @param index index of the diagonal.
    * @param value value.
    */
-  void set_gains(const MPCGains& gains);
+  void set_gains(const Gains& gains);
 
   /**
    * @brief Set the Q matrix at index
@@ -235,9 +267,9 @@ struct MPCGains {
   /**
    * @brief Set the Q matrix
    *
-   * @param Q std::array<double, MPC_NX> Q.
+   * @param Q std::array<double, Gains::Nq> Q.
    */
-  void set_Q(const std::array<double, MPC_NX>& Q);
+  void set_Q(const std::array<double, Gains::Nq>& Q);
 
   /**
    * @brief Set the R matrix at index
@@ -250,9 +282,9 @@ struct MPCGains {
   /**
    * @brief Set the R matrix
    *
-   * @param R std::array<double, MPC_NU> R.
+   * @param R std::array<double, Gains::Nr> R.
    */
-  void set_R(const std::array<double, MPC_NU>& R);
+  void set_R(const std::array<double, Gains::Nr>& R);
 
   /**
    * @brief Set the Qe matrix at index
@@ -265,17 +297,17 @@ struct MPCGains {
   /**
    * @brief Set the Qe matrix
    *
-   * @param Qe std::array<double, MPC_NX> Qe.
+   * @param Qe std::array<double, Gains::Nqe> Qe.
    */
-  void set_Q_end(const std::array<double, MPC_NX>& Qe);
+  void set_Q_end(const std::array<double, Gains::Nqe>& Qe);
 };
 
 /**
- * @brief MPCBounds
+ * @brief Bounds
  *
  * Bounds lbu and ubu for the MPC.
  */
-struct MPCBounds {
+struct Bounds {
   static constexpr size_t Nu = MPC_NU;
   std::array<double, MPC_NU> lbu;
   std::array<double, MPC_NU> ubu;
@@ -283,7 +315,7 @@ struct MPCBounds {
   /**
    * @brief Constructor
    */
-  MPCBounds();
+  Bounds();
 
   /**
    * @brief Get the lbu array
@@ -318,7 +350,7 @@ struct MPCBounds {
    *
    * @param bounds bounds.
    */
-  void set_bounds(const MPCBounds& bounds);
+  void set_bounds(const Bounds& bounds);
 
   /**
    * @brief Set the lbu
@@ -352,11 +384,11 @@ struct MPCBounds {
 };
 
 /**
- * @brief MPCOnlineParams
+ * @brief OnlineParams
  *
  * Online parameters p for the MPC.
  */
-struct MPCOnlineParams {
+struct OnlineParams {
   static constexpr size_t Np = MPC_NP;
   std::array<double, MPC_NP> data;
   std::size_t size = MPC_NP;
@@ -364,7 +396,7 @@ struct MPCOnlineParams {
   /**
    * @brief Constructor
    */
-  MPCOnlineParams();
+  OnlineParams();
 
   /**
    * @brief Get the data
@@ -402,7 +434,7 @@ struct MPCOnlineParams {
    * @param index index.
    * @param value value.
    */
-  void set_online_params(const MPCOnlineParams& params);
+  void set_online_params(const OnlineParams& params);
 
   /**
    * @brief Set the data

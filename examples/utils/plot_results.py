@@ -15,10 +15,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-
 def plotDrone3D(ax, X, q):
     """
-    Plot a 3D representation of a drone's position and orientation.
+    Plots a 3D representation of a drone's position and orientation.
 
     :param ax: Matplotlib 3D axis object.
     :param X: Position [x, y, z].
@@ -53,12 +52,12 @@ def plotDrone3D(ax, X, q):
     ax.plot3D([q3[0], q4[0]], [q3[1], q4[1]], [q3[2], q4[2]], 'k')
     for q, r in zip([q1, q2, q3, q4], [r1, r2, r3, r4]):
         ax.plot3D([q[0], r[0]], [q[1], r[1]], [q[2], r[2]], 'r')
-    ax.plot3D([x, c1[0]], [y, c1[1]], [z, c1[2]], '-', color='green', label='heading')
+    ax.plot3D([x, c1[0]], [y, c1[1]], [z, c1[2]], '-', color='orange', label='heading')
 
 
 def axisEqual3D(ax):
     """
-    Set equal scaling for 3D axis.
+    Sets equal scaling for 3D axis.
 
     :param ax: Matplotlib 3D axis object.
     """
@@ -73,21 +72,24 @@ def axisEqual3D(ax):
 
 def plotSim3D(simX, ref_traj):
     """
-    Plot the simulation and reference trajectory in 3D, along with drone snapshots.
+    Plots the simulation and reference trajectory in 3D, along with drone snapshots.
 
+    :param ax: Matplotlib 3D axis object.
     :param simX: Simulation states (position and quaternion).
     :param ref_traj: Reference trajectory states.
     """
-    ax = plt.axes(projection='3d')
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+
     x, y, z = simX[:, 0], simX[:, 1], simX[:, 2]
     x_ref, y_ref, z_ref = ref_traj[:, 0], ref_traj[:, 1], ref_traj[:, 2]
 
     ax.plot3D(x, y, z, label='meas')
     ax.plot3D(x_ref, y_ref, z_ref, label='ref')
-    ax.set_xlabel('x [m]')
-    ax.set_ylabel('y [m]')
-    ax.set_zlabel('z [m]')
-    ax.set_title('Performed Trajectory')
+    ax.set_xlabel("x [m]")
+    ax.set_ylabel("y [m]")
+    ax.set_zlabel("z [m]")
+    ax.set_title("Performed Trajectory")
     ax.legend()
 
     NUM_STEPS = simX.shape[0]
@@ -107,3 +109,33 @@ def plotSim3D(simX, ref_traj):
 
     axisEqual3D(ax)
     plt.show()
+
+
+if __name__ == '__main__':
+    import csv
+    csv_file = 'mpc_log.csv'
+
+    # load the data
+    with open(csv_file, 'r') as f:
+        reader = csv.reader(f)
+        data = list(reader)
+    
+    # extract the data
+    # Row: 'time', 'x', 'y', 'z', 'qw', 'qx', 'qy', 'qz', 'vx', 'vy', 'vz', 'x_ref', 'y_ref', 'z_ref', 'qw_ref', 'qx_ref', 'qy_ref', 'qz_ref', 'vx_ref', 'vy_ref', 'vz_refthrust_ref', 'wx_ref', 'wy_ref', 'wz_ref'
+    num_rows = len(data)-1
+    num_cols = len(data[0])
+
+    t = np.zeros((num_rows, 1))
+    state = np.zeros((num_rows, 10))
+    reference = np.zeros((num_rows, 10))
+    control = np.zeros((num_rows, 4))
+
+    for i, row in enumerate(data):
+        if i == 0:
+            continue
+        t[i-1] = float(row[0])
+        state[i-1] = [float(row[j]) for j in range(1, 11)]
+        reference[i-1] = [float(row[j]) for j in range(11, 21)]
+        control[i-1] = [float(row[j]) for j in range(21, 25)]
+
+    plotSim3D(state, reference)

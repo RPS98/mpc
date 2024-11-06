@@ -63,3 +63,8 @@ include(CTest)
 if(BUILD_TESTING)
   add_subdirectory(tests)
 endif()
+
+# Add executable for each example
+if(BUILD_EXAMPLES)
+  add_subdirectory(examples)
+endif()

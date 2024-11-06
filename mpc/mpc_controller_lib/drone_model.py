@@ -304,8 +304,9 @@ class CaDynamics(CaBase):
         # Parameters
         mass = ca.SX.sym('mass')
         gravity = ca.DM(9.81)
+        q_ref = ca.SX.sym('q_ref', 4)
 
-        self._p = ca.vertcat(mass)
+        self._p = ca.vertcat(mass, q_ref)
 
         # Model equations
         p_dot = x.linear_velocity
@@ -314,6 +315,21 @@ class CaDynamics(CaBase):
             x.orientation, u.thrust, gravity, mass)
 
         self._f_expl = ca.vertcat(p_dot, q_dot, v_dot)
+
+        self._q_att = CaDynamics.quaternion_error(
+            self._x.orientation,
+            q_ref)
+        
+        self._cost_y_expr = ca.vertcat(
+            self._x.position,
+            self._q_att,
+            self._x.linear_velocity,
+            self.u)
+        
+        self._cost_y_expr_e = ca.vertcat(
+            self._x.position,
+            self._q_att,
+            self._x.linear_velocity)
 
     @staticmethod
     def quaternion_derivate(quaternion: ca.SX, angular_velocity: ca.SX) -> ca.SX:
@@ -523,6 +539,24 @@ class CaDynamics(CaBase):
         :return (ca.SX): The explicit dynamics.
         """
         return self._f_expl
+    
+    @property
+    def cost_y_expr(self) -> ca.SX:
+        """
+        Get the cost y expression.
+
+        :return (ca.SX): The cost y expression.
+        """
+        return self._cost_y_expr
+    
+    @property
+    def cost_y_expr_e(self) -> ca.SX:
+        """
+        Get the cost y end expression.
+
+        :return (ca.SX): The cost y end expression.
+        """
+        return self._cost_y_expr_e
 
     @property
     def xdot(self) -> ca.SX:
@@ -604,6 +638,8 @@ def get_acados_model() -> AcadosModel:
     model.z = z
     model.p = dynamics.p
     model.name = model_name
+    model.cost_y_expr = dynamics.cost_y_expr
+    model.cost_y_expr_e = dynamics.cost_y_expr_e
 
     return model
 

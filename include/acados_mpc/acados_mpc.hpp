@@ -63,9 +63,10 @@ namespace acados_mpc {
  */
 struct MPCData {
   State state;
-  Control control;
   Reference reference;
-  State reference_end;
+  ReferenceEnd reference_end;
+  OnlineParams p_params;
+  Control control;
 };
 
 /**
@@ -77,8 +78,6 @@ class MPC {
 public:
   /**
    * @brief Constructor
-   *
-   * @param data MPCData pointer.
    */
   MPC();
 
@@ -89,6 +88,8 @@ public:
 
   /**
    * @brief Solve the MPC
+   *
+   * MPCData must be set before calling this function.
    *
    * Return status:
    *  ACADOS_SUCCESS = 0
@@ -128,32 +129,25 @@ public:
   MPCData* get_data() { return &mpc_data_; }
 
   /**
-   * @brief Get the MPCGains pointer to modify the gains.
+   * @brief Get the Gains pointer to modify the gains.
    *
    * update_gains() must be called to update the gains.
    */
-  MPCGains* get_gains() { return &gains_; }
+  Gains* get_gains() { return &gains_; }
 
   /**
-   * @brief Get the MPCBounds pointer to modify the bounds.
+   * @brief Get the Bounds pointer to modify the bounds.
    *
    * update_bounds() must be called to update the bounds.
    */
-  MPCBounds* get_bounds() { return &bounds_; }
-
-  /**
-   * @brief Get the MPCOnlineParams pointer to modify the online parameters.
-   *
-   * update_online_params() must be called to update the online parameters.
-   */
-  MPCOnlineParams* get_online_params() { return &p_params_; }
+  Bounds* get_bounds() { return &bounds_; }
 
   // Setters
 
   /**
    * @brief Update the gains Q, R and Qe.
    *
-   * It uses the MPCGains pointer to update the gains.
+   * It uses the Gains pointer to update the gains.
    * It can be accessed using get_gains().
    */
   void update_gains();
@@ -161,18 +155,10 @@ public:
   /**
    * @brief Update the bounds lbx and ubx.
    *
-   * It uses the MPCBounds pointer to update the bounds.
+   * It uses the Bounds pointer to update the bounds.
    * It can be accessed using get_bounds().
    */
   void update_bounds();
-
-  /**
-   * @brief Update the online parameters p.
-   *
-   * It uses the MPCOnlineParams pointer to update the online parameters.
-   * It can be accessed using get_online_params().
-   */
-  void update_online_params();
 
 private:
   /**
@@ -194,6 +180,11 @@ private:
    * @brief Set the solver reference yref_N
    */
   void setSolverRefenceEnd();
+
+  /**
+   * @brief Set the solver online parameters p
+   */
+  void setSolverOnlineParams();
 
   /**
    * @brief Validate the status
@@ -218,10 +209,13 @@ private:
   // Internal variables
   int status_;
   double prediction_time_step_;
-  MPCData mpc_data_         = MPCData();
-  MPCGains gains_           = MPCGains();
-  MPCBounds bounds_         = MPCBounds();
-  MPCOnlineParams p_params_ = MPCOnlineParams();
+
+  // Dynamic input
+  MPCData mpc_data_ = MPCData();
+
+  // Parameters
+  Gains gains_   = Gains();
+  Bounds bounds_ = Bounds();
 };
 }  // namespace acados_mpc
 
