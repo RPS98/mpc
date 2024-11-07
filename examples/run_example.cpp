@@ -210,8 +210,7 @@ int main(int argc, char** argv) {
   acados_mpc::acados_mpc_examples::YamlData yaml_data;
   // acados_mpc::acados_mpc_examples::read_yaml_params("examples/simulation_config.yaml",
   // yaml_data);
-  acados_mpc::acados_mpc_examples::read_yaml_params(
-      "/home/rafa/mpc_examples/thirdparty/mpc/examples/simulation_config.yaml", yaml_data);
+  acados_mpc::acados_mpc_examples::read_yaml_params("examples/simulation_config.yaml", yaml_data);
 
   // Initialize MPC
   acados_mpc::MPC mpc = acados_mpc::MPC();
