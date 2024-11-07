@@ -165,10 +165,10 @@ if __name__ == '__main__':
     # Trajectory generator
     trajectory_generator = get_trajectory_generator(
         initial_position=np.zeros(3),
-        waypoints=simulation_yaml.waypoints,
-        speed=simulation_yaml.trajectory_generator_max_speed
+        waypoints=simulation_yaml.sim_params.trajectory_generator_waypoints,
+        speed=simulation_yaml.sim_params.trajectory_generator_max_speed
     )
-    trajectory_generator.set_path_facing(simulation_yaml.path_facing)
+    trajectory_generator.set_path_facing(simulation_yaml.sim_params.path_facing)
 
     test_trajectory_controller(
         mpc,

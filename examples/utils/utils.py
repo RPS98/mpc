@@ -34,13 +34,14 @@ __authors__ = 'Rafael Pérez Seguí'
 __copyright__ = 'Copyright (c) 2022 Universidad Politécnica de Madrid'
 __license__ = 'BSD-3-Clause'
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import math
 import yaml
 import os
 import numpy as np
 import utils.trajectory_generator as dtb
+
 
 def euler_to_quaternion(roll: float, pitch: float, yaw: float) -> np.ndarray:
     """
@@ -98,12 +99,36 @@ class YamlMPCData:
     ubu: np.ndarray = np.zeros(4)
     p: np.ndarray = np.zeros(5)
 
+@dataclass
+class SimParams:
+    """
+    Sim parameters.
+
+    :param trajectory_generator_max_speed(float): Maximum speed of the
+    trajectory generator.
+    :param trajectory_generator_waypoints(np.ndarray): Waypoints of the
+    trajectory generator.
+    :param floor_height(float): Floor height.
+    :param path_facing(bool): Path facing.
+    """
+
+    trajectory_generator_max_speed: float = 1.0
+    trajectory_generator_waypoints: list = field(default_factory=lambda: [])
+    path_facing: bool = False
+
+
+@dataclass
 class YamlData:
-    def __init__(self):
-        self.trajectory_generator_max_speed = 0.0
-        self.waypoints = []
-        self.path_facing = False
-        self.mpc_data = YamlMPCData()
+    """
+    Yaml data.
+
+    :param sim_params(SimParams): Simulation parameters.
+    :param mpc_data(YamlMPCData): MPC data.
+    """
+
+    sim_params: SimParams = field(default_factory=lambda: SimParams())
+    mpc_data: YamlMPCData = field(default_factory=lambda: YamlMPCData())
+
 
 def read_yaml_params(file_path: str):
     """
@@ -122,12 +147,12 @@ def read_yaml_params(file_path: str):
     data = YamlData()
 
     # Read simulation parameters
-    data.trajectory_generator_max_speed = config["sim_config"]["trajectory_generator_max_speed"]
+    data.sim_params.trajectory_generator_max_speed = config["sim_config"]["trajectory_generator_max_speed"]
 
     for waypoint in config["sim_config"]["trajectory_generator_waypoints"]:
-        data.waypoints.append(np.array([waypoint[0], waypoint[1], waypoint[2]]))
+        data.sim_params.trajectory_generator_waypoints.append(np.array([waypoint[0], waypoint[1], waypoint[2]]))
 
-    data.path_facing = config["sim_config"]["path_facing"]
+    data.sim_params.path_facing = config["sim_config"]["path_facing"]
 
     data.mpc_data.Q = np.diag(np.array(config["controller"]["mpc"]["Q"], dtype=np.float64))
     data.mpc_data.Qe = np.diag(np.array(config["controller"]["mpc"]["Qe"], dtype=np.float64))

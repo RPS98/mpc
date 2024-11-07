@@ -217,10 +217,6 @@ void test_mpc_controller(CsvLogger& logger,
 }  // namespace acados_mpc
 
 int main(int argc, char** argv) {
-  // Logger
-  std::string file_name = "mpc_log.csv";
-  acados_mpc::acados_mpc_examples::CsvLogger logger(file_name);
-
   // Params
   acados_mpc::acados_mpc_examples::YamlData yaml_data;
   acados_mpc::acados_mpc_examples::read_yaml_params("examples/simulation_config.yaml", yaml_data);
@@ -243,6 +239,10 @@ int main(int argc, char** argv) {
   // Initialize trajectory generator
   auto trajectory_generator = acados_mpc::acados_mpc_examples::get_trajectory_generator(
       Eigen::Vector3d::Zero(), yaml_data.waypoints, yaml_data.trajectory_generator_max_speed);
+
+  // Logger
+  std::string file_name = "mpc_log.csv";
+  acados_mpc::acados_mpc_examples::CsvLogger logger(file_name);
 
   acados_mpc::acados_mpc_examples::test_mpc_controller(logger, mpc, simulator, trajectory_generator,
                                                        yaml_data);
