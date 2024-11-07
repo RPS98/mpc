@@ -72,22 +72,16 @@ void traj_generator_ref_to_mpc_ref(const dynamic_traj_generator::References& ref
     mpc_data->reference_end.set_data(1, references.position.y());
     mpc_data->reference_end.set_data(2, references.position.z());
 
-    // Attitude difference
-    mpc_data->reference_end.set_data(3, 0.0);
-    mpc_data->reference_end.set_data(4, 0.0);
-    mpc_data->reference_end.set_data(5, 0.0);
-
     // Velocity
     mpc_data->reference_end.set_data(6, references.velocity.x());
     mpc_data->reference_end.set_data(7, references.velocity.y());
     mpc_data->reference_end.set_data(8, references.velocity.z());
 
     // Orientation
-    mpc_data->p_params.set_data(0, 1.0);
-    mpc_data->p_params.set_data(1, q[0]);
-    mpc_data->p_params.set_data(2, q[1]);
-    mpc_data->p_params.set_data(3, q[2]);
-    mpc_data->p_params.set_data(4, q[3]);
+    mpc_data->p_params.set_data(MPC_N, 1, q[0]);
+    mpc_data->p_params.set_data(MPC_N, 2, q[1]);
+    mpc_data->p_params.set_data(MPC_N, 3, q[2]);
+    mpc_data->p_params.set_data(MPC_N, 4, q[3]);
 
     return;
   } else if (index > MPC_N) {
@@ -98,11 +92,6 @@ void traj_generator_ref_to_mpc_ref(const dynamic_traj_generator::References& ref
   mpc_data->reference.set_data(index, 1, references.position.y());
   mpc_data->reference.set_data(index, 2, references.position.z());
 
-  // Attitude difference
-  mpc_data->reference.set_data(3, 0.0);
-  mpc_data->reference.set_data(4, 0.0);
-  mpc_data->reference.set_data(5, 0.0);
-
   // Velocity
   mpc_data->reference.set_data(index, 6, references.velocity.x());
   mpc_data->reference.set_data(index, 7, references.velocity.y());
@@ -112,11 +101,10 @@ void traj_generator_ref_to_mpc_ref(const dynamic_traj_generator::References& ref
   mpc_data->reference.set_data(index, 9, mpc_data->p_params.data[0] * 9.81);  // Thrust
 
   // Orientation
-  mpc_data->p_params.set_data(0, 1.0);
-  mpc_data->p_params.set_data(1, q[0]);
-  mpc_data->p_params.set_data(2, q[1]);
-  mpc_data->p_params.set_data(3, q[2]);
-  mpc_data->p_params.set_data(4, q[3]);
+  mpc_data->p_params.set_data(index, 1, q[0]);
+  mpc_data->p_params.set_data(index, 2, q[1]);
+  mpc_data->p_params.set_data(index, 3, q[2]);
+  mpc_data->p_params.set_data(index, 4, q[3]);
 }
 
 void print_progress_bar(float progress) {
@@ -232,6 +220,13 @@ int main(int argc, char** argv) {
   mpc.get_bounds()->set_ubu(yaml_data.mpc_data.ubu);
   mpc.update_bounds();
   mpc.update_gains();
+
+  // Update online params
+  for (int i = 0; i < acados_mpc::OnlineParams::size_n; i++) {
+    for (int j = 0; j < acados_mpc::OnlineParams::Np; j++) {
+      mpc.get_data()->p_params.set_data(i, j, yaml_data.mpc_data.p[j]);
+    }
+  }
 
   // Initialize integrator
   acados_mpc::MPCSimSolver simulator = acados_mpc::MPCSimSolver();

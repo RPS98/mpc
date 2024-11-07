@@ -53,7 +53,7 @@ namespace acados_mpc {
 struct State {
   static constexpr size_t Nx = MPC_NX;
   std::array<double, MPC_NX> data;
-  std::size_t size = MPC_NX;
+  static const std::size_t size = MPC_NX;
 
   /**
    * @brief Constructor
@@ -75,7 +75,7 @@ struct State {
 struct Control {
   static constexpr size_t Nu = MPC_NU;
   std::array<double, MPC_NU> data;
-  std::size_t size = MPC_NU;
+  static const std::size_t size = MPC_NU;
 
   /**
    * @brief Constructor
@@ -97,7 +97,7 @@ struct Control {
 struct Reference {
   static constexpr size_t Nyref = MPC_NY;
   std::array<double, MPC_N * MPC_NY> data;
-  std::size_t size = MPC_N * MPC_NY;
+  static const std::size_t size = MPC_N * MPC_NY;
 
   /**
    * @brief Constructor
@@ -157,7 +157,7 @@ struct Reference {
 
 struct ReferenceEnd {
   std::array<double, MPC_NYN> data;
-  std::size_t size = MPC_NYN;
+  static const std::size_t size = MPC_NYN;
 
   /**
    * @brief Constructor
@@ -390,8 +390,9 @@ struct Bounds {
  */
 struct OnlineParams {
   static constexpr size_t Np = MPC_NP;
-  std::array<double, MPC_NP> data;
-  std::size_t size = MPC_NP;
+  std::array<double, (MPC_N + 1) * MPC_NP> data;
+  static const std::size_t size_n = (MPC_N + static_cast<size_t>(1));
+  static const std::size_t size   = size_n * MPC_NP;
 
   /**
    * @brief Constructor
@@ -415,7 +416,7 @@ struct OnlineParams {
   /**
    * @brief Get the data at index
    *
-   * @param index index.
+   * @param index index of the stage.
    * @return double* data.
    */
   double* get_data(const int index);
@@ -423,7 +424,7 @@ struct OnlineParams {
   /**
    * @brief Get the data at index
    *
-   * @param index index.
+   * @param index index of the stage.
    * @return const double* data.
    */
   const double* get_data(const int index) const;
@@ -437,19 +438,21 @@ struct OnlineParams {
   void set_online_params(const OnlineParams& params);
 
   /**
-   * @brief Set the data
-   *
-   * @param data data.
-   */
-  void set_data(const std::array<double, MPC_NP>& data);
-
-  /**
    * @brief Set the data at index
    *
    * @param index index.
    * @param value value.
    */
   void set_data(const int index, const double value);
+
+  /**
+   * @brief Set the data at index of the stage and value
+   *
+   * @param ref_index index of the stage.
+   * @param value_index index of the value.
+   * @param state state.
+   */
+  void set_data(const int ref_index, const int value_index, const double value);
 };
 
 }  // namespace acados_mpc

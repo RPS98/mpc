@@ -79,10 +79,6 @@ double *Reference::get_data(const int index) {
 
 const double *Reference::get_data(const int index) const {
   CHECK_MPC_INDEX(index, MPC_N);
-  State state;
-  for (int i = 0; i < MPC_NX; i++) {
-    state.data[i] = data[index * MPC_NY + i];
-  }
   return &data[index * MPC_NY];
 }
 
@@ -244,13 +240,13 @@ double *OnlineParams::get_data() { return data.data(); }
 const double *OnlineParams::get_data() const { return data.data(); }
 
 double *OnlineParams::get_data(const int index) {
-  CHECK_MPC_INDEX(index, MPC_NP);
-  return &data[index];
+  CHECK_MPC_INDEX(index, size_n);
+  return &data[index * Np];
 }
 
 const double *OnlineParams::get_data(const int index) const {
-  CHECK_MPC_INDEX(index, MPC_NP);
-  return &data[index];
+  CHECK_MPC_INDEX(index, size_n);
+  return &data[index * Np];
 }
 
 void OnlineParams::set_online_params(const OnlineParams &params) {
@@ -259,15 +255,14 @@ void OnlineParams::set_online_params(const OnlineParams &params) {
   }
 }
 
-void OnlineParams::set_data(const std::array<double, MPC_NP> &data) {
-  for (size_t i = 0; i < data.size(); ++i) {
-    set_data(i, data[i]);
-  }
+void OnlineParams::set_data(const int index, const double value) {
+  CHECK_MPC_INDEX(index, size);
+  data[index] = value;
 }
 
-void OnlineParams::set_data(const int index, const double value) {
-  CHECK_MPC_INDEX(index, MPC_NP);
-  data[index] = value;
+void OnlineParams::set_data(const int ref_index, const int value_index, const double value) {
+  CHECK_MPC_INDEX(index, size);
+  data[ref_index * MPC_NP + value_index] = value;
 }
 
 }  // namespace acados_mpc
