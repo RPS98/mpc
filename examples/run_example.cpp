@@ -152,8 +152,9 @@ void test_mpc_controller(CsvLogger& logger,
   std::vector<double> total_times;
   total_times.reserve(n_iterations);
 
-  for (double t = 0; t < tg_max_time + 100; t += tf) {
-    print_progress_bar(t / (tg_max_time + 100));
+  double hover_time = 2.0;
+  for (double t = 0; t < tg_max_time + hover_time; t += tf) {
+    print_progress_bar(t / (tg_max_time + hover_time));
     auto iter_start = std::chrono::high_resolution_clock::now();
 
     double t_eval = t;
