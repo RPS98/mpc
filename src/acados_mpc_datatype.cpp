@@ -67,10 +67,7 @@ void Control::set_data(const int index, const double value) {
   data[index] = value;
 }
 
-Reference::Reference() {
-  data.fill(0.0);
-  set_state(0, State());
-}
+Reference::Reference() { data.fill(0.0); }
 
 double *Reference::get_data(const int index) {
   CHECK_MPC_INDEX(index, MPC_N);
