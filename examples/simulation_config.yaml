@@ -10,9 +10,9 @@ sim_config:
   path_facing: False
 controller:
   mpc:
-    Q: [50.0, 50.0, 3000.0, 1.0, 1.0, 50.0, 0.1, 0.1, 0.1] # Weight for internal states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
-    Qe: [50.0, 50.0, 3000.0, 1.0, 1.0, 50.0, 0.1, 0.1, 0.1] # Weight for end states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
-    R: [1.0, 1.0, 1.0, 10.0] # Weight for control inputs: [thrust, wx, wy, wz]
-    lbu: [0.0, -5.0, -5.0, -4.0] # Lower bounds for control inputs: [thrust, wx, wy, wz]
-    ubu: [20.0, 5.0, 5.0, 4.0] # Upper bounds for control inputs: [thrust, wx, wy, wz]
+    Q: [50.0, 50.0, 2500.0, 1.0, 1.0, 150.0, 0.1, 0.1, 0.1] # Weight for internal states: [x, y, z, roll, pitch, yaw, vx, vy, vz]
+    Qe: [50.0, 50.0, 2500.0, 1.0, 1.0, 150.0, 0.1, 0.1, 0.1] # Weight for end states: [x, y, z, roll, pitch, yaw, vx, vy, vz]
+    R: [1.0, 1.0, 1.0, 1.0] # Weight for control inputs: [thrust, wx, wy, wz]
+    lbu: [0.0, -3.0, -3.0, -2.0] # Lower bounds for control inputs: [thrust, wx, wy, wz]
+    ubu: [20.0, 3.0, 3.0, 2.0] # Upper bounds for control inputs: [thrust, wx, wy, wz]
     p: [1.0, 1.0, 0.0, 0.0, 0.0] # Online parameter: [mass, qw_ref, qx_ref, qy_ref, qz_ref]

@@ -168,7 +168,7 @@ void Gains::set_Q(const std::array<double, Gains::Nq> &Q) {
 
 void Gains::set_R(const int index, const double value) {
   CHECK_MPC_INDEX(index, Gains::Nr);
-  set_W(MPC_NX + index, value);
+  set_W(MPC_NYN + index, value);
 }
 
 void Gains::set_R(const std::array<double, Gains::Nr> &R) {
@@ -257,9 +257,10 @@ void OnlineParams::set_data(const int index, const double value) {
   data[index] = value;
 }
 
-void OnlineParams::set_data(const int ref_index, const int value_index, const double value) {
+void OnlineParams::set_data(const int index, const int value_index, const double value) {
   CHECK_MPC_INDEX(index, size);
-  data[ref_index * MPC_NP + value_index] = value;
+  CHECK_MPC_INDEX(value_index, Np);
+  data[index * MPC_NP + value_index] = value;
 }
 
 }  // namespace acados_mpc

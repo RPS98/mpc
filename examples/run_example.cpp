@@ -152,8 +152,8 @@ void test_mpc_controller(CsvLogger& logger,
   std::vector<double> total_times;
   total_times.reserve(n_iterations);
 
-  for (double t = 0; t < tg_max_time; t += tf) {
-    print_progress_bar(t / tg_max_time);
+  for (double t = 0; t < tg_max_time + 100; t += tf) {
+    print_progress_bar(t / (tg_max_time + 100));
     auto iter_start = std::chrono::high_resolution_clock::now();
 
     double t_eval = t;
@@ -207,7 +207,10 @@ void test_mpc_controller(CsvLogger& logger,
 int main(int argc, char** argv) {
   // Params
   acados_mpc::acados_mpc_examples::YamlData yaml_data;
-  acados_mpc::acados_mpc_examples::read_yaml_params("examples/simulation_config.yaml", yaml_data);
+  // acados_mpc::acados_mpc_examples::read_yaml_params("examples/simulation_config.yaml",
+  // yaml_data);
+  acados_mpc::acados_mpc_examples::read_yaml_params(
+      "/home/rafa/mpc_examples/thirdparty/mpc/examples/simulation_config.yaml", yaml_data);
 
   // Initialize MPC
   acados_mpc::MPC mpc = acados_mpc::MPC();

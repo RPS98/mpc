@@ -90,7 +90,7 @@ void MPC::setSolverRefenceEnd() {
 
 void MPC::setSolverOnlineParams() {
   // initial values for parameter vector - can be updated stagewise
-  for (int i = 0; i <= MPC_N + 1; i++) {
+  for (int i = 0; i <= MPC_N; i++) {
     ocp_nlp_in_set(nlp_config_, nlp_dims_, nlp_in_, i, "parameter_values",
                    mpc_data_.p_params.get_data(i));
   }
