@@ -233,6 +233,20 @@ struct Gains {
   const double* get_We() const;
 
   /**
+   * @brief Get the Q matrix
+   *
+   * @return std::array<double, Gains::Nq> Copy of Q.
+   */
+  std::array<double, Gains::Nq> get_Q() const;
+
+  /**
+   * @brief Get the Qe matrix
+   *
+   * @return std::array<double, Gains::Nqe> Copy of Qe.
+   */
+  std::array<double, Gains::Nqe> get_Q_end() const;
+
+  /**
    * @brief Set the W matrix at index
    *
    * @param index index of the diagonal.

@@ -83,6 +83,8 @@ TEST(acados_mpc, test_acados_datatypes) {
   auto gains = Gains();
   EXPECT_NO_THROW(gains.get_W());
   EXPECT_NO_THROW(gains.get_We());
+  EXPECT_NO_THROW(gains.get_Q());
+  EXPECT_NO_THROW(gains.get_Q_end());
   EXPECT_NO_THROW(gains.set_W(0, 0.0));
   EXPECT_NO_THROW(gains.set_We(0, 0.0));
   EXPECT_NO_THROW(gains.set_Q(0, 0.0));

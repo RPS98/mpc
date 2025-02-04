@@ -135,6 +135,22 @@ double *Gains::get_We() { return We.data(); }
 
 const double *Gains::get_We() const { return We.data(); }
 
+std::array<double, Gains::Nq> Gains::get_Q() const {
+  std::array<double, Gains::Nq> Q;
+  for (size_t i = 0; i < Nq; ++i) {
+    Q[i] = W[i * MPC_NY + i];
+  }
+  return Q;
+}
+
+std::array<double, Gains::Nqe> Gains::get_Q_end() const {
+  std::array<double, Gains::Nqe> Qe;
+  for (size_t i = 0; i < Nqe; ++i) {
+    Qe[i] = We[i * MPC_NYN + i];
+  }
+  return Qe;
+}
+
 void Gains::set_W(const int index, const double value) {
   CHECK_MPC_INDEX(index, MPC_NY);
   W[index * MPC_NY + index] = value;
