@@ -151,6 +151,14 @@ std::array<double, Gains::Nqe> Gains::get_Q_end() const {
   return Qe;
 }
 
+std::array<double, Gains::Nr> Gains::get_R() const {
+  std::array<double, Gains::Nr> R;
+  for (size_t i = 0; i < Nr; ++i) {
+    R[i] = W[MPC_NYN + i * MPC_NY + MPC_NYN + i];
+  }
+  return R;
+}
+
 void Gains::set_W(const int index, const double value) {
   CHECK_MPC_INDEX(index, MPC_NY);
   W[index * MPC_NY + index] = value;
