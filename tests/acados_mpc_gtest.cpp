@@ -95,7 +95,9 @@ TEST(acados_mpc, test_acados_datatypes) {
   EXPECT_NO_THROW(Bounds());
   auto bounds = Bounds();
   EXPECT_NO_THROW(bounds.get_lbu());
+  EXPECT_NO_THROW(bounds.get_lbu_array());
   EXPECT_NO_THROW(bounds.get_ubu());
+  EXPECT_NO_THROW(bounds.get_ubu_array());
   EXPECT_NO_THROW(bounds.set_lbu(0, 0.0));
   EXPECT_NO_THROW(bounds.set_ubu(0, 0.0));
 
@@ -103,6 +105,7 @@ TEST(acados_mpc, test_acados_datatypes) {
   auto p_params = OnlineParams();
   EXPECT_NO_THROW(p_params.get_data());
   EXPECT_NO_THROW(p_params.get_data(0));
+  EXPECT_NO_THROW(p_params.get_online_params(0));
   EXPECT_NO_THROW(p_params.set_data(0, 0.0));
 }
 
