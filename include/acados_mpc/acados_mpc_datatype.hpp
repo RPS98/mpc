@@ -233,6 +233,27 @@ struct Gains {
   const double* get_We() const;
 
   /**
+   * @brief Get the Q matrix
+   *
+   * @return std::array<double, Gains::Nq> Copy of Q.
+   */
+  std::array<double, Gains::Nq> get_Q() const;
+
+  /**
+   * @brief Get the Qe matrix
+   *
+   * @return std::array<double, Gains::Nqe> Copy of Qe.
+   */
+  std::array<double, Gains::Nqe> get_Q_end() const;
+
+  /**
+   * @brief Get the R matrix
+   *
+   * @return std::array<double, Gains::Nr> Copy of R.
+   */
+  std::array<double, Gains::Nr> get_R() const;
+
+  /**
    * @brief Set the W matrix at index
    *
    * @param index index of the diagonal.
@@ -332,6 +353,13 @@ struct Bounds {
   const double* get_lbu() const;
 
   /**
+   * @brief Get the lbu array
+   *
+   * @return std::array<double, MPC_NU> lbu.
+   */
+  std::array<double, MPC_NU> get_lbu_array() const;
+
+  /**
    * @brief Get the ubu array
    *
    * @return double* ubu.
@@ -344,6 +372,13 @@ struct Bounds {
    * @return const double* ubu.
    */
   const double* get_ubu() const;
+
+  /**
+   * @brief Get the ubu array
+   *
+   * @return std::array<double, MPC_NU> ubu.
+   */
+  std::array<double, MPC_NU> get_ubu_array() const;
 
   /**
    * @brief Set the bounds
@@ -428,6 +463,13 @@ struct OnlineParams {
    * @return const double* data.
    */
   const double* get_data(const int index) const;
+
+  /**
+   * @brief Get the online parameters
+   *
+   * @return std::array<double, MPC_NP> Copy of online parameters.
+   */
+  std::array<double, MPC_NP> get_online_params(const int index = 0) const;
 
   /**
    * @brief Set the data at index

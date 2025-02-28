@@ -135,6 +135,30 @@ double *Gains::get_We() { return We.data(); }
 
 const double *Gains::get_We() const { return We.data(); }
 
+std::array<double, Gains::Nq> Gains::get_Q() const {
+  std::array<double, Gains::Nq> Q;
+  for (size_t i = 0; i < Nq; ++i) {
+    Q[i] = W[i * MPC_NY + i];
+  }
+  return Q;
+}
+
+std::array<double, Gains::Nqe> Gains::get_Q_end() const {
+  std::array<double, Gains::Nqe> Qe;
+  for (size_t i = 0; i < Nqe; ++i) {
+    Qe[i] = We[i * MPC_NYN + i];
+  }
+  return Qe;
+}
+
+std::array<double, Gains::Nr> Gains::get_R() const {
+  std::array<double, Gains::Nr> R;
+  for (size_t i = 0; i < Nr; ++i) {
+    R[i] = W[MPC_NYN + i * MPC_NY + MPC_NYN + i];
+  }
+  return R;
+}
+
 void Gains::set_W(const int index, const double value) {
   CHECK_MPC_INDEX(index, MPC_NY);
   W[index * MPC_NY + index] = value;
@@ -194,9 +218,13 @@ double *Bounds::get_lbu() { return lbu.data(); }
 
 const double *Bounds::get_lbu() const { return lbu.data(); }
 
+std::array<double, MPC_NU> Bounds::get_lbu_array() const { return lbu; }
+
 double *Bounds::get_ubu() { return ubu.data(); }
 
 const double *Bounds::get_ubu() const { return ubu.data(); }
+
+std::array<double, MPC_NU> Bounds::get_ubu_array() const { return ubu; }
 
 void Bounds::set_bounds(const Bounds &bounds) {
   for (size_t i = 0; i < lbu.size(); ++i) {
@@ -244,6 +272,15 @@ double *OnlineParams::get_data(const int index) {
 const double *OnlineParams::get_data(const int index) const {
   CHECK_MPC_INDEX(index, size_n);
   return &data[index * Np];
+}
+
+std::array<double, MPC_NP> OnlineParams::get_online_params(const int index) const {
+  CHECK_MPC_INDEX(index, size_n);
+  std::array<double, MPC_NP> params;
+  for (size_t i = 0; i < MPC_NP; ++i) {
+    params[i] = get_data(index)[i];
+  }
+  return params;
 }
 
 void OnlineParams::set_online_params(const OnlineParams &params) {
