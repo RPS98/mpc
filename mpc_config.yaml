@@ -1,8 +1,8 @@
 mpc:
-  N_horizon: 100 # Prediction steps
-  tf: 0.5 # Prediction horizon in seconds
-  Q: [50.0, 50.0, 2500.0, 1.0, 1.0, 150.0, 0.1, 0.1, 0.1] # Weight for internal states: [x, y, z, roll, pitch, yaw, vx, vy, vz]
-  Qe: [50.0, 50.0, 2500.0, 1.0, 1.0, 150.0, 0.1, 0.1, 0.1] # Weight for end states: [x, y, z, roll, pitch, yaw, vx, vy, vz]
+  N_horizon: 50 # Prediction steps
+  tf: 1.0 # Prediction horizon in seconds
+  Q: [50.0, 50.0, 50.0, 1.0, 1.0, 10.0, 0.1, 0.1, 0.1] # Weight for internal states: [x, y, z, roll, pitch, yaw, vx, vy, vz]
+  Qe: [50.0, 50.0, 50.0, 1.0, 1.0, 10.0, 0.1, 0.1, 0.1] # Weight for end states: [x, y, z, roll, pitch, yaw, vx, vy, vz]
   R: [1.0, 1.0, 1.0, 1.0] # Weight for control inputs: [thrust, wx, wy, wz]
   lbu: [0.0, -3.0, -3.0, -2.0] # Lower bounds for control inputs: [thrust, wx, wy, wz]
   ubu: [20.0, 3.0, 3.0, 2.0] # Upper bounds for control inputs: [thrust, wx, wy, wz]
