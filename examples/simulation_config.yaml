@@ -1,18 +1,25 @@
 sim_config:
-  trajectory_generator_max_speed: 1.5 # m/s
+  trajectory_generator_max_speed: 5.0 # m/s
   trajectory_generator_waypoints:
-  - [ 0.0,  0.0, 1.0]
-  - [ 3.0, -3.0, 2.0]
-  - [ 3.0,  3.0, 2.0]
-  - [-3.0, -3.0, 2.0]
-  - [-3.0,  3.0, 2.0]
-  - [ 0.0,  0.0, 2.0]
-  path_facing: False
+    - [14.0, 25.0, 1.23]
+    - [30.0, 19.0, 1.23]
+    - [46.0, 22.0, 1.23]
+    - [63.0, 20.0, 3.93]
+    - [85.0, 18.0, 3.93]
+    - [93.0, 16.0, 2.93]
+    - [88.0, 19.0, 1.5]
+    - [85.0, 18.0, 1.23]
+    - [68.0, 13.0, 1.23]
+    - [55.0, 07.0, 1.23]
+    - [37.0, 12.0, 1.23]
+    - [19.7, 07.0, 1.23]
+    - [09.0, 14.0, 1.23]
+  path_facing: false
 controller:
   mpc:
-    Q: [50.0, 50.0, 2500.0, 1.0, 1.0, 150.0, 0.1, 0.1, 0.1] # Weight for internal states: [x, y, z, roll, pitch, yaw, vx, vy, vz]
-    Qe: [50.0, 50.0, 2500.0, 1.0, 1.0, 150.0, 0.1, 0.1, 0.1] # Weight for end states: [x, y, z, roll, pitch, yaw, vx, vy, vz]
-    R: [1.0, 1.0, 1.0, 1.0] # Weight for control inputs: [thrust, wx, wy, wz]
-    lbu: [0.0, -3.0, -3.0, -2.0] # Lower bounds for control inputs: [thrust, wx, wy, wz]
-    ubu: [20.0, 3.0, 3.0, 2.0] # Upper bounds for control inputs: [thrust, wx, wy, wz]
-    p: [1.0, 1.0, 0.0, 0.0, 0.0] # Online parameter: [mass, qw_ref, qx_ref, qy_ref, qz_ref]
+    Q: [5.0, 5.0, 10.0, 0.1, 0.1, 20.0, 0.1, 0.1, 0.1] # Weight for internal states: [x, y, z, roll, pitch, yaw, vx, vy, vz]
+    Qe: [10.0, 10.0, 20.0, 0.1, 0.1, 20.0, 0.1, 0.1, 0.1] # Weight for end states: [x, y, z, roll, pitch, yaw, vx, vy, vz]
+    R: [0.8, 1.0, 1.0, 0.5] # Weight for control inputs: [thrust, wx, wy, wz]
+    lbu: [0.01, -5.0, -5.0, -5.0] # Lower bounds for control inputs: [thrust, wx, wy, wz]
+    ubu: [40.0, 5.0, 5.0, 5.0] # Upper bounds for control inputs: [thrust, wx, wy, wz]
+    p: [1.0, 1.0, 0.0, 0.0, 0.0] # Online parameter: [mass, qw_ref, qx_ref, qy_ref, qz_ref]     
