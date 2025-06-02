@@ -66,10 +66,10 @@ void MPC::initializeSolver() {
 }
 
 void MPC::setSolverState() {
-  status_ = ocp_nlp_constraints_model_set(nlp_config_, nlp_dims_, nlp_in_, 0, "lbx",
+  status_ = ocp_nlp_constraints_model_set(nlp_config_, nlp_dims_, nlp_in_, nlp_out_, 0, "lbx",
                                           mpc_data_.state.data.data());
   validateStatus(status_);
-  status_ = ocp_nlp_constraints_model_set(nlp_config_, nlp_dims_, nlp_in_, 0, "ubx",
+  status_ = ocp_nlp_constraints_model_set(nlp_config_, nlp_dims_, nlp_in_, nlp_out_, 0, "ubx",
                                           mpc_data_.state.data.data());
   validateStatus(status_);
 }
@@ -128,10 +128,10 @@ void MPC::update_bounds() {
   // lower bounds on u at shooting nodes (0 to N-1)
   // upper bounds on u at shooting nodes (0 to N-1)
   for (int i = 0; i < MPC_N; i++) {
-    status_ = ocp_nlp_constraints_model_set(nlp_config_, nlp_dims_, nlp_in_, i, "lbu",
+    status_ = ocp_nlp_constraints_model_set(nlp_config_, nlp_dims_, nlp_in_, nlp_out_, i, "lbu",
                                             bounds_.lbu.data());
     validateStatus(status_);
-    status_ = ocp_nlp_constraints_model_set(nlp_config_, nlp_dims_, nlp_in_, i, "ubu",
+    status_ = ocp_nlp_constraints_model_set(nlp_config_, nlp_dims_, nlp_in_, nlp_out_, i, "ubu",
                                             bounds_.ubu.data());
     validateStatus(status_);
   }
