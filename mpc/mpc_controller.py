@@ -111,6 +111,22 @@ class MPC(mpc_lib.AcadosMPCSolver):
         u = self.compute_control_action(state, trajectory[:-1, :], trajectory[-1, :])
         return u
 
+    def position_to_acro(
+            self,
+            position: np.ndarray,
+            max_velocity: float = 0.0) -> np.ndarray:
+        """
+        Convert a desired position into a desired attitude and thrust.
+
+        :param position(np.array): Desired position [x, y, z] (m).
+        :param max_velocity(float): Maximum velocity (m/s). If 0.0,
+                                    the velocity is not considered.
+
+        :return: Desired acro [thrust, wx, wy, wz] (N, rad/s).
+        """
+        # Set velocity constraints
+        # if max_velocity > 0.0:
+
     # Getters and Setters
     def update_params(self, mpc_params: mpc_lib.AcadosMPCParams) -> None:
         """
