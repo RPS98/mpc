@@ -53,7 +53,7 @@ For manual installation follow these instructions:
  4. Enable execution privilege on the file "t_renderer" with:
 
 ```bash
-chmod +x $ACADOS_ROOT_DIR/bin/t_renderer
+chmod +x $ACADOS_SOURCE_DIR/bin/t_renderer
 ```
 
 #### 5. Install acados_template
@@ -103,8 +103,8 @@ You can build the C++ interface and run the MPC using the C++ interface, from th
 ```bash
 mkdir -p build
 cd build
-cmake ..
-make -j4 -DBUILD_EXAMPLES=ON
+cmake .. -DBUILD_EXAMPLES=ON
+make -j4
 ```
 
 You can run the example:

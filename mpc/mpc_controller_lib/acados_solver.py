@@ -356,6 +356,27 @@ class AcadosMPCSolver:
         ])
         self.solver.set(self.N, 'p', p)
 
+    def _set_state_constraints(
+            self,
+            jbx: list,
+            lbx: np.ndarray,
+            ubx: np.ndarray) -> None:
+        """
+        Set the state constraints for the MPC solver.
+
+        :param jbx: List of indices for the state constraints.
+        :param lbx: Lower bounds for the state constraints.
+        :param ubx: Upper bounds for the state constraints.
+        """
+        if len(jbx) != self.x_dim:
+            raise ValueError(f'jbx must have {self.x_dim} elements, got {len(jbx)}')
+
+        for node in range(self.N + 1):
+            for i, j in enumerate(jbx):
+                # Set lower bounds
+                self.solver.constraints_set(node, 'lbx', lbx)
+                # Set upper bounds
+                self.solver.constraints_set(node, 'ubx', ubx)
 
     def evaluate(
             self,
