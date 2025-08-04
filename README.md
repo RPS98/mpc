@@ -53,7 +53,7 @@ For manual installation follow these instructions:
  4. Enable execution privilege on the file "t_renderer" with:
 
 ```bash
-chmod +x $ACADOS_ROOT_DIR/bin/t_renderer
+chmod +x $ACADOS_SOURCE_DIR/bin/t_renderer
 ```
 
 #### 5. Install acados_template
