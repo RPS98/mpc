@@ -103,8 +103,8 @@ You can build the C++ interface and run the MPC using the C++ interface, from th
 ```bash
 mkdir -p build
 cd build
-cmake ..
-make -j4 -DBUILD_EXAMPLES=ON
+cmake .. -DBUILD_EXAMPLES=ON
+make -j4
 ```
 
 You can run the example:
