@@ -249,9 +249,6 @@ class AcadosMPCSolver:
             self.solver.constraints_set(node, 'lbu', self.mpc_params.lbu)
             self.solver.constraints_set(node, 'ubu', self.mpc_params.ubu)
 
-            self.solver.constraints_set(node, 'lbx', self.mpc_params.lbx[idxbx])
-            self.solver.constraints_set(node, 'ubx', self.mpc_params.ubx[idxbx])
-
         # initial values for parameter vector - can be updated stagewise
         for i in range(self.N + 1):
             self.solver.set(i, 'p', self.mpc_params.p)
@@ -260,6 +257,8 @@ class AcadosMPCSolver:
         for node in range(1, self.N):
             self.solver.cost_set(node, 'W', scipy.linalg.block_diag(
                 self.mpc_params.Q, self.mpc_params.R))
+            self.solver.constraints_set(node, 'lbx', self.mpc_params.lbx[idxbx])
+            self.solver.constraints_set(node, 'ubx', self.mpc_params.ubx[idxbx])
 
         # weight matrix at terminal shooting node (N)
         self.solver.cost_set(self.N, 'W', self.mpc_params.Qe)
@@ -272,7 +271,7 @@ class AcadosMPCSolver:
 
         # Solver options
         # integrator type. String in (‘ERK’, ‘IRK’, ‘GNSF’, ‘DISCRETE’, ‘LIFTED_IRK’).
-        acados_sim.solver_options.integrator_type = 'IRK'
+        acados_sim.solver_options.integrator_type = 'ERK'
         # number of stages in the integrator
         acados_sim.solver_options.num_stages = 4
         # number of steps in the integrator

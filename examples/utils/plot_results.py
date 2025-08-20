@@ -109,7 +109,6 @@ def plotSim3D(simX, ref_traj):
             plotDrone3D(ax, X, q)
 
     axisEqual3D(ax)
-    plt.show()
 
 
 def plotVel2D(states, time):
@@ -144,6 +143,44 @@ def plotVel2D(states, time):
 
     plt.suptitle("Drone Velocity Components Over Time")
     plt.tight_layout()
+
+
+def plotStateReference(simX, ref_traj, t):
+    """
+    Plots the state and reference trajectory in 2D.
+
+    :param states: Array of shape (N, nx) containing the state.
+    :param references: Array of shape (N, nx) containing the reference trajectory.
+    """
+    fig, axs = plt.subplots(3, 1, figsize=(10, 8), sharex=True)
+    x, y, z = simX[1:, 0], simX[1:, 1], simX[1:, 2]
+    print(x[50])
+    x_ref, y_ref, z_ref = ref_traj[1:, 0], ref_traj[1:, 1], ref_traj[1:, 2]
+    time = t[1:]
+
+    axs[0].plot(time, x, label='State')
+    axs[0].plot(time, x_ref, label='Reference', linestyle='--')
+    axs[0].set_ylabel('x [m]')
+    axs[0].legend()
+    axs[0].grid(True)
+
+    axs[1].plot(time, y, label='State')
+    axs[1].plot(time, y_ref, label='Reference', linestyle='--')
+    axs[1].set_ylabel('y [m]')
+    axs[1].legend()
+    axs[1].grid(True)
+
+    axs[2].plot(time, z, label='State')
+    axs[2].plot(time, z_ref, label='Reference', linestyle='--')
+    axs[2].set_ylabel('z [m]')
+    axs[2].set_xlabel('Time [s]')
+    axs[2].legend()
+    axs[2].grid(True)
+
+    plt.suptitle("State and Reference Trajectory")
+
+
+def showPlot():
     plt.show()
 
 
@@ -174,5 +211,7 @@ if __name__ == '__main__':
         reference[i - 1] = [float(row[j]) for j in range(11, 21)]
         control[i - 1] = [float(row[j]) for j in range(21, 25)]
 
-    # plotSim3D(state, reference)
+    plotSim3D(state, reference)
     plotVel2D(state, t)
+    plotStateReference(state, reference, t)
+    showPlot()
