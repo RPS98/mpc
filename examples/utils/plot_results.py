@@ -15,6 +15,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+
 def plotDrone3D(ax, X, q):
     """
     Plots a 3D representation of a drone's position and orientation.
@@ -32,9 +33,9 @@ def plotDrone3D(ax, X, q):
 
     # Rotation matrix based on quaternion
     R = np.array([
-        [1 - 2*qy**2 - 2*qz**2, 2*qx*qy - 2*qz*qw, 2*qx*qz + 2*qy*qw],
-        [2*qx*qy + 2*qz*qw, 1 - 2*qx**2 - 2*qz**2, 2*qy*qz - 2*qx*qw],
-        [2*qx*qz - 2*qy*qw, 2*qy*qz + 2*qx*qw, 1 - 2*qx**2 - 2*qy**2]
+        [1 - 2 * qy**2 - 2 * qz**2, 2 * qx * qy - 2 * qz * qw, 2 * qx * qz + 2 * qy * qw],
+        [2 * qx * qy + 2 * qz * qw, 1 - 2 * qx**2 - 2 * qz**2, 2 * qy * qz - 2 * qx * qw],
+        [2 * qx * qz - 2 * qy * qw, 2 * qy * qz + 2 * qx * qw, 1 - 2 * qx**2 - 2 * qy**2]
     ])
 
     # Position of rotors and the center of the body
@@ -111,6 +112,41 @@ def plotSim3D(simX, ref_traj):
     plt.show()
 
 
+def plotVel2D(states, time):
+    """
+    Plots the velocity components (vx, vy, vz) of the drone over time in 2D.
+
+    :param states: Array of shape (N, nx) containing the state.
+    :param time: Array of length N with the time stamps.
+    """
+
+    vx = np.array([s[7] for s in states])
+    vy = np.array([s[8] for s in states])
+    vz = np.array([s[9] for s in states])
+
+    fig, axs = plt.subplots(3, 1, figsize=(10, 8), sharex=True)
+
+    axs[0].plot(time, vx, label='vx')
+    axs[0].set_ylabel('vx [m/s]')
+    axs[0].legend()
+    axs[0].grid(True)
+
+    axs[1].plot(time, vy, label='vy')
+    axs[1].set_ylabel('vy [m/s]')
+    axs[1].legend()
+    axs[1].grid(True)
+
+    axs[2].plot(time, vz, label='vz')
+    axs[2].set_ylabel('vz [m/s]')
+    axs[2].set_xlabel('Time [s]')
+    axs[2].legend()
+    axs[2].grid(True)
+
+    plt.suptitle("Drone Velocity Components Over Time")
+    plt.tight_layout()
+    plt.show()
+
+
 if __name__ == '__main__':
     import csv
     csv_file = 'mpc_log.csv'
@@ -119,10 +155,10 @@ if __name__ == '__main__':
     with open(csv_file, 'r') as f:
         reader = csv.reader(f)
         data = list(reader)
-    
+
     # extract the data
     # Row: 'time', 'x', 'y', 'z', 'qw', 'qx', 'qy', 'qz', 'vx', 'vy', 'vz', 'x_ref', 'y_ref', 'z_ref', 'qw_ref', 'qx_ref', 'qy_ref', 'qz_ref', 'vx_ref', 'vy_ref', 'vz_refthrust_ref', 'wx_ref', 'wy_ref', 'wz_ref'
-    num_rows = len(data)-1
+    num_rows = len(data) - 1
     num_cols = len(data[0])
 
     t = np.zeros((num_rows, 1))
@@ -133,9 +169,10 @@ if __name__ == '__main__':
     for i, row in enumerate(data):
         if i == 0:
             continue
-        t[i-1] = float(row[0])
-        state[i-1] = [float(row[j]) for j in range(1, 11)]
-        reference[i-1] = [float(row[j]) for j in range(11, 21)]
-        control[i-1] = [float(row[j]) for j in range(21, 25)]
+        t[i - 1] = float(row[0])
+        state[i - 1] = [float(row[j]) for j in range(1, 11)]
+        reference[i - 1] = [float(row[j]) for j in range(11, 21)]
+        control[i - 1] = [float(row[j]) for j in range(21, 25)]
 
-    plotSim3D(state, reference)
+    # plotSim3D(state, reference)
+    plotVel2D(state, t)

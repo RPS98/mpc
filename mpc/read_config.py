@@ -73,6 +73,8 @@ def read_mpc_params(file_path: str) -> YamlMPCParams:
     data.mpc_params.lbu = np.array(config['mpc']['lbu'], dtype=np.float64)
     data.mpc_params.ubu = np.array(config['mpc']['ubu'], dtype=np.float64)
     data.mpc_params.p = np.array(config['mpc']['p'], dtype=np.float64)
+    data.mpc_params.lbx = np.array(config['mpc']['lbx'], dtype=np.float64)
+    data.mpc_params.ubx = np.array(config['mpc']['ubx'], dtype=np.float64)
 
     return data
 

@@ -49,24 +49,30 @@ class AcadosMPCParams:
     Model parameters.
 
     :param Q (np.ndarray): State weight matrix.
-    [x, y, z, qw, qx, qy, qz, vx, vy, vz]
+    [x, y, z, roll, pitch, yaw, vx, vy, vz]
     :param Qe (np.ndarray): Terminal state weight matrix.
-    [x, y, z, qw, qx, qy, qz, vx, vy, vz]
+    [x, y, z, roll, pitch, yaw, vx, vy, vz]
     :param R (np.ndarray): Control weight matrix.
     [thrust, w_x, w_y, w_z]
     :param lbu (np.ndarray): Lower bounds on control input.
     [thrust, w_x, w_y, w_z]_min
     :param ubu (np.ndarray): Upper bounds on control input.
     [thrust, w_x, w_y, w_z]_max
+    :param lbx (np.array): Lower bounds on state
+    [x, y, z, qw, qx, qy, qz, vx, vy, vz]
+    :param ubx (np.array): Uper bounds on state
+    [x, y, z, qw, qx, qy, qz, vx, vy, vz]
     :param p (np.ndarray): Parameter vector.
     [mass, qw_ref, qx_ref, qy_ref, qz_ref]
     """
 
-    Q: np.ndarray = np.zeros((10, 10))
-    Qe: np.ndarray = np.zeros((10, 10))
+    Q: np.ndarray = np.zeros((9, 9))
+    Qe: np.ndarray = np.zeros((9, 9))
     R: np.ndarray = np.zeros((4, 4))
     lbu: np.ndarray = np.zeros(4)
     ubu: np.ndarray = np.zeros(4)
+    lbx: np.ndarray = np.zeros(10)
+    ubx: np.ndarray = np.zeros(10)
     p: np.ndarray = np.zeros(5)
 
     def __str__(self):
@@ -75,6 +81,8 @@ class AcadosMPCParams:
                 f'R: \n{self.R}\n'
                 f'lbu: {self.lbu}\n'
                 f'ubu: {self.ubu}\n'
+                f'lbx: {self.lbx}\n'
+                f'ubx: {self.ubx}\n'
                 f'p: {self.p}')
 
 
@@ -130,16 +138,16 @@ class AcadosMPCSolver:
 
         # reference at intermediate shooting nodes (1 to N-1)
         cost.yref = np.concatenate([
-            x0_position, # Position reference
-            np.zeros(3), # Attitude reference
-            x0_linear_velocity, # Linear velocity reference
+            x0_position,  # Position reference
+            np.zeros(3),  # Attitude reference
+            np.zeros(3),  # Linear velocity has not reference
             u0  # Control reference
         ])
         # reference at terminal shooting node (N)
         cost.yref_e = np.concatenate([
-            x0_position, # Position reference
-            np.zeros(3), # Attitude reference
-            x0_linear_velocity, # Linear velocity reference
+            x0_position,  # Position reference
+            np.zeros(3),  # Attitude reference
+            np.zeros(3),  # Linear velocity has not reference
         ])
 
         # # For linear least squares cost
@@ -161,20 +169,37 @@ class AcadosMPCSolver:
         # Set up the cost type
         cost.cost_type = 'NONLINEAR_LS'
         cost.cost_type_e = 'NONLINEAR_LS'
-        # CasADi expression for nonlinear least squares
+
+        # # CasADi expression for nonlinear least squares
         # ocp.model.cost_y_expr = ca.vertcat(ocp.model.x, ocp.model.u)
         # ocp.model.cost_y_expr_e = ocp.model.x
 
         # Constraints
         constraints = ocp.constraints
+
         # initial state
         constraints.x0 = x0
+        constraints.idxbx_0 = np.arange(10)  # All states
+        constraints.lbx_0 = x0
+        constraints.ubx_0 = x0
         # lower bounds on u at shooting nodes (0 to N-1)
         constraints.lbu = self.mpc_params.lbu
         # upper bounds on u at shooting nodes (0 to N-1)
         constraints.ubu = self.mpc_params.ubu
         # matrix coefficient for bounds on u at shooting nodes
         constraints.Jbu = np.identity(4)
+
+        constraints.idxbx = np.array([7, 8, 9])
+        # lower bounds on x at shooting nodes (1 to N)
+        constraints.lbx = self.mpc_params.lbx[constraints.idxbx]
+        # upper bounds on x at shooting nodes (1 to N)
+        constraints.ubx = self.mpc_params.ubx[constraints.idxbx]
+
+        constraints.idxbx_e = np.array([7, 8, 9])
+        # lower bounds on x at terminal shooting node (N)
+        constraints.lbx_e = self.mpc_params.lbx[constraints.idxbx_e]
+        # upper bounds on x at terminal shooting node (N)
+        constraints.ubx_e = self.mpc_params.ubx[constraints.idxbx_e]
 
         # Solver options
         solver_options = ocp.solver_options
@@ -201,7 +226,7 @@ class AcadosMPCSolver:
 
         self._solver = AcadosOcpSolver(
             ocp,
-            # json_file = 'mpc_controller.json',
+            # json_file='mpc_controller.json',
             generate=True,
             verbose=False)
 
@@ -218,15 +243,17 @@ class AcadosMPCSolver:
         """
         # Update Solver constraints:
         self.mpc_params = mpc_params
-
-        # lower bounds on u at shooting nodes (0 to N-1)
-        # upper bounds on u at shooting nodes (0 to N-1)
+        idxbx = np.array([7, 8, 9])
         for node in range(self.N):
+
             self.solver.constraints_set(node, 'lbu', self.mpc_params.lbu)
             self.solver.constraints_set(node, 'ubu', self.mpc_params.ubu)
 
+            self.solver.constraints_set(node, 'lbx', self.mpc_params.lbx[idxbx])
+            self.solver.constraints_set(node, 'ubx', self.mpc_params.ubx[idxbx])
+
         # initial values for parameter vector - can be updated stagewise
-        for i in range(self.N+1):
+        for i in range(self.N + 1):
             self.solver.set(i, 'p', self.mpc_params.p)
 
         # weight matrix at intermediate shooting nodes (1 to N-1)
@@ -272,8 +299,8 @@ class AcadosMPCSolver:
         :return: The predicted state of the system.
         """
         states = np.zeros((
-            self.solver.acados_ocp.solver_options.N_horizon+1, self.solver.get(0, 'x').shape[0]))
-        for i in range(self.solver.acados_ocp.solver_options.N_horizon+1):
+            self.solver.acados_ocp.solver_options.N_horizon + 1, self.solver.get(0, 'x').shape[0]))
+        for i in range(self.solver.acados_ocp.solver_options.N_horizon + 1):
             states[i, :] = self.solver.get(i, 'x')
         return states
 
@@ -329,7 +356,7 @@ class AcadosMPCSolver:
 
             # self.solver.set(i, 'yref', yref[i, :])
             self.solver.set(i, 'yref', y_ref)
-            
+
             # Set orientation in online params
             p = np.concatenate([
                 np.array([self.mpc_params.p[0]]),  # Mass
@@ -478,36 +505,39 @@ class AcadosMPCSolver:
 
 if __name__ == '__main__':
 
-    mpc_params = AcadosMPCParams(
-        Q=CaState.get_cost_matrix(
-            position_weight=1*np.ones(3),
-            orientation_weight=0*np.ones(4),
-            linear_velocity_weight=0.0*np.ones(3)
-        ),
-        Qe=CaState.get_cost_matrix(
-            position_weight=1*np.ones(3),
-            orientation_weight=0*np.ones(4),
-            linear_velocity_weight=0.0*np.ones(3)
-        ),
-        R=CaControl.get_cost_matrix(
-            thrust_weight=np.array([1e-2]),
-            angular_velocity_weight=1e-2*np.ones(3)
-        ),
-        lbu=np.array([0.2, -1.0, -1.0, -1.0]),
-        ubu=np.array([30.0, 1.0, 1.0, 1.0]),
-        p=np.array([1.0])
-    )
+    # mpc_params = AcadosMPCParams(
+    #     Q=CaState.get_cost_matrix(
+    #         position_weight=1 * np.ones(3),
+    #         orientation_weight=0 * np.ones(4),
+    #         linear_velocity_weight=0.0 * np.ones(3)
+    #     ),
+    #     Qe=CaState.get_cost_matrix(
+    #         position_weight=1 * np.ones(3),
+    #         orientation_weight=0 * np.ones(4),
+    #         linear_velocity_weight=0.0 * np.ones(3)
+    #     ),
+    #     R=CaControl.get_cost_matrix(
+    #         thrust_weight=np.array([1e-2]),
+    #         angular_velocity_weight=1e-2 * np.ones(3)
+    #     ),
+    #     lbu=np.array([0.2, -1.0, -1.0, -1.0]),
+    #     ubu=np.array([30.0, 1.0, 1.0, 1.0]),
+    #     p=np.array([1.0, 1.0, 0.0, 0.0, 0.0])
+    # )
+    from read_config import read_mpc_params
+    yaml_data = read_mpc_params('mpc_config.yaml')
 
     mpc = AcadosMPCSolver(
         prediction_steps=100,
         prediction_horizon=0.5,
-        mpc_params=mpc_params
+        mpc_params=yaml_data.mpc_params
     )
 
-    mpc.update_mpc_params(mpc_params)
+    mpc.update_mpc_params(yaml_data.mpc_params)
 
     # Compute the control
     u = mpc.compute_control_action(
         mpc.get_empty_state(),
         mpc.get_empty_reference(),
         mpc.get_empty_end_reference())
+    print(f'Control action: {u}')

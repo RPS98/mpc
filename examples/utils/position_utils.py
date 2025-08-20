@@ -91,8 +91,8 @@ def compute_path_facing(velocity: np.ndarray) -> list:
 
 @dataclass
 class YamlMPCData:
-    Q: np.ndarray = np.zeros((10, 10))
-    Qe: np.ndarray = np.zeros((10, 10))
+    Q: np.ndarray = np.zeros((9, 9))
+    Qe: np.ndarray = np.zeros((9, 9))
     R: np.ndarray = np.zeros((4, 4))
     lbu: np.ndarray = np.zeros(4)
     ubu: np.ndarray = np.zeros(4)
