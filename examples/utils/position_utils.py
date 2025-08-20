@@ -40,6 +40,7 @@ import math
 import yaml
 import os
 import numpy as np
+from mpc.mpc_controller_lib.acados_solver import AcadosMPCParams
 
 
 def euler_to_quaternion(roll: float, pitch: float, yaw: float) -> np.ndarray:
@@ -125,7 +126,8 @@ class YamlData:
     """
 
     sim_params: SimParams = field(default_factory=lambda: SimParams())
-    mpc_data: YamlMPCData = field(default_factory=lambda: YamlMPCData())
+    # mpc_data: YamlMPCData = field(default_factory=lambda: YamlMPCData())
+    mpc_data: AcadosMPCParams = AcadosMPCParams()
 
 
 def read_yaml_params(file_path: str):
@@ -159,7 +161,8 @@ def read_yaml_params(file_path: str):
     data.mpc_data.lbu = np.array(config["controller"]["mpc"]["lbu"], dtype=np.float64)
     data.mpc_data.ubu = np.array(config["controller"]["mpc"]["ubu"], dtype=np.float64)
     data.mpc_data.p = np.array(config["controller"]["mpc"]["p"], dtype=np.float64)
-
+    data.mpc_data.lbx = np.array(config["controller"]['mpc']['lbx'], dtype=np.float64)
+    data.mpc_data.ubx = np.array(config["controller"]['mpc']['ubx'], dtype=np.float64)
     return data
 
 
@@ -178,7 +181,7 @@ class CsvLogger:
         self.file.write(
             'time,'
             'x,y,z,qw,qx,qy,qz,vx,vy,vz,'
-            'x_ref,y_ref,z_ref,qw_ref,qx_ref,qy_ref,qz_ref,vx_ref,vy_ref,vz_ref'
+            'x_ref,y_ref,z_ref,qw_ref,qx_ref,qy_ref,qz_ref,vx_ref,vy_ref,vz_ref,'
             'thrust_ref,wx_ref,wy_ref,wz_ref\n')
 
     def add_double(self, data: float) -> None:

@@ -41,10 +41,9 @@ from mpc.read_config import read_mpc_params
 import numpy as np
 import time
 from tqdm import tqdm
-from utils.plot_results import plotSim3D
-from utils.position_utils import euler_to_quaternion, read_yaml_params, CsvLogger, SimParams
+from utils.position_utils import euler_to_quaternion, read_yaml_params, CsvLogger, YamlData
 
-SIM_TIME = 30.0
+SIM_TIME = 60.0
 
 
 def position_reference_to_mpc_reference(position_reference, ref_yaw: float = 0.0):
@@ -75,11 +74,11 @@ def progress_bar(func):
 def test_trajectory_controller(
         mpc: MPC,
         integrator: mpc_lib.AcadosSimSolver,
-        simulation_data: SimParams,
+        simulation_data: YamlData,
         logger: CsvLogger,
         pbar):
     """Test trajectory controller."""
-    x = mpc_lib.CaState.get_state()
+    x = mpc_lib.CaState.get_state(position=(14.0, 25.0, 1.23))
     u = mpc_lib.CaControl.get_control()
     y = mpc_lib.CaState.get_state()
 
@@ -94,18 +93,18 @@ def test_trajectory_controller(
     state_history = np.zeros(7)
     reference_history = np.zeros(7)
 
-    position_references = simulation_data.waypoints
+    position_references = simulation_data.sim_params.waypoints
     pos_index = 0
     pos_ref = position_reference_to_mpc_reference(position_references[0])
 
     logger.save(t, x, y, u)
+    flag_update_params = True
     while t < max_time:
         reference = np.zeros((prediction_steps + 1, mpc.x_dim))
         # print(reference_trajectory.shape)  # (101, 10)
         for i in range(prediction_steps + 1):
             reference[i, :] = position_reference_to_mpc_reference(
                 position_references[pos_index])
-
         current_time = time.time()
         u = mpc.evaluate(x, reference[:-1], reference[-1][:mpc.x_dim])
         mpc_solve_times = np.append(mpc_solve_times, time.time() - current_time)
@@ -139,8 +138,11 @@ def test_trajectory_controller(
             print(f'Position reference updated to {pos_ref[:3]} at time {t:.2f}s')
 
         pbar.update(tf)
+        if pos_ref[2] == 1.5 and flag_update_params:
+            print(f"Updating MPC parameters at time {t:.2f}s")
+            mpc.update_params(simulation_data.mpc_data)
+            flag_update_params = False
     print(f'MPC solve time mean: {np.mean(mpc_solve_times)}')
-    plotSim3D(state_history, reference_history)
 
 
 if __name__ == '__main__':
@@ -149,7 +151,6 @@ if __name__ == '__main__':
 
     # MPC Params
     yaml_data = read_mpc_params('mpc_config.yaml')
-
     # Logger
     file_name = 'mpc_log.csv'
     logger = CsvLogger(file_name)
@@ -168,5 +169,5 @@ if __name__ == '__main__':
     test_trajectory_controller(
         mpc,
         integrator,
-        simulation_yaml.sim_params,
+        simulation_yaml,
         logger)
