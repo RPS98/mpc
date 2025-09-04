@@ -54,6 +54,8 @@ TEST(acados_mpc, test_acados_mpc) {
   EXPECT_NO_THROW(mpc.get_data());
   EXPECT_NO_THROW(mpc.get_gains());
   EXPECT_NO_THROW(mpc.get_bounds());
+  EXPECT_NO_THROW(mpc.get_state_bounds());
+  EXPECT_NO_THROW(mpc.update_state_bounds());
   EXPECT_NO_THROW(mpc.update_gains());
   EXPECT_NO_THROW(mpc.update_bounds());
 }
@@ -91,6 +93,18 @@ TEST(acados_mpc, test_acados_datatypes) {
   EXPECT_NO_THROW(gains.set_Q(0, 0.0));
   EXPECT_NO_THROW(gains.set_R(0, 0.0));
   EXPECT_NO_THROW(gains.set_Q_end(0, 0.0));
+
+  EXPECT_NO_THROW(StateBounds());
+  auto state_bounds = StateBounds();
+  // EXPECT_NO_THROW(state_bounds.get_idxbx());
+  // EXPECT_NO_THROW(state_bounds.get_idxbx_vector());
+  // EXPECT_NO_THROW(state_bounds.set_idxbx(0, 0));
+  EXPECT_NO_THROW(state_bounds.get_lbx());
+  EXPECT_NO_THROW(state_bounds.get_lbx_array());
+  EXPECT_NO_THROW(state_bounds.get_ubx());
+  EXPECT_NO_THROW(state_bounds.get_ubx_array());
+  EXPECT_NO_THROW(state_bounds.set_lbx(0.0, 0.0));
+  EXPECT_NO_THROW(state_bounds.set_ubx(0, 0.0));
 
   EXPECT_NO_THROW(Bounds());
   auto bounds = Bounds();

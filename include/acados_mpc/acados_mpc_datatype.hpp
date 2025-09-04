@@ -42,6 +42,7 @@
 #include <mpc_generated_code/mpc_model/mpc_model.h>
 
 #include <array>
+#include <vector>
 #include <stdexcept>
 #include <string>
 
@@ -323,6 +324,135 @@ struct Gains {
   void set_Q_end(const std::array<double, Gains::Nqe>& Qe);
 };
 
+/**
+ * @brief Bounds
+ *
+ * Bounds lbu and ubu for the MPC.
+ */
+struct StateBounds {
+  static constexpr size_t Nx = MPC_NX;
+  // std::vector<int> idxbx;
+  std::array<double, MPC_NX> lbx;
+  std::array<double, MPC_NX> ubx;
+
+  /**
+   * @brief Constructor
+   */
+  StateBounds();
+
+  /**
+   * @brief Get the idxbx array
+   *
+   * @return int* idxbx.
+   */
+  // int * get_idxbx();
+
+  // /**
+  //  * @brief Get the idxbx array
+  //  *
+  //  * @return const int* idxbx.
+  //  */
+  // const int * get_idxbx() const;
+
+  // /**
+  //  * @brief Get the idxbx array as a vector
+  //  *
+  //  * @return std::vector<int> idxbx.
+  //  */
+  // std::vector<int> get_idxbx_vector() const;
+
+  // /**
+  //  * @brief Get the lbx array
+  //  *
+  //  * @return double* lbx.
+  //  */
+
+
+  double * get_lbx();
+
+  /**
+   * @brief Get the lbx array
+   *
+   * @return const double* lbx.
+   */
+  const double * get_lbx() const;
+
+  /**
+   * @brief Get the lbx array
+   *
+   * @return std::array<double, MPC_NX> lbx.
+   */
+  std::array<double, MPC_NX> get_lbx_array() const;
+
+  /**
+   * @brief Get the ubx array
+   *
+   * @return double* ubx.
+   */
+  double * get_ubx();
+
+  /**
+   * @brief Get the ubx array
+   *
+   * @return const double* ubx.
+   */
+  const double * get_ubx() const;
+
+  /**
+   * @brief Get the ubx array
+   *
+   * @return std::array<double, MPC_NX> ubx.
+   */
+  std::array<double, MPC_NX> get_ubx_array() const;
+
+  /**
+   * @brief Set the bounds
+   *
+   * @param statebounds bounds.
+   */
+  void set_bounds(const StateBounds & statebounds);
+  /**
+  //  * @brief Set the idxbx
+  //  *
+  //  * @param idxbx idxbx.
+  //  */
+  // void set_idxbx(const int index, const int value);
+  // /**
+  //  * @brief Set the idxbx
+  //  *
+  //  * @param idxbx idxbx.
+  //  */
+  // void set_idxbx(const std::vector<int> & idxbx);
+  // /**
+  //  * @brief Set the lbx
+  //  *
+  //  * @param lbx lbx.
+  //  */
+  void set_lbx(const std::array<double, MPC_NX> & lbx);
+
+  /**
+   * @brief Set the lbx at index
+   *
+   * @param index index.
+   * @param value value.
+   */
+  void set_lbx(const int index, const double value);
+
+  /**
+   * @brief Set the ubx
+   *
+   * @param ubx ubx.
+   */
+  void set_ubx(const std::array<double, MPC_NX> & ubx);
+
+  /**
+   * @brief Set the ubx at index
+   *
+   * @param index index.
+   * @param value value.
+   */
+  void set_ubx(const int index, const double value);
+};
 /**
  * @brief Bounds
  *

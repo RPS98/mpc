@@ -187,8 +187,11 @@ void test_mpc_controller(CsvLogger& logger,
     mpc_times.push_back(mpc_duration.count());
     sim_times.push_back(sim_duration.count());
     total_times.push_back(total_duration.count());
-
-    logger.save(t, mpc_data);
+    // printf(
+    //   "Current position: [%f, %f, %f] | Reference position: [%f, %f, %f] \n",
+    //   mpc_data->state.data[0], mpc_data->state.data[1], mpc_data->state.data[2],
+    //   mpc_data->reference.data[0], mpc_data->reference.data[1], mpc_data->reference.data[2]);
+    // logger.save(t, mpc_data);
   }
   logger.close();
 
@@ -208,9 +211,8 @@ void test_mpc_controller(CsvLogger& logger,
 int main(int argc, char** argv) {
   // Params
   acados_mpc::acados_mpc_examples::YamlData yaml_data;
-  // acados_mpc::acados_mpc_examples::read_yaml_params("examples/simulation_config.yaml",
-  // yaml_data);
-  acados_mpc::acados_mpc_examples::read_yaml_params("examples/simulation_config.yaml", yaml_data);
+  acados_mpc::acados_mpc_examples::read_yaml_params(
+    "/home/carmen/repos/mpc_ws/src/mpc/examples/simulation_config.yaml", yaml_data);
 
   // Initialize MPC
   acados_mpc::MPC mpc = acados_mpc::MPC();
@@ -221,9 +223,12 @@ int main(int argc, char** argv) {
   mpc.get_gains()->set_R(yaml_data.mpc_data.R);
   mpc.get_bounds()->set_lbu(yaml_data.mpc_data.lbu);
   mpc.get_bounds()->set_ubu(yaml_data.mpc_data.ubu);
+  // mpc.get_state_bounds()->set_idxbx(yaml_data.mpc_data.idxbx);
+  mpc.get_state_bounds()->set_lbx(yaml_data.mpc_data.lbx);
+  mpc.get_state_bounds()->set_ubx(yaml_data.mpc_data.ubx);
   mpc.update_bounds();
+  mpc.update_state_bounds();
   mpc.update_gains();
-
   // Update online params
   for (int i = 0; i < acados_mpc::OnlineParams::size_n; i++) {
     for (int j = 0; j < acados_mpc::OnlineParams::Np; j++) {

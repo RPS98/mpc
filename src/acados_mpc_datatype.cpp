@@ -208,6 +208,78 @@ void Gains::set_Q_end(const std::array<double, Gains::Nqe> &Qe) {
     set_Q_end(i, Qe[i]);
   }
 }
+StateBounds::StateBounds()
+{
+  // idxbx = {};
+  lbx.fill(0.0);
+  ubx.fill(0.0);
+}
+// int * StateBounds::get_idxbx() {return idxbx.data();}
+
+// const int * StateBounds::get_idxbx() const {return idxbx.data();}
+
+// std::vector<int> StateBounds::get_idxbx_vector() const {return idxbx;}
+
+double * StateBounds::get_lbx() {return lbx.data();}
+
+const double * StateBounds::get_lbx() const {return lbx.data();}
+
+std::array<double, MPC_NX> StateBounds::get_lbx_array() const {return lbx;}
+
+double * StateBounds::get_ubx() {return ubx.data();}
+
+const double * StateBounds::get_ubx() const {return ubx.data();}
+
+std::array<double, MPC_NX> StateBounds::get_ubx_array() const {return ubx;}
+
+void StateBounds::set_bounds(const StateBounds & statebounds)
+{
+  for (size_t i = 1; i < lbx.size(); ++i) {
+    lbx[i] = statebounds.lbx[i];
+  }
+
+  for (size_t i = 1; i < ubx.size(); ++i) {
+    ubx[i] = statebounds.ubx[i];
+  }
+}
+
+// void StateBounds::set_idxbx(const std::vector<int> & idxbx)
+// {
+//   for (size_t i = 0; i < idxbx.size(); i++) {
+//     set_idxbx(i, idxbx[i]);
+//   }
+// }
+
+void StateBounds::set_lbx(const std::array<double, MPC_NX> & lbx)
+{
+  for (size_t i = 1; i < lbx.size(); ++i) {
+    set_lbx(i, lbx[i]);
+  }
+}
+
+void StateBounds::set_ubx(const std::array<double, MPC_NX> & ubx)
+{
+  for (size_t i = 1; i < ubx.size(); ++i) {
+    set_ubx(i, ubx[i]);
+  }
+}
+
+// void StateBounds::set_idxbx(const int index, const int value)
+// {
+//   idxbx[index] = value;
+// }
+
+void StateBounds::set_lbx(const int index, const double value)
+{
+  CHECK_MPC_INDEX(index, MPC_NX);
+  lbx[index] = value;
+}
+
+void StateBounds::set_ubx(const int index, const double value)
+{
+  CHECK_MPC_INDEX(index, MPC_NX);
+  ubx[index] = value;
+}
 
 Bounds::Bounds() {
   lbu.fill(0.0);

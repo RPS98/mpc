@@ -38,9 +38,11 @@
 #include <memory>
 #include "acados_mpc/acados_sim_solver.hpp"
 
-namespace acados_mpc {
+namespace acados_mpc
+{
 
-void test_acados_mpc() {
+void test_acados_mpc()
+{
   MPC mpc = MPC();
   MPCSimSolver mpc_sim_solver;
   double prediction_steps = mpc.get_prediction_steps();
@@ -49,11 +51,30 @@ void test_acados_mpc() {
   std::cout << "Prediction time horizon: " << prediction_time_horizon << std::endl;
   double prediction_time_step = mpc.get_prediction_time_step();
   std::cout << "Prediction time steps: " << prediction_time_step << std::endl;
+  std::array<double, acados_mpc::Bounds::Nu> lbu;
+  std::array<double, acados_mpc::StateBounds::Nx> lbx;
+  lbx = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -4.0, -4.0, -4.0};
+  lbu = {0.1, 0.4, 0.2, 0.1};
+  mpc.get_bounds()->set_lbu(lbu);
+  mpc.get_state_bounds()->set_lbx(lbx);
+  mpc.update_state_bounds();
+  mpc.update_bounds();
+  printf("state bounds\n");
+  for (const auto & bound : mpc.get_state_bounds()->get_lbx_array()) {
+    printf("%f ", bound);
+  }
+  printf("\n");
+  printf("Bounds\n");
+  for (const auto & bound : mpc.get_bounds()->get_lbu_array()) {
+    printf("%f ", bound);
+  }
+  printf("\n");
 }
 
 }  // namespace acados_mpc
 
-int main(int argc, char* argv[]) {
+int main(int argc, char * argv[])
+{
   acados_mpc::test_acados_mpc();
   return 0;
 }

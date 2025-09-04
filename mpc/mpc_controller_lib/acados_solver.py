@@ -179,9 +179,6 @@ class AcadosMPCSolver:
 
         # initial state
         constraints.x0 = x0
-        constraints.idxbx_0 = np.arange(10)  # All states
-        constraints.lbx_0 = x0
-        constraints.ubx_0 = x0
         # lower bounds on u at shooting nodes (0 to N-1)
         constraints.lbu = self.mpc_params.lbu
         # upper bounds on u at shooting nodes (0 to N-1)

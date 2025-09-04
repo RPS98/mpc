@@ -66,11 +66,13 @@ void MPC::initializeSolver() {
 }
 
 void MPC::setSolverState() {
-  status_ = ocp_nlp_constraints_model_set(nlp_config_, nlp_dims_, nlp_in_, nlp_out_, 0, "lbx",
-                                          mpc_data_.state.data.data());
+  status_ = ocp_nlp_constraints_model_set(
+    nlp_config_, nlp_dims_, nlp_in_, nlp_out_, 0, "lbx",
+    mpc_data_.state.data.data());
   validateStatus(status_);
-  status_ = ocp_nlp_constraints_model_set(nlp_config_, nlp_dims_, nlp_in_, nlp_out_, 0, "ubx",
-                                          mpc_data_.state.data.data());
+  status_ = ocp_nlp_constraints_model_set(
+    nlp_config_, nlp_dims_, nlp_in_, nlp_out_, 0, "ubx",
+    mpc_data_.state.data.data());
   validateStatus(status_);
 }
 
@@ -123,6 +125,67 @@ void MPC::update_gains() {
   // weight matrix at terminal shooting node (N)
   status_ = ocp_nlp_cost_model_set(nlp_config_, nlp_dims_, nlp_in_, MPC_N, "W", gains_.get_We());
 }
+void MPC::update_state_bounds()
+{
+  for (int i = 1; i <= MPC_N; i++) {
+    int idxbx[] = {7, 8, 9};
+    double lbx_vals[] = {
+      state_bounds_.lbx[7],
+      state_bounds_.lbx[8],
+      state_bounds_.lbx[9]
+    };
+
+    double ubx_vals[] = {
+      state_bounds_.ubx[7],
+      state_bounds_.ubx[8],
+      state_bounds_.ubx[9]
+    };
+    status_ = ocp_nlp_constraints_model_set(
+      nlp_config_, nlp_dims_, nlp_in_, nlp_out_, i, "idxbx", idxbx);
+    validateStatus(status_);
+
+    validateStatus(status_);
+
+    status_ = ocp_nlp_constraints_model_set(
+      nlp_config_, nlp_dims_, nlp_in_, nlp_out_, i, "lbx",
+      lbx_vals);
+    validateStatus(status_);
+
+    status_ = ocp_nlp_constraints_model_set(
+      nlp_config_, nlp_dims_, nlp_in_, nlp_out_, i, "ubx",
+      ubx_vals);
+    validateStatus(status_);
+    // std::vector<double> lbx_vals;
+    // std::vector<double> ubx_vals;
+    // for (auto & index : state_bounds_.get_idxbx_vector()) {
+    //   lbx_vals.push_back(state_bounds_.lbx[index]);
+    //   ubx_vals.push_back(state_bounds_.ubx[index]);
+    //   // printf("%f %f\n", state_bounds_.lbx[index], state_bounds_.ubx[index]);
+
+    //   for (int i = 0; i < MPC_NX; i++) {
+    //     // printf("%d %d %d\n", state_bounds_.idxbx[0], state_bounds_.idxbx[1], state_bounds_.idxbx[2]);
+    //     status_ = ocp_nlp_constraints_model_set(
+    //       nlp_config_, nlp_dims_, nlp_in_, nlp_out_, i, "idxbx", state_bounds_.idxbx.data());
+    //     validateStatus(status_);
+
+    //     validateStatus(status_);
+
+    //     status_ = ocp_nlp_constraints_model_set(
+    //       nlp_config_, nlp_dims_, nlp_in_, nlp_out_, i, "lbx",
+    //       lbx_vals.data());
+    //     validateStatus(status_);
+
+    //     status_ = ocp_nlp_constraints_model_set(
+    //       nlp_config_, nlp_dims_, nlp_in_, nlp_out_, i, "ubx",
+    //       ubx_vals.data());
+    //     for (auto it = ubx_vals.begin(); it != ubx_vals.end(); ++it) {
+    //       // printf("Upper bounds on x at shooting node (%d): %f\n", i, *it);
+    //     }
+    //     validateStatus(status_);
+    //   }
+  }
+}
+
 
 void MPC::update_bounds() {
   // lower bounds on u at shooting nodes (0 to N-1)

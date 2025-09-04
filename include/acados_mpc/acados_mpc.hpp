@@ -136,6 +136,13 @@ public:
   Gains* get_gains() { return &gains_; }
 
   /**
+   * @brief Get the StateBounds pointer to modify the state bounds.
+   *
+   * update_state_bounds() must be called to update the state bounds.
+   */
+  StateBounds* get_state_bounds() { return &state_bounds_; }
+
+  /**
    * @brief Get the Bounds pointer to modify the bounds.
    *
    * update_bounds() must be called to update the bounds.
@@ -151,7 +158,10 @@ public:
    * It can be accessed using get_gains().
    */
   void update_gains();
-
+  /**
+   * @brief Set the solver state x ( 1 to N )
+   */
+  void update_state_bounds();
   /**
    * @brief Update the bounds lbx and ubx.
    *
@@ -215,6 +225,7 @@ private:
 
   // Parameters
   Gains gains_   = Gains();
+  StateBounds state_bounds_ = StateBounds();
   Bounds bounds_ = Bounds();
 };
 }  // namespace acados_mpc
