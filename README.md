@@ -19,7 +19,7 @@ Follow the instructions in the [Acados documentation](https://docs.acados.org/in
 #### 1. Clone the repository
 
 ```bash
-git clone https://github.com/acados/acados.git
+git clone https://github.com/acados/acados.git -b v0.5.1
 cd acados
 git submodule update --recursive --init
 ```
@@ -37,10 +37,9 @@ make install -j4
 #### 3. Export the path to the library
 
 ```bash
-export ACADOS_ROOT_DIR="<path_to_acados_folder>"
-export PYTHONPATH=$PYTHONPATH:"$ACADOS_ROOT_DIR/interfaces/acados_template/"
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:"$ACADOS_ROOT_DIR/acados/lib"
-export ACADOS_SOURCE_DIR="$ACADOS_ROOT_DIR/acados"
+export ACADOS_SOURCE_DIR="<path_to_acados_folder>"  # E.g. ~/acados
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$ACADOS_SOURCE_DIR/lib
+export PYTHONPATH=$PYTHONPATH:$ACADOS_SOURCE_DIR/interfaces/acados_template/
 ```
 
 #### 4. Install tera_renderer
@@ -58,8 +57,10 @@ chmod +x $ACADOS_ROOT_DIR/bin/t_renderer
 
 #### 5. Install acados_template
 
+From the acados root folder, run:
+
 ```bash
-pip install -e <acados_root>/interfaces/acados_template
+pip install -e interfaces/acados_template
 ```
 
 ## Generate C code for MPC
@@ -103,8 +104,8 @@ You can build the C++ interface and run the MPC using the C++ interface, from th
 ```bash
 mkdir -p build
 cd build
-cmake ..
-make -j4 -DBUILD_EXAMPLES=ON
+cmake .. -DBUILD_EXAMPLES=ON
+make -j4
 ```
 
 You can run the example:

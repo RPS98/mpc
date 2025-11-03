@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mpc"
+version = "0.1.0"
+authors = [{ name = "Rafael Pérez Seguí", email = "r.psegui@upm.es" }]
+description = "MPC Library for MAVs using acados"
+license = { text = "BSD-3-Clause" }
+dependencies = [
+    "numpy>=1.22",
+    "acados-template",
+    "pyyaml"
+]
+readme = "README.md"
+requires-python = ">=3.8"
+
+[tool.setuptools.packages.find]
+include = ["mpc", "mpc.*"]

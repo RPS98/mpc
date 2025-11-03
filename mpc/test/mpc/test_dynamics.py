@@ -37,10 +37,14 @@ __license__ = 'BSD-3-Clause'
 
 import unittest
 
-from mpc.mpc_controller_lib.drone_model import CaDynamics, CaState, CaControl
+from mpc.utils.quaternion_utils import quaternion_derivate, quaternion_multiply, \
+    quaternion_inverse, apply_rotation, apply_inverse_rotation
+from mpc.drone_model import CaState, CaActuation
+from mpc.drone_model import DroneModel
 import numpy as np
 from pyquaternion import Quaternion
 import math
+
 
 def Euler_to_quaternion(roll: float, pitch: float, yaw: float) -> np.ndarray:
     """
@@ -84,8 +88,8 @@ class TestCaDynamics(unittest.TestCase):
 
     def setUp(self):
         self.x = CaState()
-        self.u = CaControl()
-        self.dynamics = CaDynamics(
+        self.u = CaActuation()
+        self.dynamics = DroneModel(
             self.x,
             self.u)
 
@@ -106,7 +110,7 @@ class TestCaDynamics(unittest.TestCase):
                 q_dot = q.derivative(w)
 
                 # Get the derivative of the quaternion using the function
-                q_dot_func = self.dynamics.quaternion_derivate(q_np, w)
+                q_dot_func = quaternion_derivate(q_np, w)
 
                 # Check the results
                 self.assertAlmostEqual(q_dot[0], q_dot_func[0])
@@ -130,7 +134,7 @@ class TestCaDynamics(unittest.TestCase):
             q_mult = q1 * q2
 
             # Get the multiplication of the quaternions using the function
-            q_mult_func = self.dynamics.quaternion_multiply(q1_np, q2_np)
+            q_mult_func = quaternion_multiply(q1_np, q2_np)
 
             # Check the results
             self.assertAlmostEqual(q_mult[0], q_mult_func[0])
@@ -155,7 +159,7 @@ class TestCaDynamics(unittest.TestCase):
                 v_rot = q.rotate(v)
 
                 # Get the rotation of the vector using the function
-                v_rot_func = self.dynamics.apply_rotation(q_np, v)
+                v_rot_func = apply_rotation(q_np, v)
 
                 # Check the results
                 self.assertAlmostEqual(v_rot[0], v_rot_func[0])
@@ -179,7 +183,7 @@ class TestCaDynamics(unittest.TestCase):
                 v_rot = q.inverse.rotate(v)
 
                 # Get the inverse rotation of the vector using the function
-                v_rot_func = self.dynamics.apply_inverse_rotation(q_np, v)
+                v_rot_func = apply_inverse_rotation(q_np, v)
 
                 # Check the results
                 self.assertAlmostEqual(v_rot[0], v_rot_func[0])
@@ -199,7 +203,7 @@ class TestCaDynamics(unittest.TestCase):
             q_inv = q.inverse
 
             # Get the inverse of the quaternion using the function
-            q_inv_func = self.dynamics.quaternion_inverse(q_np)
+            q_inv_func = quaternion_inverse(q_np)
 
             # Check the results
             self.assertAlmostEqual(q_inv[0], q_inv_func[0])
@@ -236,35 +240,35 @@ class TestCaDynamics(unittest.TestCase):
         self.assertLess(v_dot[2], 0.0)
 
         # Move forward
-        thrust = np.array([mass * gravity]) / math.sin(math.pi/4)
-        q = Euler_to_quaternion(0.0, math.pi/4, 0.0)
+        thrust = np.array([mass * gravity]) / math.sin(math.pi / 4)
+        q = Euler_to_quaternion(0.0, math.pi / 4, 0.0)
         v_dot = self.dynamics.velocity_derivate(q, thrust, gravity, mass)
-        self.assertAlmostEqual(v_dot[0], thrust * math.cos(math.pi/4) / mass)
+        self.assertAlmostEqual(v_dot[0], thrust * math.cos(math.pi / 4) / mass)
         self.assertEqual(v_dot[1], 0.0)
         self.assertAlmostEqual(v_dot[2], 0.0)
 
         # Move backward
-        thrust = np.array([mass * gravity]) / math.sin(math.pi/4)
-        q = Euler_to_quaternion(0.0, -math.pi/4, 0.0)
+        thrust = np.array([mass * gravity]) / math.sin(math.pi / 4)
+        q = Euler_to_quaternion(0.0, -math.pi / 4, 0.0)
         v_dot = self.dynamics.velocity_derivate(q, thrust, gravity, mass)
-        self.assertAlmostEqual(v_dot[0], -thrust * math.cos(math.pi/4) / mass)
+        self.assertAlmostEqual(v_dot[0], -thrust * math.cos(math.pi / 4) / mass)
         self.assertEqual(v_dot[1], 0.0)
         self.assertAlmostEqual(v_dot[2], 0.0)
 
         # Move right
-        thrust = np.array([mass * gravity]) / math.sin(math.pi/4)
-        q = Euler_to_quaternion(-math.pi/4, 0.0, 0.0)
+        thrust = np.array([mass * gravity]) / math.sin(math.pi / 4)
+        q = Euler_to_quaternion(-math.pi / 4, 0.0, 0.0)
         v_dot = self.dynamics.velocity_derivate(q, thrust, gravity, mass)
         self.assertEqual(v_dot[0], 0.0)
-        self.assertAlmostEqual(v_dot[1], thrust * math.cos(math.pi/4) / mass)
+        self.assertAlmostEqual(v_dot[1], thrust * math.cos(math.pi / 4) / mass)
         self.assertAlmostEqual(v_dot[2], 0.0)
 
         # Move left
-        thrust = np.array([mass * gravity]) / math.sin(math.pi/4)
-        q = Euler_to_quaternion(math.pi/4, 0.0, 0.0)
+        thrust = np.array([mass * gravity]) / math.sin(math.pi / 4)
+        q = Euler_to_quaternion(math.pi / 4, 0.0, 0.0)
         v_dot = self.dynamics.velocity_derivate(q, thrust, gravity, mass)
         self.assertEqual(v_dot[0], 0.0)
-        self.assertAlmostEqual(v_dot[1], -thrust * math.cos(math.pi/4) / mass)
+        self.assertAlmostEqual(v_dot[1], -thrust * math.cos(math.pi / 4) / mass)
         self.assertAlmostEqual(v_dot[2], 0.0)
 
 

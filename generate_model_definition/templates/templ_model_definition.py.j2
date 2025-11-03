@@ -1,0 +1,114 @@
+#!/usr/bin/env python3
+
+# Copyright 2025 Universidad Politécnica de Madrid
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+#    * Redistributions of source code must retain the above copyright
+#      notice, this list of conditions and the following disclaimer.
+#
+#    * Redistributions in binary form must reproduce the above copyright
+#      notice, this list of conditions and the following disclaimer in the
+#      documentation and/or other materials provided with the distribution.
+#
+#    * Neither the name of the Universidad Politécnica de Madrid nor the names of its
+#      contributors may be used to endorse or promote products derived from
+#      this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+"""Casadi MAV Model datatype {{ class_name }}."""
+
+__authors__ = 'Rafael Pérez Seguí'
+__copyright__ = 'Copyright (c) 2025 Universidad Politécnica de Madrid'
+__license__ = 'BSD-3-Clause'
+
+# THIS CODE HAS BEEN AUTOMATICALLY GENERATED USING {{ template_file }}
+
+from typing import ClassVar, List, Union
+
+from mpc.utils.datatypes_utils import VectorBase
+import casadi as ca
+import numpy as np
+
+
+class _{{ class_name }}Def:
+    """{{ class_name }} definition for MAV."""
+
+    _names: ClassVar[List[str]] = [
+        {%- for param in parameters %}
+        '{{ param.name }}'{% if not loop.last %},{% endif %}
+        {%- endfor %}
+    ]
+    _names_sx: ClassVar[List[str]] = [
+        {%- for param in parameters %}
+        'sx_{{ param.name }}'{% if not loop.last %},{% endif %}
+        {%- endfor %}
+    ]
+    _sizes: ClassVar[List[int]] = [
+        {%- for param in parameters %}
+        {{ param.size }}{% if not loop.last %},{% endif %}
+        {%- endfor %}
+    ]
+{% for param in parameters %}
+    {{ param.name }}: Union[ca.SX, ca.DM]
+{%- endfor %}
+
+
+class Ca{{ class_name }}(_{{ class_name }}Def, VectorBase):
+    """
+    CasADi SX {{ class_name }} for the UAV.
+{% for param in parameters %}
+    :param {{ param.name }}: {{ param.description }}
+    :type {{ param.name }}: ca.SX
+{%- endfor %}
+    """
+
+    _type = 'ca.SX'
+
+
+class {{ class_name }}(_{{ class_name }}Def, VectorBase):
+    """{{ class_name }} for the UAV Model."""
+
+    _type = 'np.array'
+
+    def __init__(
+            self,
+{%- for param in parameters %}
+            {{ param.name }}: np.array = np.array({{ param.value }}){% if not loop.last %},{% else %}):{%- endif %}
+{%- endfor %}
+        """
+        {{ class_name }} for the UAV Model.
+{% for param in parameters %}
+        :param {{ param.name }}: {{ param.description }}
+        :type {{ param.name }}: np.array
+{%- endfor %}
+        """
+        super().__init__()
+{%- for param in parameters %}
+        self.{{ param.name }} = {{ param.name }}
+{%- endfor %}
+
+
+if __name__ == '__main__':
+    # Test the {{ class_name }} class
+    {{ class_name | lower }} = {{ class_name }}()
+    print('CasADi SX:', {{ class_name | lower }}._names)
+    print('CasADi SX Sizes:', {{ class_name | lower }}._sizes)
+    print('Vector:', {{ class_name | lower }}.vector)
+
+{%- for param in parameters %}
+    print('{{ param.name }}:', {{ class_name | lower }}.{{ param.name }})
+{%- endfor %}
+    print({{ class_name | lower }})
+
