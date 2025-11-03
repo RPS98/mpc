@@ -362,7 +362,8 @@ def get_acados_sim_solver(config_path: str) -> AcadosSimSolver:
     return acados_mpc_solver.acados_integrator
 
 
-if __name__ == '__main__':
+def main():
+    """Main entry point for the Acados MPC Solver generator."""
     # Parse command line arguments
     parser = argparse.ArgumentParser(
         description='Generate Acados MPC Solver from configuration file.')
@@ -376,3 +377,7 @@ if __name__ == '__main__':
 
     # Generate Code
     acados_solver = generate_acados_solver(args.config_path)
+
+
+if __name__ == '__main__':
+    main()

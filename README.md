@@ -63,53 +63,21 @@ From the acados root folder, run:
 pip install -e interfaces/acados_template
 ```
 
-## Generate C code for MPC
+#### 6. Install mpc package
 
-The MPC is implemented in Python and C++. The Python code generates the C code for the MPC. To generate the C code, run the following command:
-
-```bash
-export PYTHONPATH=$PYTHONPATH:"<path_to_this_repo>"
-```
+From the mpc root folder, run:
 
 ```bash
-python3 mpc/mpc_controller.py
+pip install -e .
 ```
 
-## Build this repository
+## 7. Usage
 
-To build this repostory, follow the instructions from the root folder:
+Configure a solver_definition yaml file in the project you want to use the MPC controller, e.g., `solver_definition.yaml`.
+Then, run the following command in the terminal:
 
 ```bash
-mkdir -p build
-cd build
-make -j4
+mpc-acados-solver -c <path_to_solver_definition_yaml>
 ```
 
-## Example of the MPC using acados sim solver
-
-You can run the MPC using the Python interface, from the root folder:
-
-```bash
-python3 examples/run_example.py
-```
-
-> [!NOTE] 
-> [dynamic_trajectory_generator](https://github.com/miferco97/dynamic_trajectory_generator.git) dependency is required to run the example. Clone the repository and add the path to the LD_LIBRARY_PATH.
-
-
-## Example of the MPC using acados sim solver with C++ interface
-
-You can build the C++ interface and run the MPC using the C++ interface, from the root folder:
-
-```bash
-mkdir -p build
-cd build
-cmake .. -DBUILD_EXAMPLES=ON
-make -j4
-```
-
-You can run the example:
-
-```bash
-./build/examples/acados_mpc_run_example
-```
+This will generate the c code in solver.export_dir. If cpp module is enabled, it will also generate a c++ project, to be able to compile it using add_submodule in cmake.

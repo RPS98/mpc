@@ -29,4 +29,3 @@ integrator:
 cpp_module:
   generate: false
   project_name: acados_mpc_solver
-  project_path: 'test_project'
