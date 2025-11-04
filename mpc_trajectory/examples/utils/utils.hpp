@@ -288,9 +288,9 @@ public:
     add_double(yaw);
 
     // State velocity
-    add_double(mpc_data->state.data[10]);
-    add_double(mpc_data->state.data[11]);
-    add_double(mpc_data->state.data[12]);
+    add_double(mpc_data->state.data[7]);
+    add_double(mpc_data->state.data[8]);
+    add_double(mpc_data->state.data[9]);
 
     // Reference position
     add_double(mpc_data->reference.data[0]);
@@ -313,9 +313,9 @@ public:
     add_double(yaw_ref);
 
     // Reference velocity
+    add_double(mpc_data->reference.data[6]);
     add_double(mpc_data->reference.data[7]);
     add_double(mpc_data->reference.data[8]);
-    add_double(mpc_data->reference.data[9]);
 
     // Actuation
     for (int i = 0; i < MPC_NU; i++) {

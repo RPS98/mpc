@@ -246,7 +246,7 @@ def main():
     fig0 = plt.figure()
     axs0 = fig0.add_subplot(projection='3d')
 
-    fig1, axs1 = plt.subplots(4, 3)
+    fig1, axs1 = plt.subplots(3, 3)
     fig1.suptitle("Plots - Figure 1")
 
     update_plot_figure0(0, axs0, plot_drone=True)

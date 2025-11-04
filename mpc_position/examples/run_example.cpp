@@ -227,7 +227,7 @@ int main(int argc, char** argv) {
   mpc.get_state_bounds()->set_lbx(yaml_data.mpc_data.lbx);
   mpc.get_state_bounds()->set_ubx(yaml_data.mpc_data.ubx);
   mpc.update_actuation_bounds();
-  // mpc.update_state_bounds();
+  mpc.update_state_bounds();
   mpc.update_gains();
 
   // Update online params

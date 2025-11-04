@@ -160,8 +160,8 @@ void read_yaml_params(const std::string& file_path, YamlData& data) {
   std::vector<double> R   = config["controller"]["mpc"]["R"].as<std::vector<double>>();
   std::vector<double> lbu = config["controller"]["mpc"]["lbu"].as<std::vector<double>>();
   std::vector<double> ubu = config["controller"]["mpc"]["ubu"].as<std::vector<double>>();
-  std::vector<double> lbx = config["controller"]["mpc"]["lbx_c"].as<std::vector<double>>();
-  std::vector<double> ubx = config["controller"]["mpc"]["ubx_c"].as<std::vector<double>>();
+  std::vector<double> lbx = config["controller"]["mpc"]["lbx"].as<std::vector<double>>();
+  std::vector<double> ubx = config["controller"]["mpc"]["ubx"].as<std::vector<double>>();
   std::vector<double> p   = config["controller"]["mpc"]["p"].as<std::vector<double>>();
 
   data.mpc_data.dt = dt;
@@ -253,9 +253,9 @@ public:
     add_double(yaw);
 
     // State velocity
-    add_double(mpc_data->state.data[10]);
-    add_double(mpc_data->state.data[11]);
-    add_double(mpc_data->state.data[12]);
+    add_double(mpc_data->state.data[7]);
+    add_double(mpc_data->state.data[8]);
+    add_double(mpc_data->state.data[9]);
 
     // Reference position
     add_double(mpc_data->reference.data[0]);
@@ -278,9 +278,9 @@ public:
     add_double(yaw_ref);
 
     // Reference velocity
+    add_double(mpc_data->reference.data[6]);
     add_double(mpc_data->reference.data[7]);
     add_double(mpc_data->reference.data[8]);
-    add_double(mpc_data->reference.data[9]);
 
     // Actuation
     for (int i = 0; i < MPC_NU; i++) {
