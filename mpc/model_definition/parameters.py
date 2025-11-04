@@ -47,19 +47,27 @@ class _ParametersDef:
 
     _names: ClassVar[List[str]] = [
         'mass',
-        'desired_orientation'
+        'desired_orientation',
+        'desired_position',
+        'max_position_error'
     ]
     _names_sx: ClassVar[List[str]] = [
         'sx_mass',
-        'sx_desired_orientation'
+        'sx_desired_orientation',
+        'sx_desired_position',
+        'sx_max_position_error'
     ]
     _sizes: ClassVar[List[int]] = [
         1,
-        4
+        4,
+        3,
+        1
     ]
 
     mass: Union[ca.SX, ca.DM]
     desired_orientation: Union[ca.SX, ca.DM]
+    desired_position: Union[ca.SX, ca.DM]
+    max_position_error: Union[ca.SX, ca.DM]
 
 
 class CaParameters(_ParametersDef, VectorBase):
@@ -70,6 +78,10 @@ class CaParameters(_ParametersDef, VectorBase):
     :type mass: ca.SX
     :param desired_orientation: Desired orientation as a quaternion [qw, qx, qy, qz]
     :type desired_orientation: ca.SX
+    :param desired_position: Desired position in world frame [x, y, z] (m)
+    :type desired_position: ca.SX
+    :param max_position_error: Maximum allowable position error (m)
+    :type max_position_error: ca.SX
     """
 
     _type = 'ca.SX'
@@ -83,7 +95,9 @@ class Parameters(_ParametersDef, VectorBase):
     def __init__(
             self,
             mass: np.array = np.array(1.0),
-            desired_orientation: np.array = np.array([1.0, 0.0, 0.0, 0.0])):
+            desired_orientation: np.array = np.array([1.0, 0.0, 0.0, 0.0]),
+            desired_position: np.array = np.array([0.0, 0.0, 0.0]),
+            max_position_error: np.array = np.array(1.0)):
         """
         Parameters for the UAV Model.
 
@@ -91,10 +105,16 @@ class Parameters(_ParametersDef, VectorBase):
         :type mass: np.array
         :param desired_orientation: Desired orientation as a quaternion [qw, qx, qy, qz]
         :type desired_orientation: np.array
+        :param desired_position: Desired position in world frame [x, y, z] (m)
+        :type desired_position: np.array
+        :param max_position_error: Maximum allowable position error (m)
+        :type max_position_error: np.array
         """
         super().__init__()
         self.mass = mass
         self.desired_orientation = desired_orientation
+        self.desired_position = desired_position
+        self.max_position_error = max_position_error
 
 
 if __name__ == '__main__':
@@ -105,4 +125,6 @@ if __name__ == '__main__':
     print('Vector:', parameters.vector)
     print('mass:', parameters.mass)
     print('desired_orientation:', parameters.desired_orientation)
+    print('desired_position:', parameters.desired_position)
+    print('max_position_error:', parameters.max_position_error)
     print(parameters)

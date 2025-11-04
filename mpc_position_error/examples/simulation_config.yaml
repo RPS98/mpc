@@ -1,0 +1,23 @@
+sim_config:
+  sim_time: 5.0 # seconds
+  max_speed: 0.5 # m/s
+  waypoints:
+    - [0.0, 0.0, 1.0]
+    - [1.0, 0.0, 1.0]
+  path_facing: true
+controller:
+  solver_definition_path: 'solver_definition_mpc_position_error.yaml'
+  ocp_json_file_path: 'acados_position_mpc/mpc_generated_code/acados_ocp.json'
+  mpc:
+    dt: 0.2 # Delta time between control steps in seconds
+    Q: [20.0, 20.0, 50.0, 0.1, 0.1, 15.0, 0.1, 0.1, 0.1] # Weight for internal states: [x, y, z, roll, pitch, yaw, vx, vy, vz]
+    Qe: [40.0, 40.0, 100.0, 0.1, 0.1, 15.0, 0.1, 0.1, 0.1] # Weight for end states: [x, y, z, roll, pitch, yaw, vx, vy, vz]
+    R: [0.8, 1.0, 1.0, 0.1] # Weight for control inputs: [thrust, wx, wy, wz]
+    lbu: [0.01, -2.0, -2.0, -0.5] # Lower bounds for control inputs: [thrust, wx, wy, wz]
+    ubu: [40.0, 2.0, 2.0, 0.5] # Upper bounds for control inputs: [thrust, wx, wy, wz]
+    ubx: [0.5, 0.5, 0.5] # Upper bounds for states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
+    lbx: [-0.5, -0.5, -0.5] # Lower bounds for states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
+    ubx_c: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.5, 0.5] # Upper bounds for states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
+    lbx_c: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5, -0.5, -0.5] # Lower bounds for states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
+    ubx: [0.5, 0.5, 0.5] # Upper bounds for states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
+    p: [1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0] # Online parameter: [mass, ref_orientation (qw, qx, qy, qz), ref_position (x, y, z), max_position_error]

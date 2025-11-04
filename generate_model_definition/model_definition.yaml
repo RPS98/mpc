@@ -12,3 +12,5 @@ dynamics:
 parameters:
   mass: 1.0 # Mass of the MAV (kg)
   desired_orientation: [1.0, 0.0, 0.0, 0.0] # Desired orientation as a quaternion [qw, qx, qy, qz]
+  desired_position: [0.0, 0.0, 0.0] # Desired position in world frame [x, y, z] (m)
+  max_position_error: 1.0 # Maximum allowable position error (m)

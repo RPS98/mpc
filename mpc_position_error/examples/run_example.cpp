@@ -79,9 +79,9 @@ void position_ref_to_mpc_ref(Eigen::Vector3d waypoint,
   Eigen::Quaterniond desired_orientation = current_orientation;
   if (index == MPC_N) {
     // Position
-    mpc_data->reference_end.set_data(0, waypoint[0]);
-    mpc_data->reference_end.set_data(1, waypoint[1]);
-    mpc_data->reference_end.set_data(2, waypoint[2]);
+    mpc_data->p_params.set_data(5, waypoint[0]);
+    mpc_data->p_params.set_data(6, waypoint[1]);
+    mpc_data->p_params.set_data(7, waypoint[2]);
 
     // Orientation
     if (path_facing) {
@@ -99,9 +99,9 @@ void position_ref_to_mpc_ref(Eigen::Vector3d waypoint,
     throw std::out_of_range("Index out of range.");
   }
   // Position
-  mpc_data->reference.set_data(index, 0, waypoint[0]);
-  mpc_data->reference.set_data(index, 1, waypoint[1]);
-  mpc_data->reference.set_data(index, 2, waypoint[2]);
+  mpc_data->p_params.set_data(index, 5, waypoint[0]);
+  mpc_data->p_params.set_data(index, 6, waypoint[1]);
+  mpc_data->p_params.set_data(index, 7, waypoint[2]);
 
   // Control
   mpc_data->reference.set_data(index, 9, mpc_data->p_params.data[0] * 9.81);  // Thrust
@@ -116,6 +116,7 @@ void position_ref_to_mpc_ref(Eigen::Vector3d waypoint,
   mpc_data->p_params.set_data(index, 2, desired_orientation.x());
   mpc_data->p_params.set_data(index, 3, desired_orientation.y());
   mpc_data->p_params.set_data(index, 4, desired_orientation.z());
+  return;
 }
 
 void print_progress_bar(float progress) {
@@ -170,8 +171,12 @@ void test_mpc_controller(CsvLogger& logger,
     }
     // Solve MPC
     auto mpc_start = std::chrono::high_resolution_clock::now();
-    mpc.solve();
-    auto mpc_end = std::chrono::high_resolution_clock::now();
+    int status     = mpc.solve();
+    auto mpc_end   = std::chrono::high_resolution_clock::now();
+    if (status != ACADOS_SUCCESS) {
+      std::cerr << "MPC solver failed with status " << status << " at time " << t << " s"
+                << std::endl;
+    }
 
     // Simulate
     auto sim_start = std::chrono::high_resolution_clock::now();
@@ -213,7 +218,7 @@ int main(int argc, char** argv) {
   // Params
   acados_mpc::acados_mpc_examples::YamlData yaml_data;
   acados_mpc::acados_mpc_examples::read_yaml_params(
-      "/home/rafa/mpc/mpc_position/examples/simulation_config.yaml", yaml_data);
+      "/home/rafa/mpc/mpc_position_error/examples/simulation_config.yaml", yaml_data);
 
   // Initialize MPC
   acados_mpc::MPC mpc = acados_mpc::MPC();
@@ -227,7 +232,7 @@ int main(int argc, char** argv) {
   mpc.get_state_bounds()->set_lbx(yaml_data.mpc_data.lbx);
   mpc.get_state_bounds()->set_ubx(yaml_data.mpc_data.ubx);
   mpc.update_actuation_bounds();
-  mpc.update_state_bounds();
+  // mpc.update_state_bounds();
   mpc.update_gains();
 
   // Update online params

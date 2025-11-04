@@ -85,17 +85,41 @@ class DroneModel(CaDynamics):
             p.desired_orientation
         )
 
-        self._cost_y_expr = ca.vertcat(
+        self._position_error = self.position_error(
             self._x.position,
+            p.desired_position,
+            p.max_position_error)
+
+        self._cost_y_expr = ca.vertcat(
+            self._position_error,
             self._q_att,
             self._x.linear_velocity,
             self._u.vector)
 
         self._cost_y_expr_e = ca.vertcat(
-            self._x.position,
+            self._position_error,
             self._q_att,
             self._x.linear_velocity)
 
+    @staticmethod
+    def position_error(
+            position: ca.SX,
+            desired_position: ca.SX,
+            max_error: ca.SX) -> ca.SX:
+        """
+        Compute the position error with saturation per component.
+
+        :param position (ca.SX): The current position [x, y, z].
+        :param desired_position (ca.SX): The desired position [x_d, y_d, z_d].
+        :param max_error (ca.SX): Maximum error per axis (m).
+
+        :return (ca.SX): The saturated position error [ex, ey, ez].
+        """
+        error = position - desired_position
+        # Saturate each component between -max_error and +max_error
+        saturated_error = ca.fmin(ca.fmax(error, -max_error), max_error)
+        return saturated_error
+        
     @staticmethod
     def velocity_derivate(
             quaternion: ca.SX,
