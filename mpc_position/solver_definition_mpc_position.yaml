@@ -11,6 +11,18 @@ mpc:
   idxbx_e: [7, 8, 9] # Indices of bounded states at terminal shooting node (N): [x, y, z, roll, pitch, yaw, vx, vy, vz]
   lbx: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5, -0.5, -0.5] # Lower bounds for states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
   ubx: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.5, 0.5] # Upper bounds for states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
+  idxsbx: [0, 1, 2] # Indices of soft bounded states: [x, y, z, roll, pitch, yaw, vx, vy, vz]
+  idxsbx_e: [0, 1, 2] # Indices of soft bounded states at terminal shooting node (N): [x, y, z, roll, pitch, yaw, vx, vy, vz]
+  lsbx: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.2, -0.2, -0.2] # Lower soft bounds for states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
+  usbx: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.2, 0.2, 0.2] # Upper soft bounds for states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
+  Zl: [100.0, 100.0, 100.0] # Diagonal Hessian weights for lower slack variables (dimension = nsbx)
+  Zu: [100.0, 100.0, 100.0] # Diagonal Hessian weights for upper slack variables (dimension = nsbx)
+  zl: [10.0, 10.0, 10.0] # Linear weights for lower slack variables (dimension = nsbx)
+  zu: [10.0, 10.0, 10.0] # Linear weights for upper slack variables (dimension = nsbx)
+  Zl_e: [100.0, 100.0, 100.0] # Diagonal Hessian weights for lower slack variables at terminal shooting node (N) (dimension = nsbx_e)
+  Zu_e: [100.0, 100.0, 100.0] # Diagonal Hessian weights for upper slack variables at terminal shooting node (N) (dimension = nsbx_e)
+  zl_e: [10.0, 10.0, 10.0] # Linear weights for lower slack variables at terminal shooting node (N) (dimension = nsbx_e)
+  zu_e: [10.0, 10.0, 10.0] # Linear weights for upper slack variables at terminal shooting node (N) (dimension = nsbx_e)
   p: [1.0, 1.0, 0.0, 0.0, 0.0] # Online parameter: [mass, ref_orientation (qw, qx, qy, qz)]
 solver:
   export_dir: 'acados_position_mpc/'

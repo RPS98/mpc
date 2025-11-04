@@ -19,4 +19,14 @@ controller:
     ubx: [0.5, 0.5, 0.5] # Upper bounds for states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
     lbx: [-0.5, -0.5, -0.5] # Lower bounds for states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
     ubx: [0.5, 0.5, 0.5] # Upper bounds for states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
+    lsbx: [-3.0, -3.0, -3.0] # Lower soft bounds for states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
+    usbx: [3.0, 3.0, 3.0] # Upper soft bounds for states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
+    Zl: [100.0, 100.0, 100.0] # Diagonal Hessian weights for lower slack variables (dimension = nsbx)
+    Zu: [100.0, 100.0, 100.0] # Diagonal Hessian weights for upper slack variables (dimension = nsbx)
+    zl: [10.0, 10.0, 10.0] # Linear weights for lower slack variables (dimension = nsbx)
+    zu: [10.0, 10.0, 10.0] # Linear weights for upper slack variables (dimension = nsbx)
+    Zl_e: [100.0, 100.0, 100.0] # Diagonal Hessian weights for lower slack variables at terminal shooting node (N) (dimension = nsbx_e)
+    Zu_e: [100.0, 100.0, 100.0] # Diagonal Hessian weights for upper slack variables at terminal shooting node (N) (dimension = nsbx_e)
+    zl_e: [10.0, 10.0, 10.0] # Linear weights for lower slack variables at terminal shooting node (N) (dimension = nsbx_e)
+    zu_e: [10.0, 10.0, 10.0] # Linear weights for upper slack variables at terminal shooting node (N) (dimension = nsbx_e)
     p: [1.0, 1.0, 0.0, 0.0, 0.0] # Online parameter: [mass, ref_orientation (qw, qx, qy, qz)]

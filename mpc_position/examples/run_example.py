@@ -223,7 +223,17 @@ if __name__ == '__main__':
         lbu=mpc_params.lbu,
         ubu=mpc_params.ubu,
         lbx=mpc_params.lbx,
-        ubx=mpc_params.ubx
+        ubx=mpc_params.ubx,
+        lsbx=mpc_params.lsbx,
+        usbx=mpc_params.usbx,
+        Zl=mpc_params.Zl,
+        Zu=mpc_params.Zu,
+        zl=mpc_params.zl,
+        zu=mpc_params.zu,
+        Zl_e=mpc_params.Zl_e,
+        Zu_e=mpc_params.Zu_e,
+        zl_e=mpc_params.zl_e,
+        zu_e=mpc_params.zu_e,
     )
 
     mpc = MPC(

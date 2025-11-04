@@ -168,6 +168,7 @@ class AcadosMPCSolver:
         # Upper bounds on u at shooting nodes (0 to N-1)
         constraints.ubu = solver_definition.mpc.ubu
 
+        # Hard constraints on states
         if solver_definition.mpc.idxbx.shape[0] > 0:
             # Indices of bounds on x at shooting nodes (1 to N)
             constraints.idxbx = solver_definition.mpc.idxbx
@@ -182,6 +183,36 @@ class AcadosMPCSolver:
             constraints.lbx_e = solver_definition.mpc.lbx[constraints.idxbx_e]
             # Upper bounds on x at terminal shooting node (N)
             constraints.ubx_e = solver_definition.mpc.ubx[constraints.idxbx_e]
+        
+        # Soft constraints on states
+        if hasattr(solver_definition.mpc, 'idxsbx') and solver_definition.mpc.idxsbx is not None:
+            if solver_definition.mpc.idxsbx.shape[0] > 0:
+                # Indices of soft bounds on x within the indices of bounds on x at stages (1 to N-1)
+                constraints.idxsbx = solver_definition.mpc.idxsbx
+                # Lower bounds on slacks corresponding to soft lower bounds on x at stages (1 to N-1)
+                constraints.lsbx = solver_definition.mpc.lsbx[constraints.idxsbx]
+                # Upper bounds on slacks corresponding to soft upper bounds on x at stages (1 to N-1)
+                constraints.usbx = solver_definition.mpc.usbx[constraints.idxsbx]
+                
+                # Cost for state bounds violation
+                cost.Zl = solver_definition.mpc.Zl
+                cost.Zu = solver_definition.mpc.Zu
+                cost.zl = solver_definition.mpc.zl
+                cost.zu = solver_definition.mpc.zu
+        if hasattr(solver_definition.mpc, 'idxsbx_e') and solver_definition.mpc.idxsbx_e is not None:
+            if solver_definition.mpc.idxsbx_e.shape[0] > 0:
+                # Indices of soft bounds on x within the indices of bounds on x at terminal stage (N)
+                constraints.idxsbx_e = solver_definition.mpc.idxsbx_e
+                # Lower bounds on slacks corresponding to soft lower bounds on x at terminal stage (N)
+                constraints.lsbx_e = solver_definition.mpc.lsbx[constraints.idxsbx_e]
+                # Upper bounds on slacks corresponding to soft upper bounds on x at terminal stage (N)
+                constraints.usbx_e = solver_definition.mpc.usbx[constraints.idxsbx_e]
+                
+                # Cost for state bounds violation at terminal stage
+                cost.Zl_e = solver_definition.mpc.Zl_e
+                cost.Zu_e = solver_definition.mpc.Zu_e
+                cost.zl_e = solver_definition.mpc.zl_e
+                cost.zu_e = solver_definition.mpc.zu_e
 
         # Solver options
         solver_options = ocp.solver_options

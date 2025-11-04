@@ -68,6 +68,10 @@ class MPCParameters():
     :type lbx: np.ndarray
     :param ubx: Upper bounds on state.
     :type ubx: np.ndarray
+    :param lsbx: Lower soft bounds on state.
+    :type lsbx: np.ndarray
+    :param usbx: Upper soft bounds on state.
+    :type usbx: np.ndarray
     """
     dt: float
     Q: np.ndarray
@@ -76,8 +80,18 @@ class MPCParameters():
     p: np.ndarray
     lbu: np.ndarray
     ubu: np.ndarray
-    lbx: np.ndarray
-    ubx: np.ndarray
+    lbx: np.ndarray = None
+    ubx: np.ndarray = None
+    lsbx: np.ndarray = None
+    usbx: np.ndarray = None
+    Zl: np.ndarray = None
+    Zu: np.ndarray = None
+    zl: np.ndarray = None
+    zu: np.ndarray = None
+    Zl_e: np.ndarray = None
+    Zu_e: np.ndarray = None
+    zl_e: np.ndarray = None
+    zu_e: np.ndarray = None
 
     def __str__(self):
         return (
@@ -90,6 +104,16 @@ class MPCParameters():
             f'ubu: {self.ubu}\n'
             f'lbx: {self.lbx}\n'
             f'ubx: {self.ubx}\n'
+            f'lsbx: {self.lsbx}\n'
+            f'usbx: {self.usbx}\n'
+            f'Zl: {self.Zl}\n'
+            f'Zu: {self.Zu}\n'
+            f'zl: {self.zl}\n'
+            f'zu: {self.zu}\n'
+            f'Zl_e: {self.Zl_e}\n'
+            f'Zu_e: {self.Zu_e}\n'
+            f'zl_e: {self.zl_e}\n'
+            f'zu_e: {self.zu_e}\n'
         )
 
 
@@ -134,6 +158,8 @@ class MPC():
         self._ubu_size = self.acados_ocp_solver.constraints_get(0, 'ubu').shape[0]
         self._lbx_size = self.acados_ocp_solver.constraints_get(1, 'lbx').shape[0]
         self._ubx_size = self.acados_ocp_solver.constraints_get(1, 'ubx').shape[0]
+        self._lsbx_size = self.acados_ocp_solver.constraints_get(1, 'lsbx').shape[0]
+        self._usbx_size = self.acados_ocp_solver.constraints_get(1, 'usbx').shape[0]
 
         print('MPC parameters:')
         print(f'Horizon N={self.N}, tf={self.tf}, dt={self.dt}')
@@ -147,6 +173,8 @@ class MPC():
         print(f'  ubu_size: {self.ubu_size}')
         print(f'  lbx_size: {self.lbx_size}')
         print(f'  ubx_size: {self.ubx_size}')
+        print(f'  lsbx_size: {self.lsbx_size}')
+        print(f'  usbx_size: {self.usbx_size}')
 
         # Internal variables
         self.thrust = 0.0  # Thrust (N)
@@ -213,6 +241,16 @@ class MPC():
     def ubx_size(self) -> int:
         """Get the size of upper state bounds."""
         return self._ubx_size
+
+    @property
+    def lsbx_size(self) -> int:
+        """Get the size of lower soft state bounds."""
+        return self._lsbx_size
+
+    @property
+    def usbx_size(self) -> int:
+        """Get the size of upper soft state bounds."""
+        return self._usbx_size
 
     @property
     def states(self):
