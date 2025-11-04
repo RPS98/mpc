@@ -424,9 +424,9 @@ struct ActuationBounds {
  * StateBounds lbx and ubx for the MPC.
  */
 struct StateBounds {
-  static constexpr size_t Nx = MPC_NX;
-  std::array<double, MPC_NX> lbx;
-  std::array<double, MPC_NX> ubx;
+  static constexpr size_t Nx = MPC_NBX;
+  std::array<double, MPC_NBX> lbx;
+  std::array<double, MPC_NBX> ubx;
 
   /**
    * @brief Constructor
@@ -450,9 +450,9 @@ struct StateBounds {
   /**
    * @brief Get the lbx array
    *
-   * @return std::array<double, MPC_NX> lbx.
+   * @return std::array<double, MPC_NBX> lbx.
    */
-  std::array<double, MPC_NX> get_lbx_array() const;
+  std::array<double, MPC_NBX> get_lbx_array() const;
 
   /**
    * @brief Get the ubx array
@@ -471,9 +471,9 @@ struct StateBounds {
   /**
    * @brief Get the ubx array
    *
-   * @return std::array<double, MPC_NX> ubx.
+   * @return std::array<double, MPC_NBX> ubx.
    */
-  std::array<double, MPC_NX> get_ubx_array() const;
+  std::array<double, MPC_NBX> get_ubx_array() const;
 
   /**
    * @brief Set the bounds
@@ -487,7 +487,7 @@ struct StateBounds {
    *
    * @param lbx lbx.
    */
-  void set_lbx(const std::array<double, MPC_NX>& lbx);
+  void set_lbx(const std::array<double, MPC_NBX>& lbx);
 
   /**
    * @brief Set the lbx at index
@@ -502,7 +502,7 @@ struct StateBounds {
    *
    * @param ubx ubx.
    */
-  void set_ubx(const std::array<double, MPC_NX>& ubx);
+  void set_ubx(const std::array<double, MPC_NBX>& ubx);
 
   /**
    * @brief Set the ubx at index

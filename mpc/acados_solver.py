@@ -280,10 +280,9 @@ class AcadosMPCSolver:
                 f"Export directory does not exist: {base_export_dir_abs}"
             )
 
-        # Get cpp_interface source directory (relative to the mpc module)
+        # Get cpp_interface source directory (inside the mpc module)
         mpc_module_dir = os.path.dirname(os.path.abspath(__file__))
-        workspace_root = os.path.dirname(mpc_module_dir)
-        cpp_interface_src = os.path.join(workspace_root, 'cpp_interface')
+        cpp_interface_src = os.path.join(mpc_module_dir, 'cpp_interface')
 
         # Verify that cpp_interface source exists
         if not os.path.exists(cpp_interface_src):

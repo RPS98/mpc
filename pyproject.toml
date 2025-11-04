@@ -19,5 +19,8 @@ requires-python = ">=3.8"
 [tool.setuptools.packages.find]
 include = ["mpc", "mpc.*"]
 
+[tool.setuptools.package-data]
+"*" = ["cpp_interface/**/*"]
+
 [project.scripts]
 mpc-acados-solver = "mpc.acados_solver:main"
