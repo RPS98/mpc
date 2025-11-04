@@ -145,6 +145,11 @@ void MPC::update_state_bounds() {
   // lower state_bounds on u at shooting nodes (0 to N-1)
   // upper state_bounds on u at shooting nodes (0 to N-1)
   for (int i = 1; i < MPC_N; i++) {
+    int idxbx[] = {7, 8, 9};
+    status_ =
+        ocp_nlp_constraints_model_set(nlp_config_, nlp_dims_, nlp_in_, nlp_out_, i, "idxbx", idxbx);
+    validateStatus(status_);
+
     status_ = ocp_nlp_constraints_model_set(nlp_config_, nlp_dims_, nlp_in_, nlp_out_, i, "lbx",
                                             state_bounds_.lbx.data());
     validateStatus(status_);
@@ -152,6 +157,7 @@ void MPC::update_state_bounds() {
                                             state_bounds_.ubx.data());
     validateStatus(status_);
   }
+  return;
 }
 
 }  // namespace acados_mpc
