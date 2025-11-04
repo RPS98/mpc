@@ -154,4 +154,60 @@ void MPC::update_state_bounds() {
   }
 }
 
+void MPC::update_soft_state_bounds() {
+  // lower soft state bounds at shooting nodes (1 to N-1)
+  // upper soft state bounds at shooting nodes (1 to N-1)
+  for (int i = 1; i < MPC_N; i++) {
+    status_ = ocp_nlp_constraints_model_set(nlp_config_, nlp_dims_, nlp_in_, nlp_out_, i, "lsbx",
+                                            soft_state_bounds_.lsbx.data());
+    validateStatus(status_);
+    status_ = ocp_nlp_constraints_model_set(nlp_config_, nlp_dims_, nlp_in_, nlp_out_, i, "usbx",
+                                            soft_state_bounds_.usbx.data());
+    validateStatus(status_);
+  }
+
+  // lower soft state bounds at terminal shooting node (N)
+  // upper soft state bounds at terminal shooting node (N)
+  status_ = ocp_nlp_constraints_model_set(nlp_config_, nlp_dims_, nlp_in_, nlp_out_, MPC_N, "lsbx",
+                                          soft_state_bounds_.lsbx.data());
+  validateStatus(status_);
+  status_ = ocp_nlp_constraints_model_set(nlp_config_, nlp_dims_, nlp_in_, nlp_out_, MPC_N, "usbx",
+                                          soft_state_bounds_.usbx.data());
+  validateStatus(status_);
+}
+
+void MPC::update_slack_weights() {
+  // slack weights at shooting nodes (1 to N-1)
+  for (int i = 1; i < MPC_N; i++) {
+    status_ =
+        ocp_nlp_cost_model_set(nlp_config_, nlp_dims_, nlp_in_, i, "Zl", slack_weights_.Zl.data());
+    validateStatus(status_);
+    status_ =
+        ocp_nlp_cost_model_set(nlp_config_, nlp_dims_, nlp_in_, i, "Zu", slack_weights_.Zu.data());
+    validateStatus(status_);
+    status_ =
+        ocp_nlp_cost_model_set(nlp_config_, nlp_dims_, nlp_in_, i, "zl", slack_weights_.zl.data());
+    validateStatus(status_);
+    status_ =
+        ocp_nlp_cost_model_set(nlp_config_, nlp_dims_, nlp_in_, i, "zu", slack_weights_.zu.data());
+    validateStatus(status_);
+  }
+}
+
+void MPC::update_slack_weights_end() {
+  // slack weights at terminal shooting node (N)
+  status_ = ocp_nlp_cost_model_set(nlp_config_, nlp_dims_, nlp_in_, MPC_N, "Zl",
+                                   slack_weights_end_.Zl_e.data());
+  validateStatus(status_);
+  status_ = ocp_nlp_cost_model_set(nlp_config_, nlp_dims_, nlp_in_, MPC_N, "Zu",
+                                   slack_weights_end_.Zu_e.data());
+  validateStatus(status_);
+  status_ = ocp_nlp_cost_model_set(nlp_config_, nlp_dims_, nlp_in_, MPC_N, "zl",
+                                   slack_weights_end_.zl_e.data());
+  validateStatus(status_);
+  status_ = ocp_nlp_cost_model_set(nlp_config_, nlp_dims_, nlp_in_, MPC_N, "zu",
+                                   slack_weights_end_.zu_e.data());
+  validateStatus(status_);
+}
+
 }  // namespace acados_mpc

@@ -119,6 +119,16 @@ struct YamlMPCData {
   std::array<double, acados_mpc::ActuationBounds::Nu> ubu;
   std::array<double, acados_mpc::StateBounds::Nx> lbx;
   std::array<double, acados_mpc::StateBounds::Nx> ubx;
+  std::array<double, acados_mpc::SoftStateBounds::Nsbx> lsbx;
+  std::array<double, acados_mpc::SoftStateBounds::Nsbx> usbx;
+  std::array<double, acados_mpc::SlackWeights::Nsbx> Zl;
+  std::array<double, acados_mpc::SlackWeights::Nsbx> Zu;
+  std::array<double, acados_mpc::SlackWeights::Nsbx> zl;
+  std::array<double, acados_mpc::SlackWeights::Nsbx> zu;
+  std::array<double, acados_mpc::SlackWeightsEnd::Nsbx_e> Zl_e;
+  std::array<double, acados_mpc::SlackWeightsEnd::Nsbx_e> Zu_e;
+  std::array<double, acados_mpc::SlackWeightsEnd::Nsbx_e> zl_e;
+  std::array<double, acados_mpc::SlackWeightsEnd::Nsbx_e> zu_e;
   std::array<double, acados_mpc::OnlineParams::Np> p;
 };
 
@@ -154,15 +164,25 @@ void read_yaml_params(const std::string& file_path, YamlData& data) {
   data.path_facing = config["sim_config"]["path_facing"].as<bool>();
 
   // Read MPC params
-  double dt               = config["controller"]["mpc"]["dt"].as<double>();
-  std::vector<double> Q   = config["controller"]["mpc"]["Q"].as<std::vector<double>>();
-  std::vector<double> Qe  = config["controller"]["mpc"]["Qe"].as<std::vector<double>>();
-  std::vector<double> R   = config["controller"]["mpc"]["R"].as<std::vector<double>>();
-  std::vector<double> lbu = config["controller"]["mpc"]["lbu"].as<std::vector<double>>();
-  std::vector<double> ubu = config["controller"]["mpc"]["ubu"].as<std::vector<double>>();
-  std::vector<double> lbx = config["controller"]["mpc"]["lbx"].as<std::vector<double>>();
-  std::vector<double> ubx = config["controller"]["mpc"]["ubx"].as<std::vector<double>>();
-  std::vector<double> p   = config["controller"]["mpc"]["p"].as<std::vector<double>>();
+  double dt                = config["controller"]["mpc"]["dt"].as<double>();
+  std::vector<double> Q    = config["controller"]["mpc"]["Q"].as<std::vector<double>>();
+  std::vector<double> Qe   = config["controller"]["mpc"]["Qe"].as<std::vector<double>>();
+  std::vector<double> R    = config["controller"]["mpc"]["R"].as<std::vector<double>>();
+  std::vector<double> lbu  = config["controller"]["mpc"]["lbu"].as<std::vector<double>>();
+  std::vector<double> ubu  = config["controller"]["mpc"]["ubu"].as<std::vector<double>>();
+  std::vector<double> lbx  = config["controller"]["mpc"]["lbx"].as<std::vector<double>>();
+  std::vector<double> ubx  = config["controller"]["mpc"]["ubx"].as<std::vector<double>>();
+  std::vector<double> lsbx = config["controller"]["mpc"]["lsbx"].as<std::vector<double>>();
+  std::vector<double> usbx = config["controller"]["mpc"]["usbx"].as<std::vector<double>>();
+  std::vector<double> Zl   = config["controller"]["mpc"]["Zl"].as<std::vector<double>>();
+  std::vector<double> Zu   = config["controller"]["mpc"]["Zu"].as<std::vector<double>>();
+  std::vector<double> zl   = config["controller"]["mpc"]["zl"].as<std::vector<double>>();
+  std::vector<double> zu   = config["controller"]["mpc"]["zu"].as<std::vector<double>>();
+  std::vector<double> Zl_e = config["controller"]["mpc"]["Zl_e"].as<std::vector<double>>();
+  std::vector<double> Zu_e = config["controller"]["mpc"]["Zu_e"].as<std::vector<double>>();
+  std::vector<double> zl_e = config["controller"]["mpc"]["zl_e"].as<std::vector<double>>();
+  std::vector<double> zu_e = config["controller"]["mpc"]["zu_e"].as<std::vector<double>>();
+  std::vector<double> p    = config["controller"]["mpc"]["p"].as<std::vector<double>>();
 
   data.mpc_data.dt = dt;
   for (int i = 0; i < acados_mpc::Gains::Nq; i++) {
@@ -188,6 +208,42 @@ void read_yaml_params(const std::string& file_path, YamlData& data) {
     }
   } else {
     std::cout << "Warning: State bounds size mismatch. Skipping state bounds update." << std::endl;
+  }
+  if (lsbx.size() == acados_mpc::SoftStateBounds::Nsbx &&
+      usbx.size() == acados_mpc::SoftStateBounds::Nsbx) {
+    for (int i = 0; i < acados_mpc::SoftStateBounds::Nsbx; i++) {
+      data.mpc_data.lsbx[i] = lsbx[i];
+      data.mpc_data.usbx[i] = usbx[i];
+    }
+  } else {
+    std::cout << "Warning: Soft state bounds size mismatch. Skipping soft state bounds update."
+              << std::endl;
+  }
+  if (Zl.size() == acados_mpc::SlackWeights::Nsbx && Zu.size() == acados_mpc::SlackWeights::Nsbx &&
+      zl.size() == acados_mpc::SlackWeights::Nsbx && zu.size() == acados_mpc::SlackWeights::Nsbx) {
+    for (int i = 0; i < acados_mpc::SlackWeights::Nsbx; i++) {
+      data.mpc_data.Zl[i] = Zl[i];
+      data.mpc_data.Zu[i] = Zu[i];
+      data.mpc_data.zl[i] = zl[i];
+      data.mpc_data.zu[i] = zu[i];
+    }
+  } else {
+    std::cout << "Warning: Slack weights size mismatch. Skipping slack weights update."
+              << std::endl;
+  }
+  if (Zl_e.size() == acados_mpc::SlackWeightsEnd::Nsbx_e &&
+      Zu_e.size() == acados_mpc::SlackWeightsEnd::Nsbx_e &&
+      zl_e.size() == acados_mpc::SlackWeightsEnd::Nsbx_e &&
+      zu_e.size() == acados_mpc::SlackWeightsEnd::Nsbx_e) {
+    for (int i = 0; i < acados_mpc::SlackWeightsEnd::Nsbx_e; i++) {
+      data.mpc_data.Zl_e[i] = Zl_e[i];
+      data.mpc_data.Zu_e[i] = Zu_e[i];
+      data.mpc_data.zl_e[i] = zl_e[i];
+      data.mpc_data.zu_e[i] = zu_e[i];
+    }
+  } else {
+    std::cout << "Warning: Slack weights end size mismatch. Skipping slack weights end update."
+              << std::endl;
   }
   for (int i = 0; i < acados_mpc::OnlineParams::Np; i++) {
     data.mpc_data.p[i] = p[i];

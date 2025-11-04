@@ -226,8 +226,21 @@ int main(int argc, char** argv) {
   mpc.get_actuation_bounds()->set_ubu(yaml_data.mpc_data.ubu);
   mpc.get_state_bounds()->set_lbx(yaml_data.mpc_data.lbx);
   mpc.get_state_bounds()->set_ubx(yaml_data.mpc_data.ubx);
+  mpc.get_soft_state_bounds()->set_lsbx(yaml_data.mpc_data.lsbx);
+  mpc.get_soft_state_bounds()->set_usbx(yaml_data.mpc_data.usbx);
+  mpc.get_slack_weights()->set_Zl(yaml_data.mpc_data.Zl);
+  mpc.get_slack_weights()->set_Zu(yaml_data.mpc_data.Zu);
+  mpc.get_slack_weights()->set_zl(yaml_data.mpc_data.zl);
+  mpc.get_slack_weights()->set_zu(yaml_data.mpc_data.zu);
+  mpc.get_slack_weights_end()->set_Zl_e(yaml_data.mpc_data.Zl_e);
+  mpc.get_slack_weights_end()->set_Zu_e(yaml_data.mpc_data.Zu_e);
+  mpc.get_slack_weights_end()->set_zl_e(yaml_data.mpc_data.zl_e);
+  mpc.get_slack_weights_end()->set_zu_e(yaml_data.mpc_data.zu_e);
   mpc.update_actuation_bounds();
   mpc.update_state_bounds();
+  mpc.update_soft_state_bounds();
+  mpc.update_slack_weights();
+  mpc.update_slack_weights_end();
   mpc.update_gains();
 
   // Update online params

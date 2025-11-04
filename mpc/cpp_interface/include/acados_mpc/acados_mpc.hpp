@@ -150,6 +150,27 @@ public:
    */
   StateBounds* get_state_bounds() { return &state_bounds_; }
 
+  /**
+   * @brief Get the SoftStateBounds pointer to modify the soft_state_bounds.
+   *
+   * update_soft_state_bounds() must be called to update the soft_state_bounds.
+   */
+  SoftStateBounds* get_soft_state_bounds() { return &soft_state_bounds_; }
+
+  /**
+   * @brief Get the SlackWeights pointer to modify the slack_weights.
+   *
+   * update_slack_weights() must be called to update the slack_weights.
+   */
+  SlackWeights* get_slack_weights() { return &slack_weights_; }
+
+  /**
+   * @brief Get the SlackWeightsEnd pointer to modify the slack_weights_end.
+   *
+   * update_slack_weights_end() must be called to update the slack_weights_end.
+   */
+  SlackWeightsEnd* get_slack_weights_end() { return &slack_weights_end_; }
+
   // Setters
 
   /**
@@ -175,6 +196,30 @@ public:
    * It can be accessed using get_state_bounds().
    */
   void update_state_bounds();
+
+  /**
+   * @brief Update the soft_state_bounds lsbx and usbx.
+   *
+   * It uses the SoftStateBounds pointer to update the soft_state_bounds.
+   * It can be accessed using get_soft_state_bounds().
+   */
+  void update_soft_state_bounds();
+
+  /**
+   * @brief Update the slack_weights Zl, Zu, zl, zu.
+   *
+   * It uses the SlackWeights pointer to update the slack_weights.
+   * It can be accessed using get_slack_weights().
+   */
+  void update_slack_weights();
+
+  /**
+   * @brief Update the slack_weights_end Zl_e, Zu_e, zl_e, zu_e.
+   *
+   * It uses the SlackWeightsEnd pointer to update the slack_weights_end.
+   * It can be accessed using get_slack_weights_end().
+   */
+  void update_slack_weights_end();
 
 private:
   /**
@@ -230,9 +275,12 @@ private:
   MPCData mpc_data_ = MPCData();
 
   // Parameters
-  Gains gains_                      = Gains();
-  ActuationBounds actuation_bounds_ = ActuationBounds();
-  StateBounds state_bounds_         = StateBounds();
+  Gains gains_                       = Gains();
+  ActuationBounds actuation_bounds_  = ActuationBounds();
+  StateBounds state_bounds_          = StateBounds();
+  SoftStateBounds soft_state_bounds_ = SoftStateBounds();
+  SlackWeights slack_weights_        = SlackWeights();
+  SlackWeightsEnd slack_weights_end_ = SlackWeightsEnd();
 };
 }  // namespace acados_mpc
 

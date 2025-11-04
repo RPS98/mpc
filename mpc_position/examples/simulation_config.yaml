@@ -16,11 +16,10 @@ controller:
     R: [0.8, 1.0, 1.0, 0.1] # Weight for control inputs: [thrust, wx, wy, wz]
     lbu: [0.01, -2.0, -2.0, -0.5] # Lower bounds for control inputs: [thrust, wx, wy, wz]
     ubu: [40.0, 2.0, 2.0, 0.5] # Upper bounds for control inputs: [thrust, wx, wy, wz]
-    ubx: [0.5, 0.5, 0.5] # Upper bounds for states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
-    lbx: [-0.5, -0.5, -0.5] # Lower bounds for states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
-    ubx: [0.5, 0.5, 0.5] # Upper bounds for states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
-    lsbx: [-3.0, -3.0, -3.0] # Lower soft bounds for states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
-    usbx: [3.0, 3.0, 3.0] # Upper soft bounds for states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
+    lbx: [-0.5, -0.5, -0.5] # Lower bounds for states: [vx, vy, vz]
+    ubx: [0.5, 0.5, 0.5] # Upper bounds for states: [vx, vy, vz]
+    lsbx: [-2.0, -2.0, -2.0] # Lower soft bounds for states: [vx, vy, vz]
+    usbx: [2.0, 2.0, 2.0] # Upper soft bounds for states: [vx, vy, vz]
     Zl: [100.0, 100.0, 100.0] # Diagonal Hessian weights for lower slack variables (dimension = nsbx)
     Zu: [100.0, 100.0, 100.0] # Diagonal Hessian weights for upper slack variables (dimension = nsbx)
     zl: [10.0, 10.0, 10.0] # Linear weights for lower slack variables (dimension = nsbx)
