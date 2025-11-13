@@ -48,22 +48,26 @@ class _StateDef:
     _names: ClassVar[List[str]] = [
         'position',
         'orientation',
-        'linear_velocity'
+        'linear_velocity',
+        'theta'
     ]
     _names_sx: ClassVar[List[str]] = [
         'sx_position',
         'sx_orientation',
-        'sx_linear_velocity'
+        'sx_linear_velocity',
+        'sx_theta'
     ]
     _sizes: ClassVar[List[int]] = [
         3,
         4,
-        3
+        3,
+        1
     ]
 
     position: Union[ca.SX, ca.DM]
     orientation: Union[ca.SX, ca.DM]
     linear_velocity: Union[ca.SX, ca.DM]
+    theta: Union[ca.SX, ca.DM]
 
 
 class CaState(_StateDef, VectorBase):
@@ -76,6 +80,8 @@ class CaState(_StateDef, VectorBase):
     :type orientation: ca.SX
     :param linear_velocity: Linear velocity in world frame [vx, vy, vz] (m/s)
     :type linear_velocity: ca.SX
+    :param theta: Contouring progress along the path
+    :type theta: ca.SX
     """
 
     _type = 'ca.SX'
@@ -90,7 +96,8 @@ class State(_StateDef, VectorBase):
             self,
             position: np.array = np.array([0.0, 0.0, 0.0]),
             orientation: np.array = np.array([1.0, 0.0, 0.0, 0.0]),
-            linear_velocity: np.array = np.array([0.0, 0.0, 0.0])):
+            linear_velocity: np.array = np.array([0.0, 0.0, 0.0]),
+            theta: np.array = np.array(0.0)):
         """
         State for the UAV Model.
 
@@ -100,11 +107,14 @@ class State(_StateDef, VectorBase):
         :type orientation: np.array
         :param linear_velocity: Linear velocity in world frame [vx, vy, vz] (m/s)
         :type linear_velocity: np.array
+        :param theta: Contouring progress along the path
+        :type theta: np.array
         """
         super().__init__()
         self.position = position
         self.orientation = orientation
         self.linear_velocity = linear_velocity
+        self.theta = theta
 
 
 if __name__ == '__main__':
@@ -116,4 +126,5 @@ if __name__ == '__main__':
     print('position:', state.position)
     print('orientation:', state.orientation)
     print('linear_velocity:', state.linear_velocity)
+    print('theta:', state.theta)
     print(state)

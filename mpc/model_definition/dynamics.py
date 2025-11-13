@@ -48,22 +48,26 @@ class _DynamicsDef:
     _names: ClassVar[List[str]] = [
         'position_dot',
         'orientation_dot',
-        'linear_velocity_dot'
+        'linear_velocity_dot',
+        'theta_dot'
     ]
     _names_sx: ClassVar[List[str]] = [
         'sx_position_dot',
         'sx_orientation_dot',
-        'sx_linear_velocity_dot'
+        'sx_linear_velocity_dot',
+        'sx_theta_dot'
     ]
     _sizes: ClassVar[List[int]] = [
         3,
         4,
-        3
+        3,
+        1
     ]
 
     position_dot: Union[ca.SX, ca.DM]
     orientation_dot: Union[ca.SX, ca.DM]
     linear_velocity_dot: Union[ca.SX, ca.DM]
+    theta_dot: Union[ca.SX, ca.DM]
 
 
 class CaDynamics(_DynamicsDef, VectorBase):
@@ -76,6 +80,8 @@ class CaDynamics(_DynamicsDef, VectorBase):
     :type orientation_dot: ca.SX
     :param linear_velocity_dot: Time derivative of linear velocity in world frame [ax, ay, az] (m/s^2)
     :type linear_velocity_dot: ca.SX
+    :param theta_dot: Time derivative of contouring progress along the path
+    :type theta_dot: ca.SX
     """
 
     _type = 'ca.SX'
@@ -90,7 +96,8 @@ class Dynamics(_DynamicsDef, VectorBase):
             self,
             position_dot: np.array = np.array([0.0, 0.0, 0.0]),
             orientation_dot: np.array = np.array([0.0, 0.0, 0.0, 0.0]),
-            linear_velocity_dot: np.array = np.array([0.0, 0.0, 0.0])):
+            linear_velocity_dot: np.array = np.array([0.0, 0.0, 0.0]),
+            theta_dot: np.array = np.array(0.0)):
         """
         Dynamics for the UAV Model.
 
@@ -100,11 +107,14 @@ class Dynamics(_DynamicsDef, VectorBase):
         :type orientation_dot: np.array
         :param linear_velocity_dot: Time derivative of linear velocity in world frame [ax, ay, az] (m/s^2)
         :type linear_velocity_dot: np.array
+        :param theta_dot: Time derivative of contouring progress along the path
+        :type theta_dot: np.array
         """
         super().__init__()
         self.position_dot = position_dot
         self.orientation_dot = orientation_dot
         self.linear_velocity_dot = linear_velocity_dot
+        self.theta_dot = theta_dot
 
 
 if __name__ == '__main__':
@@ -116,4 +126,5 @@ if __name__ == '__main__':
     print('position_dot:', dynamics.position_dot)
     print('orientation_dot:', dynamics.orientation_dot)
     print('linear_velocity_dot:', dynamics.linear_velocity_dot)
+    print('theta_dot:', dynamics.theta_dot)
     print(dynamics)

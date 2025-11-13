@@ -47,19 +47,23 @@ class _ActuationDef:
 
     _names: ClassVar[List[str]] = [
         'thrust',
-        'angular_velocity'
+        'angular_velocity',
+        'theta_velocity'
     ]
     _names_sx: ClassVar[List[str]] = [
         'sx_thrust',
-        'sx_angular_velocity'
+        'sx_angular_velocity',
+        'sx_theta_velocity'
     ]
     _sizes: ClassVar[List[int]] = [
         1,
-        3
+        3,
+        1
     ]
 
     thrust: Union[ca.SX, ca.DM]
     angular_velocity: Union[ca.SX, ca.DM]
+    theta_velocity: Union[ca.SX, ca.DM]
 
 
 class CaActuation(_ActuationDef, VectorBase):
@@ -70,6 +74,8 @@ class CaActuation(_ActuationDef, VectorBase):
     :type thrust: ca.SX
     :param angular_velocity: Angular velocity in body frame [wx, wy, wz] (rad/s)
     :type angular_velocity: ca.SX
+    :param theta_velocity: Rate of change of contouring progress along the path
+    :type theta_velocity: ca.SX
     """
 
     _type = 'ca.SX'
@@ -83,7 +89,8 @@ class Actuation(_ActuationDef, VectorBase):
     def __init__(
             self,
             thrust: np.array = np.array(0.0),
-            angular_velocity: np.array = np.array([0.0, 0.0, 0.0])):
+            angular_velocity: np.array = np.array([0.0, 0.0, 0.0]),
+            theta_velocity: np.array = np.array(0.0)):
         """
         Actuation for the UAV Model.
 
@@ -91,10 +98,13 @@ class Actuation(_ActuationDef, VectorBase):
         :type thrust: np.array
         :param angular_velocity: Angular velocity in body frame [wx, wy, wz] (rad/s)
         :type angular_velocity: np.array
+        :param theta_velocity: Rate of change of contouring progress along the path
+        :type theta_velocity: np.array
         """
         super().__init__()
         self.thrust = thrust
         self.angular_velocity = angular_velocity
+        self.theta_velocity = theta_velocity
 
 
 if __name__ == '__main__':
@@ -105,4 +115,5 @@ if __name__ == '__main__':
     print('Vector:', actuation.vector)
     print('thrust:', actuation.thrust)
     print('angular_velocity:', actuation.angular_velocity)
+    print('theta_velocity:', actuation.theta_velocity)
     print(actuation)
