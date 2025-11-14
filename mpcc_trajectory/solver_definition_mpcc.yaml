@@ -1,0 +1,51 @@
+mpc:
+  N_horizon: 30 # Prediction steps
+  tf: 2.0 # Prediction horizon in seconds
+  Q: [0.0, 0.0, 0.0, 0.0, 0.0] # Weight for internal states: [contouring, lag, roll, pitch, yaw]
+  Qe: [0.0, 0.0, 0.0, 0.0, 0.0] # Weight for end states: [contouring, lag, roll, pitch, yaw]
+  R: [0.8, 0.5, 0.5, 0.5, 0.5] # Weight for control inputs: [thrust, wx, wy, wz, v_theta]
+  idxbu: [0, 1, 2, 3, 4] # Indices of bounded control inputs: [thrust, wx, wy, wz, v_theta]
+  lbu: [0.01, -3.0, -3.0, -3.0, 0.0] # Lower bounds for control inputs: [thrust, wx, wy, wz, v_theta]
+  ubu: [35.0, 3.0, 3.0, 3.0, 2.0] # Upper bounds for control inputs: [thrust, wx, wy, wz, v_theta]
+  idxbx: [] # Indices of bounded states: [x, y, z, roll, pitch, yaw, vx, vy, vz]
+  idxbx_e: [] # Indices of bounded states at terminal shooting node (N): [x, y, z, roll, pitch, yaw, vx, vy, vz]
+  lbx: [] # Lower bounds for states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
+  ubx: [] # Upper bounds for states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
+  idxsbx: [] # Indices of soft bounded states: [x, y, z, roll, pitch, yaw, vx, vy, vz]
+  idxsbx_e: [] # Indices of soft bounded states at terminal shooting node (N): [x, y, z, roll, pitch, yaw, vx, vy, vz]
+  lsbx: [] # Lower soft bounds for states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
+  usbx: [] # Upper soft bounds for states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
+  Zl: [] # Diagonal Hessian weights for lower slack variables (dimension = nsbx)
+  Zu: [] # Diagonal Hessian weights for upper slack variables (dimension = nsbx)
+  zl: [] # Linear weights for lower slack variables (dimension = nsbx)
+  zu: [] # Linear weights for upper slack variables (dimension = nsbx)
+  Zl_e: [] # Diagonal Hessian weights for lower slack variables at terminal shooting node (N) (dimension = nsbx_e)
+  Zu_e: [] # Diagonal Hessian weights for upper slack variables at terminal shooting node (N) (dimension = nsbx_e)
+  zl_e: [] # Linear weights for lower slack variables at terminal shooting node (N) (dimension = nsbx_e)
+  zu_e: [] # Linear weights for upper slack variables at terminal shooting node (N) (dimension = nsbx_e)
+  p: [1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] 
+  # # Online parameter:
+  # mass,
+  # ref_orientation (qw, qx, qy, qz)
+  # s1_p (x, y, z), s1_m (tx, ty, tz),
+  # s2_p (x, y, z), s2_m (tx, ty, tz),
+  # s3_p (x, y, z), s3_m (tx, ty, tz),
+  # s_length,
+  # s_poly_coeffs (6 coefficients)
+solver:
+  export_dir: '/home/rafa/mpc/mpcc_trajectory/acados_mpcc_solver/'
+  generate_c_code: true
+  verbose: true
+  cost_type: NONLINEAR_LS
+  qp_solver: FULL_CONDENSING_QPOASES
+  nlp_solver_type: SQP_RTI
+  hessian_approx: GAUSS_NEWTON
+  integrator_type: ERK
+integrator:
+  generate_c_code: true
+  integrator_type: ERK
+  num_stages: 4
+  num_steps: 3
+cpp_module:
+  generate: false
+  project_name: acados_mpcc_solver

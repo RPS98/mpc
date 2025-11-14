@@ -1,0 +1,43 @@
+sim_config:
+  sim_time: 25.0 # seconds
+  max_speed: 1.0 # m/s
+  waypoints:
+    - [0.0, 0.0, 1.0]
+    - [5.0, 5.0, 1.0]
+    - [0.0, 0.0, 1.0]
+  path_facing: true
+controller:
+  solver_definition_path: 'solver_definition_mpcc.yaml'
+  ocp_json_file_path: 'acados_mpcc_solver/mpc_generated_code/acados_ocp.json'
+  mpc:
+    dt: 0.2 # Delta time between control steps in seconds
+    Q: [1.0, 1.0, 0.01, 0.01, 1.0] # Weight for internal states: [x, y, z, roll, pitch, yaw, vx, vy, vz]
+    Qe: [1.0, 1.0, 0.01, 0.01, 1.0] # Weight for end states: [x, y, z, roll, pitch, yaw, vx, vy, vz]
+    R: [0.8, 1.0, 1.0, 0.1, 0.5] # Weight for control inputs: [thrust, wx, wy, wz]
+    lbu: [0.01, -2.0, -2.0, -0.5, 0.0] # Lower bounds for control inputs: [thrust, wx, wy, wz]
+    ubu: [40.0, 2.0, 2.0, 0.5, 5.0] # Upper bounds for control inputs: [thrust, wx, wy, wz]
+    p: [1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] 
+    # # Online parameter:
+    # mass,
+    # ref_orientation (qw, qx, qy, qz)
+    # s1_p (x, y, z), s1_m (tx, ty, tz),
+    # s2_p (x, y, z), s2_m (tx, ty, tz),
+    # s3_p (x, y, z), s3_m (tx, ty, tz),
+    # s_length,
+    # s_poly_coeffs (6 coefficients)
+    idxbx: [] # Indices of bounded states: [x, y, z, roll, pitch, yaw, vx, vy, vz]
+    idxbx_e: [] # Indices of bounded states at terminal shooting node (N): [x, y, z, roll, pitch, yaw, vx, vy, vz]
+    lbx: [] # Lower bounds for states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
+    ubx: [] # Upper bounds for states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
+    idxsbx: [] # Indices of soft bounded states: [x, y, z, roll, pitch, yaw, vx, vy, vz]
+    idxsbx_e: [] # Indices of soft bounded states at terminal shooting node (N): [x, y, z, roll, pitch, yaw, vx, vy, vz]
+    lsbx: [] # Lower soft bounds for states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
+    usbx: [] # Upper soft bounds for states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
+    Zl: [] # Diagonal Hessian weights for lower slack variables (dimension = nsbx)
+    Zu: [] # Diagonal Hessian weights for upper slack variables (dimension = nsbx)
+    zl: [] # Linear weights for lower slack variables (dimension = nsbx)
+    zu: [] # Linear weights for upper slack variables (dimension = nsbx)
+    Zl_e: [] # Diagonal Hessian weights for lower slack variables at terminal shooting node (N) (dimension = nsbx_e)
+    Zu_e: [] # Diagonal Hessian weights for upper slack variables at terminal shooting node (N) (dimension = nsbx_e)
+    zl_e: [] # Linear weights for lower slack variables at terminal shooting node (N) (dimension = nsbx_e)
+    zu_e: [] # Linear weights for upper slack variables at terminal shooting node (N) (dimension = nsbx_e)

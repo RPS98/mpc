@@ -48,54 +48,50 @@ class _ParametersDef:
     _names: ClassVar[List[str]] = [
         'mass',
         'desired_orientation',
-        'theta_knot_1',
-        'position_knot_1',
-        'm_knot_1',
-        'theta_knot_2',
-        'position_knot_2',
-        'm_knot_2',
-        'theta_knot_3',
-        'position_knot_3',
-        'm_knot_3'
+        's1_p',
+        's1_m',
+        's2_p',
+        's2_m',
+        's3_p',
+        's3_m',
+        's_length',
+        's_poly_coeffs'
     ]
     _names_sx: ClassVar[List[str]] = [
         'sx_mass',
         'sx_desired_orientation',
-        'sx_theta_knot_1',
-        'sx_position_knot_1',
-        'sx_m_knot_1',
-        'sx_theta_knot_2',
-        'sx_position_knot_2',
-        'sx_m_knot_2',
-        'sx_theta_knot_3',
-        'sx_position_knot_3',
-        'sx_m_knot_3'
+        'sx_s1_p',
+        'sx_s1_m',
+        'sx_s2_p',
+        'sx_s2_m',
+        'sx_s3_p',
+        'sx_s3_m',
+        'sx_s_length',
+        'sx_s_poly_coeffs'
     ]
     _sizes: ClassVar[List[int]] = [
         1,
         4,
-        1,
+        3,
+        3,
+        3,
+        3,
         3,
         3,
         1,
-        3,
-        3,
-        1,
-        3,
-        3
+        6
     ]
 
     mass: Union[ca.SX, ca.DM]
     desired_orientation: Union[ca.SX, ca.DM]
-    theta_knot_1: Union[ca.SX, ca.DM]
-    position_knot_1: Union[ca.SX, ca.DM]
-    m_knot_1: Union[ca.SX, ca.DM]
-    theta_knot_2: Union[ca.SX, ca.DM]
-    position_knot_2: Union[ca.SX, ca.DM]
-    m_knot_2: Union[ca.SX, ca.DM]
-    theta_knot_3: Union[ca.SX, ca.DM]
-    position_knot_3: Union[ca.SX, ca.DM]
-    m_knot_3: Union[ca.SX, ca.DM]
+    s1_p: Union[ca.SX, ca.DM]
+    s1_m: Union[ca.SX, ca.DM]
+    s2_p: Union[ca.SX, ca.DM]
+    s2_m: Union[ca.SX, ca.DM]
+    s3_p: Union[ca.SX, ca.DM]
+    s3_m: Union[ca.SX, ca.DM]
+    s_length: Union[ca.SX, ca.DM]
+    s_poly_coeffs: Union[ca.SX, ca.DM]
 
 
 class CaParameters(_ParametersDef, VectorBase):
@@ -106,24 +102,22 @@ class CaParameters(_ParametersDef, VectorBase):
     :type mass: ca.SX
     :param desired_orientation: Desired orientation as a quaternion [qw, qx, qy, qz]
     :type desired_orientation: ca.SX
-    :param theta_knot_1: Knot_1 for contouring progress along the path
-    :type theta_knot_1: ca.SX
-    :param position_knot_1: Position at Knot_1 [x, y, z] (m)
-    :type position_knot_1: ca.SX
-    :param m_knot_1: derivate at Knot_1 for contouring progress along the path
-    :type m_knot_1: ca.SX
-    :param theta_knot_2: Knot_2 for contouring progress along the path
-    :type theta_knot_2: ca.SX
-    :param position_knot_2: Position at Knot_2 [x, y, z] (m)
-    :type position_knot_2: ca.SX
-    :param m_knot_2: derivate at Knot_2 for contouring progress along the path
-    :type m_knot_2: ca.SX
-    :param theta_knot_3: Knot_3 for contouring progress along the path
-    :type theta_knot_3: ca.SX
-    :param position_knot_3: Position at Knot_3 [x, y, z] (m)
-    :type position_knot_3: ca.SX
-    :param m_knot_3: derivate at Knot_3 for contouring progress along the path
-    :type m_knot_3: ca.SX
+    :param s1_p: Spline: Position at Knot_1 [x, y, z] (m)
+    :type s1_p: ca.SX
+    :param s1_m: Spline: Tangent at Knot_1 [tx, ty, tz]
+    :type s1_m: ca.SX
+    :param s2_p: Spline: Position at Knot_2 [x, y, z] (m)
+    :type s2_p: ca.SX
+    :param s2_m: Spline: Tangent at Knot_2 [tx, ty, tz]
+    :type s2_m: ca.SX
+    :param s3_p: Spline: Position at Knot_3 [x, y, z] (m)
+    :type s3_p: ca.SX
+    :param s3_m: Spline: Tangent at Knot_3 [tx, ty, tz]
+    :type s3_m: ca.SX
+    :param s_length: Total length of the spline path
+    :type s_length: ca.SX
+    :param s_poly_coeffs: Coefficients of the polynomial for reparametrization
+    :type s_poly_coeffs: ca.SX
     """
 
     _type = 'ca.SX'
@@ -138,15 +132,14 @@ class Parameters(_ParametersDef, VectorBase):
             self,
             mass: np.array = np.array(1.0),
             desired_orientation: np.array = np.array([1.0, 0.0, 0.0, 0.0]),
-            theta_knot_1: np.array = np.array(0.0),
-            position_knot_1: np.array = np.array([0.0, 0.0, 0.0]),
-            m_knot_1: np.array = np.array([0.0, 0.0, 0.0]),
-            theta_knot_2: np.array = np.array(0.0),
-            position_knot_2: np.array = np.array([0.0, 0.0, 0.0]),
-            m_knot_2: np.array = np.array([0.0, 0.0, 0.0]),
-            theta_knot_3: np.array = np.array(0.0),
-            position_knot_3: np.array = np.array([0.0, 0.0, 0.0]),
-            m_knot_3: np.array = np.array([0.0, 0.0, 0.0])):
+            s1_p: np.array = np.array([0.0, 0.0, 0.0]),
+            s1_m: np.array = np.array([0.0, 0.0, 0.0]),
+            s2_p: np.array = np.array([0.0, 0.0, 0.0]),
+            s2_m: np.array = np.array([0.0, 0.0, 0.0]),
+            s3_p: np.array = np.array([0.0, 0.0, 0.0]),
+            s3_m: np.array = np.array([0.0, 0.0, 0.0]),
+            s_length: np.array = np.array(1.0),
+            s_poly_coeffs: np.array = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])):
         """
         Parameters for the UAV Model.
 
@@ -154,37 +147,34 @@ class Parameters(_ParametersDef, VectorBase):
         :type mass: np.array
         :param desired_orientation: Desired orientation as a quaternion [qw, qx, qy, qz]
         :type desired_orientation: np.array
-        :param theta_knot_1: Knot_1 for contouring progress along the path
-        :type theta_knot_1: np.array
-        :param position_knot_1: Position at Knot_1 [x, y, z] (m)
-        :type position_knot_1: np.array
-        :param m_knot_1: derivate at Knot_1 for contouring progress along the path
-        :type m_knot_1: np.array
-        :param theta_knot_2: Knot_2 for contouring progress along the path
-        :type theta_knot_2: np.array
-        :param position_knot_2: Position at Knot_2 [x, y, z] (m)
-        :type position_knot_2: np.array
-        :param m_knot_2: derivate at Knot_2 for contouring progress along the path
-        :type m_knot_2: np.array
-        :param theta_knot_3: Knot_3 for contouring progress along the path
-        :type theta_knot_3: np.array
-        :param position_knot_3: Position at Knot_3 [x, y, z] (m)
-        :type position_knot_3: np.array
-        :param m_knot_3: derivate at Knot_3 for contouring progress along the path
-        :type m_knot_3: np.array
+        :param s1_p: Spline: Position at Knot_1 [x, y, z] (m)
+        :type s1_p: np.array
+        :param s1_m: Spline: Tangent at Knot_1 [tx, ty, tz]
+        :type s1_m: np.array
+        :param s2_p: Spline: Position at Knot_2 [x, y, z] (m)
+        :type s2_p: np.array
+        :param s2_m: Spline: Tangent at Knot_2 [tx, ty, tz]
+        :type s2_m: np.array
+        :param s3_p: Spline: Position at Knot_3 [x, y, z] (m)
+        :type s3_p: np.array
+        :param s3_m: Spline: Tangent at Knot_3 [tx, ty, tz]
+        :type s3_m: np.array
+        :param s_length: Total length of the spline path
+        :type s_length: np.array
+        :param s_poly_coeffs: Coefficients of the polynomial for reparametrization
+        :type s_poly_coeffs: np.array
         """
         super().__init__()
         self.mass = mass
         self.desired_orientation = desired_orientation
-        self.theta_knot_1 = theta_knot_1
-        self.position_knot_1 = position_knot_1
-        self.m_knot_1 = m_knot_1
-        self.theta_knot_2 = theta_knot_2
-        self.position_knot_2 = position_knot_2
-        self.m_knot_2 = m_knot_2
-        self.theta_knot_3 = theta_knot_3
-        self.position_knot_3 = position_knot_3
-        self.m_knot_3 = m_knot_3
+        self.s1_p = s1_p
+        self.s1_m = s1_m
+        self.s2_p = s2_p
+        self.s2_m = s2_m
+        self.s3_p = s3_p
+        self.s3_m = s3_m
+        self.s_length = s_length
+        self.s_poly_coeffs = s_poly_coeffs
 
 
 if __name__ == '__main__':
@@ -195,13 +185,12 @@ if __name__ == '__main__':
     print('Vector:', parameters.vector)
     print('mass:', parameters.mass)
     print('desired_orientation:', parameters.desired_orientation)
-    print('theta_knot_1:', parameters.theta_knot_1)
-    print('position_knot_1:', parameters.position_knot_1)
-    print('m_knot_1:', parameters.m_knot_1)
-    print('theta_knot_2:', parameters.theta_knot_2)
-    print('position_knot_2:', parameters.position_knot_2)
-    print('m_knot_2:', parameters.m_knot_2)
-    print('theta_knot_3:', parameters.theta_knot_3)
-    print('position_knot_3:', parameters.position_knot_3)
-    print('m_knot_3:', parameters.m_knot_3)
+    print('s1_p:', parameters.s1_p)
+    print('s1_m:', parameters.s1_m)
+    print('s2_p:', parameters.s2_p)
+    print('s2_m:', parameters.s2_m)
+    print('s3_p:', parameters.s3_p)
+    print('s3_m:', parameters.s3_m)
+    print('s_length:', parameters.s_length)
+    print('s_poly_coeffs:', parameters.s_poly_coeffs)
     print(parameters)

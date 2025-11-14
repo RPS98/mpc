@@ -101,7 +101,7 @@ class AcadosMPCSolver:
         ocp.model = self.acados_model
         state = State()
         actuation = Actuation(
-            thrust=solver_definition.mpc.p[0] * solver_definition.mpc.p[1]
+            thrust=solver_definition.mpc.p[0] * 9.81
         )
 
         # Parameters
@@ -121,16 +121,16 @@ class AcadosMPCSolver:
 
         # Reference at intermediate shooting nodes (1 to N-1)
         cost.yref = np.concatenate([
-            state.position,  # Position reference
+            np.zeros(1),  # Contouring reference
+            np.zeros(1),  # Lag reference
             np.zeros(3),  # Attitude reference
-            state.linear_velocity,  # Linear velocity reference
             actuation.vector  # Control reference
         ])
         # Reference at terminal shooting node (N)
         cost.yref_e = np.concatenate([
-            state.position,  # Position reference
+            np.zeros(1),  # Contouring reference
+            np.zeros(1),  # Lag reference
             np.zeros(3),  # Attitude reference
-            state.linear_velocity,  # Linear velocity reference
         ])
 
         # # For linear least squares cost

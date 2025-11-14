@@ -15,12 +15,11 @@ dynamics:
 parameters:
   mass: 1.0 # Mass of the MAV (kg)
   desired_orientation: [1.0, 0.0, 0.0, 0.0] # Desired orientation as a quaternion [qw, qx, qy, qz]
-  theta_knot_1: 0.0  # Knot_1 for contouring progress along the path
-  position_knot_1: [0.0, 0.0, 0.0]  # Position at Knot_1 [x, y, z] (m)
-  m_knot_1: [0.0, 0.0, 0.0]  # derivate at Knot_1 for contouring progress along the path
-  theta_knot_2: 0.0  # Knot_2 for contouring progress along the path
-  position_knot_2: [0.0, 0.0, 0.0]  # Position at Knot_2 [x, y, z] (m)
-  m_knot_2: [0.0, 0.0, 0.0]  # derivate at Knot_2 for contouring progress along the path
-  theta_knot_3: 0.0  # Knot_3 for contouring progress along the path
-  position_knot_3: [0.0, 0.0, 0.0]  # Position at Knot_3 [x, y, z] (m)
-  m_knot_3: [0.0, 0.0, 0.0]  # derivate at Knot_3 for contouring progress along the path
+  s1_p: [0.0, 0.0, 0.0]  # Spline: Position at Knot_1 [x, y, z] (m)
+  s1_m: [0.0, 0.0, 0.0]  # Spline: Tangent at Knot_1 [tx, ty, tz]
+  s2_p: [0.0, 0.0, 0.0]  # Spline: Position at Knot_2 [x, y, z] (m)
+  s2_m: [0.0, 0.0, 0.0]  # Spline: Tangent at Knot_2 [tx, ty, tz]
+  s3_p: [0.0, 0.0, 0.0]  # Spline: Position at Knot_3 [x, y, z] (m)
+  s3_m: [0.0, 0.0, 0.0]  # Spline: Tangent at Knot_3 [tx, ty, tz]
+  s_length: 1.0  # Total length of the spline path
+  s_poly_coeffs: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]  # Coefficients of the polynomial for reparametrization

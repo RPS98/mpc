@@ -41,6 +41,7 @@ from mpc.model_definition.state import CaState
 from mpc.model_definition.actuation import CaActuation
 from mpc.model_definition.parameters import CaParameters
 from mpc.model_definition.dynamics import CaDynamics
+from mpc.spline.spline_evaluation import evaluate_arc_length_spline
 
 
 class DroneModel(CaDynamics):
@@ -74,27 +75,85 @@ class DroneModel(CaDynamics):
             u.thrust,
             gravity,
             p.mass)
+        theta_dot = u.theta_velocity        
 
+        # Full dynamics
         self._f_expl = ca.vertcat(
             position_dot,
             orientation_dot,
-            linear_velocity_dot)
+            linear_velocity_dot,
+            theta_dot)
 
         self._q_att = q_utils.quaternion_error(
             self._x.orientation,
             p.desired_orientation
         )
+        
+        # Spline parameters from state and parameters
+        # Note: p0 is current drone position, not from parameters
+        # m0 is current velocity (approximation for tangent at current position)
+        # p0 = x.position
+        # m0 = x.linear_velocity
+        p1 = p.s1_p
+        m1 = p.s1_m
+        p2 = p.s2_p
+        m2 = p.s2_m
+        p3 = p.s3_p
+        m3 = p.s3_m
+        s_length = p.s_length
+        poly_coeffs = p.s_poly_coeffs
+        
+        # position_ref, tangent_vec = evaluate_arc_length_spline(
+        #     x.theta,
+        #     [p0, p1, p2, p3],
+        #     [m0, m1, m2, m3],
+        #     [0.0, 1.0, 2.0, 3.0],
+        #     s_length,
+        #     poly_coeffs,
+        # )
+        position_ref, tangent_vec = evaluate_arc_length_spline(
+            x.theta,
+            [p1, p2, p3],
+            [m1, m2, m3],
+            [0.0, 1.0, 2.0],
+            s_length,
+            poly_coeffs,
+        )
+        
+        # Compute contouring and lag errors
+        delta_pos = x.position - position_ref
+        e_lag = ca.dot(delta_pos, tangent_vec)
+        e_lag_vec = e_lag * tangent_vec
+        e_contour_vec = delta_pos - e_lag_vec
+        e_contour = ca.norm_2(e_contour_vec)
+        
+        # Store for cost function
+        self._e_contour = e_contour
+        self._e_lag = e_lag
 
+        # MPCC Cost Function
+        # Stage cost includes:
+        # - Contouring error e_c (distance perpendicular to path)
+        # - Lag error e_l (distance along path from reference)
+        # - Attitude error q_att (quaternion error)
+        # - Velocity v (for damping/regulation)
+        # - Control effort u (thrust, angular velocity, theta_velocity)
+        # - Progress term -theta_dot (negative to reward forward motion along path)
         self._cost_y_expr = ca.vertcat(
-            self._x.position,
-            self._q_att,
-            self._x.linear_velocity,
-            self._u.vector)
+            self._e_contour,           # Contouring error (1)
+            self._e_lag,               # Lag error (1)
+            self._q_att,               # Attitude error (3)
+            self._u.vector,            # Control effort (5: thrust + omega_xyz + theta_dot)
+        )
+        # Total dimension: 1 + 1 + 3 + 5 = 10
 
+        # Terminal cost (no progress term at the end, focus on accuracy)
         self._cost_y_expr_e = ca.vertcat(
-            self._x.position,
-            self._q_att,
-            self._x.linear_velocity)
+            self._e_contour,           # Final contouring error (1)
+            self._e_lag,               # Final lag error (1)
+            self._q_att,               # Final attitude error (3)
+        )
+        # Total dimension: 1 + 1 + 3 = 5
 
     @staticmethod
     def velocity_derivate(
@@ -216,6 +275,51 @@ class DroneModel(CaDynamics):
         :return (CaParameters): The parameters.
         """
         return self._p
+    
+    @property
+    def position_ref(self) -> ca.SX:
+        """
+        Get the reference position on the spline.
+
+        :return (ca.SX): The reference position (3x1).
+        """
+        return self._position_ref
+    
+    @property
+    def tangent_vec(self) -> ca.SX:
+        """
+        Get the tangent vector on the spline.
+
+        :return (ca.SX): The tangent vector (3x1).
+        """
+        return self._tangent_vec
+    
+    @property
+    def normal_vec(self) -> ca.SX:
+        """
+        Get the normal vector on the spline.
+
+        :return (ca.SX): The normal vector (3x1).
+        """
+        return self._normal_vec
+    
+    @property
+    def contouring_error(self) -> ca.SX:
+        """
+        Get the contouring error (perpendicular distance to path).
+
+        :return (ca.SX): The contouring error (scalar).
+        """
+        return self._e_contour
+    
+    @property
+    def lag_error(self) -> ca.SX:
+        """
+        Get the lag error (along-track distance).
+
+        :return (ca.SX): The lag error (scalar).
+        """
+        return self._e_lag
 
 
 def get_acados_model() -> AcadosModel:

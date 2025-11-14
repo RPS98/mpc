@@ -156,10 +156,14 @@ class MPC():
         self._p_size = self.acados_ocp_solver.get(0, 'p').shape[0]
         self._lbu_size = self.acados_ocp_solver.constraints_get(0, 'lbu').shape[0]
         self._ubu_size = self.acados_ocp_solver.constraints_get(0, 'ubu').shape[0]
-        self._lbx_size = self.acados_ocp_solver.constraints_get(1, 'lbx').shape[0]
-        self._ubx_size = self.acados_ocp_solver.constraints_get(1, 'ubx').shape[0]
-        self._lsbx_size = self.acados_ocp_solver.constraints_get(1, 'lsbx').shape[0]
-        self._usbx_size = self.acados_ocp_solver.constraints_get(1, 'usbx').shape[0]
+        # self._lbx_size = self.acados_ocp_solver.constraints_get(1, 'lbx').shape[0]
+        # self._ubx_size = self.acados_ocp_solver.constraints_get(1, 'ubx').shape[0]
+        # self._lsbx_size = self.acados_ocp_solver.constraints_get(1, 'lsbx').shape[0]
+        # self._usbx_size = self.acados_ocp_solver.constraints_get(1, 'usbx').shape[0]
+        self._lbx_size = 0.0
+        self._ubx_size = 0.0
+        self._lsbx_size = 0.0
+        self._usbx_size = 0.0
 
         print('MPC parameters:')
         print(f'Horizon N={self.N}, tf={self.tf}, dt={self.dt}')
@@ -304,7 +308,7 @@ class MPC():
         self.set_gain_terminal_state(parameters.Qe)
         self.set_parameters(parameters.p)
         self.set_u_bounds(parameters.lbu, parameters.ubu)
-        self.set_x_bounds(parameters.lbx, parameters.ubx)
+        # self.set_x_bounds(parameters.lbx, parameters.ubx)
 
     def set_gains(self, Q: np.ndarray, R: np.ndarray, stage: int = -1) -> None:
         """
