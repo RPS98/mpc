@@ -44,6 +44,8 @@ from utils.utils import euler_to_quaternion, CsvLogger
 from mpc.model_definition.actuation import Actuation
 from mpc.model_definition.state import State
 from mpc.model_definition.parameters import Parameters
+from hermite_spline import HermiteSpline, compute_arc_length_reparametrization
+from mpc.spline.spline_evaluation import evaluate_arc_length_spline
 import numpy as np
 import time
 from tqdm import tqdm
@@ -79,87 +81,94 @@ def test_controller(
     prediction_steps = mpc.N
     dt = mpc.dt
     
-    x = State().vector
+    x = State(
+        position=np.array([0.5, 0.0, 0.0]),
+        theta=np.array([0.1])
+    ).vector
     u = Actuation().vector
     y_ref = np.zeros((prediction_steps, mpc.w_size))
     y_ref_e = np.zeros((1, mpc.we_size))
     
-    p = mpc.parameters
     y_ref_0 = np.array([
-        0.0, 0.0, 0.0,  # position
+        0.0, # error contouring
+        0.0, # error lag
         0.0, 0.0, 0.0,  # orientation (Euler angles)
-        0.0, 0.0, 0.0,   # linear velocity
-        u_ref[0], u_ref[1], u_ref[2], u_ref[3]   # control inputs
+        0.0, # progress
+        u_ref[0], u_ref[1], u_ref[2], u_ref[3] , u_ref[4] # control inputs
     ])
-    y_ref[0, :] = y_ref_0
+    for i in range (prediction_steps):
+        mpc.set_y_ref_per_stage(y_ref_0, i)
+    y_ref_e=np.zeros(5)
+    mpc.set_y_ref_e(y_ref_e)
 
     t = 0.0
     max_time = yaml_data.sim_config.sim_time
 
     position_references = simulation_data.sim_config.waypoints
+    tg_references = simulation_data.sim_config.waypoints_tg
     pos_index = 0
 
     mpc_solve_times = np.zeros(0)
-    reference_setpoint = np.zeros(10)
 
+    points = position_references
+    tangents = tg_references
+    # Create spline
+    spline = HermiteSpline(points, tangents)
+    params = compute_arc_length_reparametrization(spline, n_samples=200, poly_degree=5)
+    print(spline.evaluate(0.9))
+    print(spline.evaluate_derivative(0.9))
+  
+
+    # print(params)  
+    # print(params['points'][0])
+    p = Parameters(
+        mass = np.array(1.0),
+        desired_orientation= np.array([1.0, 0.0, 0.0, 0.0]),
+        s1_p= params['points'][0],
+        s1_m= params['tangents'][0],
+        s2_p= params['points'][1],
+        s2_m= params['tangents'][1],
+        s3_p= params['points'][2],
+        s3_m= params['tangents'][2],
+        s_length= params['total_length'],
+        s_poly_coeffs = params['poly_coeffs']
+    )
+    position_ref, tangent_vec = evaluate_arc_length_spline(
+        np.array([0.1]),
+        [p.s1_p, p.s2_p, p.s3_p],
+        [p.s1_m, p.s2_m, p.s3_m],
+        [0.0, 1.0, 2.0],
+        p.s_length,
+        p.s_poly_coeffs,
+    )
+    print("Position ref:", position_ref)
+    print("Tangent vec:", tangent_vec)
+    p = p.vector
+    
+    # for i in range(prediction_steps + 1):
+    #     mpc.set_parameters(p.vector, i)
+    print(f"parameters: {p}")
     logger.save(t, x, y_ref_0, u)
+    
     while t <= max_time:
         t_eval = t
-        for i in range(prediction_steps + 1):
-            ref_position = position_references[pos_index]
-            ref_velocity = np.zeros(3)
-            
-            ref_yaw = 0.0
-            if simulation_data.sim_config.path_facing:
-                # Compute yaw to face the next waypoint from x position
-                x_diff = ref_position[0] - x[0]
-                y_diff = ref_position[1] - x[1]
-                if np.linalg.norm(np.array([x_diff, y_diff])) > 0.1:
-                    ref_yaw = np.arctan2(y_diff, x_diff)
-            
-            p[i, :] = Parameters(
-                mass=mass,
-                desired_orientation=euler_to_quaternion(0.0, 0.0, ref_yaw)
-            ).vector
-            
-            if i < prediction_steps:
-                y_ref[i, :] = np.array([
-                    ref_position[0],
-                    ref_position[1],
-                    ref_position[2],
-                    0.0,
-                    0.0,
-                    0.0,
-                    ref_velocity[0],
-                    ref_velocity[1],
-                    ref_velocity[2],
-                    u_ref[0],
-                    u_ref[1],
-                    u_ref[2],
-                    u_ref[3]
-                ])
-            else:
-                y_ref_e = np.array([
-                    ref_position[0],
-                    ref_position[1],
-                    ref_position[2],
-                    0.0,
-                    0.0,
-                    0.0,
-                    ref_velocity[0],
-                    ref_velocity[1],
-                    ref_velocity[2]
-                ])
-            
-            t_eval += dt
 
         current_time = time.time()
+        print("Solving MPC at time:", t)
+        mpc.actuation[0]= np.array([9.81, 0.0, 0.0, 0.0, 0.5])
         u = mpc.solve(
             state=x,
             y_ref=y_ref,
             y_ref_e=y_ref_e,
             p=p
         )
+        for k in range (prediction_steps):
+            x_k= mpc.acados_ocp_solver.get(k,"x")
+            u_k= mpc.acados_ocp_solver.get(k,"u")
+            print(f"Predicted state {k}: {x_k}")
+            print(f"Predicted control {k}: {u_k}")
+        exit(0)
+        print("MPC solve time:", time.time() - current_time)
         mpc_solve_times = np.append(mpc_solve_times, time.time() - current_time)
 
         integrator.set('x', x)
@@ -170,23 +179,25 @@ def test_controller(
                 'acados integrator returned status {}. Exiting.'.format(status))
         x = integrator.get('x')
 
-        # Update logger
-        reference_setpoint = np.array([
-            y_ref[0][0], y_ref[0][1], y_ref[0][2], # position
-            p[0][1], p[0][2], p[0][3], p[0][4],    # orientation (quaternion)
-            y_ref[0][6], y_ref[0][7], y_ref[0][8]  # velocity
-        ])
-        logger.save(t, x, reference_setpoint, u)
+        print(f'Time: {t:.2f}s, \nState: {x}, \nControl: {u}\n')
 
-        # Compute error between current state x and reference state reference[0][0:3]
-        error = np.linalg.norm(x[:3] - reference_setpoint[:3])
-        if error < 0.1 and pos_index < len(position_references) - 1:
-            pos_index += 1
-            print(f'Position reference updated to {position_references[pos_index][:3]} at time {t:.2f}s')
+        # # Update logger
+        # reference_setpoint = np.array([
+        #     y_ref[0][0], y_ref[0][1], y_ref[0][2], # position
+        #     p[0][1], p[0][2], p[0][3], p[0][4],    # orientation (quaternion)
+        #     y_ref[0][6], y_ref[0][7], y_ref[0][8]  # velocity
+        # ])
+        # logger.save(t, x, reference_setpoint, u)
+
+        # # Compute error between current state x and reference state reference[0][0:3]
+        # error = np.linalg.norm(x[:3] - reference_setpoint[:3])
+        # if error < 0.1 and pos_index < len(position_references) - 1:
+        #     pos_index += 1
+        #     print(f'Position reference updated to {position_references[pos_index][:3]} at time {t:.2f}s')
 
         pbar.update(dt)
         t += dt
-        logger.save(t, x, reference_setpoint, u)
+        # logger.save(t, x, reference_setpoint, u)
     print(f'MPC solve time mean: {np.mean(mpc_solve_times)}')
 
 

@@ -1,21 +1,25 @@
 sim_config:
-  sim_time: 25.0 # seconds
+  sim_time: 1.0 # seconds
   max_speed: 1.0 # m/s
   waypoints:
-    - [0.0, 0.0, 1.0]
-    - [5.0, 5.0, 1.0]
-    - [0.0, 0.0, 1.0]
+    - [0.0, 0.0, 0.0]
+    - [0.0, 0.0, 2.0]
+    - [0.0, 0.0, 4.0]
+  waypoints_tg:
+    - [0.0,0.0,0.1]
+    - [0.0,0.0,0.1]
+    - [0.0,0.0,0.1]
   path_facing: true
 controller:
   solver_definition_path: 'solver_definition_mpcc.yaml'
   ocp_json_file_path: 'acados_mpcc_solver/mpc_generated_code/acados_ocp.json'
   mpc:
     dt: 0.2 # Delta time between control steps in seconds
-    Q: [1.0, 1.0, 0.01, 0.01, 1.0] # Weight for internal states: [x, y, z, roll, pitch, yaw, vx, vy, vz]
-    Qe: [1.0, 1.0, 0.01, 0.01, 1.0] # Weight for end states: [x, y, z, roll, pitch, yaw, vx, vy, vz]
-    R: [0.8, 1.0, 1.0, 0.1, 0.5] # Weight for control inputs: [thrust, wx, wy, wz]
-    lbu: [0.01, -2.0, -2.0, -0.5, 0.0] # Lower bounds for control inputs: [thrust, wx, wy, wz]
-    ubu: [40.0, 2.0, 2.0, 0.5, 5.0] # Upper bounds for control inputs: [thrust, wx, wy, wz]
+    Q: [10.0, 0.0, 0.0, 0.0, 1.0, 1.0] # Weight for internal states: [contouring, lag, roll, pitch, yaw, progress]
+    Qe: [10.0, 0.0, 0.0, 0.0, 1.0] # Weight for end states: [contouring, lag, roll, pitch, yaw]
+    R: [0.8, 1.0, 1.0, 0.1, 0.5] # Weight for control inputs: [thrust, wx, wy, wz, v_theta]
+    lbu: [0.01, -2.0, -2.0, -0.5, -0.00001] # Lower bounds for control inputs: [thrust, wx, wy, wz, v_theta]
+    ubu: [40.0, 2.0, 2.0, 0.5, 1.0] # Upper bounds for control inputs: [thrust, wx, wy, wz, v_theta]
     p: [1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] 
     # # Online parameter:
     # mass,
