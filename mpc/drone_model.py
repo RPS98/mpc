@@ -30,7 +30,7 @@
 
 """Acados Model definition."""
 
-__authors__ = 'Rafael Pérez Seguí'
+__authors__ = 'Rafael Pérez Seguí, Carmen De Rojas Pita-Romero'
 __copyright__ = 'Copyright (c) 2022 Universidad Politécnica de Madrid'
 __license__ = 'BSD-3-Clause'
 
@@ -103,14 +103,6 @@ class DroneModel(CaDynamics):
         s_length = p.s_length
         poly_coeffs = p.s_poly_coeffs
         
-        # position_ref, tangent_vec = evaluate_arc_length_spline(
-        #     x.theta,
-        #     [p0, p1, p2, p3],
-        #     [m0, m1, m2, m3],
-        #     [0.0, 1.0, 2.0, 3.0],
-        #     s_length,
-        #     poly_coeffs,
-        # )
         position_ref, tangent_vec = evaluate_arc_length_spline(
             x.theta,
             [p1, p2, p3],
@@ -126,34 +118,24 @@ class DroneModel(CaDynamics):
         e_lag_vec = e_lag * tangent_vec
         e_contour_vec = delta_pos - e_lag_vec
         e_contour = ca.norm_2(e_contour_vec)
-        
-        # Store for cost function
-        self._e_contour = e_contour
-        self._e_lag = e_lag
 
-        # MPCC Cost Function
-        # Stage cost includes:
-        # - Contouring error e_c (distance perpendicular to path)
-        # - Lag error e_l (distance along path from reference)
-        # - Attitude error q_att (quaternion error)
-        # - Velocity v (for damping/regulation)
-        # - Control effort u (thrust, angular velocity, theta_velocity)
-        # - Progress term -theta_dot (negative to reward forward motion along path)
-        self._cost_y_expr = ca.vertcat(
-            self._e_contour,           # Contouring error (1)
-            self._e_lag,               # Lag error (1)
-            self._q_att,               # Attitude error (3)
-            self._u.vector,            # Control effort (5: thrust + omega_xyz + theta_dot)
-        )
-        # Total dimension: 1 + 1 + 3 + 5 = 10
+        # MPCC External Cost Function
+        # J_contouring + J_lag + J_attitude + J_control + J_progress
+        J_contour = e_contour_vec.T @ ca.diag(p.gains_contour_error) @ e_contour_vec
+        J_lag = p.gain_lag_error * e_lag**2
+        J_attitude = self._q_att.T @ ca.diag(p.gains_orientation) @ self._q_att
+        u_ref = ca.vertcat(p.mass * gravity, 0.0, 0.0, 0.0, 0.0)
+        u_error = u.vector - u_ref
+        J_control = u_error.T @ ca.diag(ca.vertcat(
+            p.gains_actuation,
+            p.gains_actuation_theta_velocity
+        )) @ u_error
+        J_progress = -p.gain_progress * u.theta_velocity    
 
-        # Terminal cost (no progress term at the end, focus on accuracy)
-        self._cost_y_expr_e = ca.vertcat(
-            self._e_contour,           # Final contouring error (1)
-            self._e_lag,               # Final lag error (1)
-            self._q_att,               # Final attitude error (3)
-        )
-        # Total dimension: 1 + 1 + 3 = 5
+        # Total stage cost
+        self._cost_expr_ext = J_contour + J_lag + J_attitude + J_control + J_progress
+        # Total terminal cost
+        self._cost_expr_ext_e = J_contour + J_lag+ J_attitude
 
     @staticmethod
     def velocity_derivate(
@@ -196,22 +178,22 @@ class DroneModel(CaDynamics):
         return self._f_expl
 
     @property
-    def cost_y_expr(self) -> ca.SX:
+    def cost_expr_ext(self) -> ca.SX:
         """
-        Get the cost y expression.
+        Get the cost external expression.
 
-        :return (ca.SX): The cost y expression.
+        :return (ca.SX): The cost external expression.
         """
-        return self._cost_y_expr
+        return self._cost_expr_ext
 
     @property
-    def cost_y_expr_e(self) -> ca.SX:
+    def cost_expr_ext_e(self) -> ca.SX:
         """
-        Get the cost y end expression.
+        Get the cost external end expression.
 
-        :return (ca.SX): The cost y end expression.
+        :return (ca.SX): The cost external end expression.
         """
-        return self._cost_y_expr_e
+        return self._cost_expr_ext_e
 
     @property
     def xdot(self) -> ca.SX:
@@ -347,8 +329,10 @@ def get_acados_model() -> AcadosModel:
     model.z = z
     model.p = drone_model.p
     model.name = model_name
-    model.cost_y_expr = drone_model.cost_y_expr
-    model.cost_y_expr_e = drone_model.cost_y_expr_e
+    
+    # MPCC External Cost
+    model.cost_expr_ext_cost = drone_model.cost_expr_ext
+    model.cost_expr_ext_cost_e = drone_model.cost_expr_ext_e
 
     return model
 
@@ -383,4 +367,6 @@ if __name__ == '__main__':
     format_output('f_impl', acados_model.f_impl_expr)
     format_output('f_expl', acados_model.f_expl_expr)
 
-    print("Cost y shape:", acados_model.cost_y_expr.shape)
+    print("External cost stage shape:", acados_model.cost_expr_ext_cost.shape)
+    print("External cost terminal shape:", acados_model.cost_expr_ext_cost_e.shape)
+

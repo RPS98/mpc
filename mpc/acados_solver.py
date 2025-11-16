@@ -29,7 +29,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Acados Solver Parameters definition."""
 
-__authors__ = 'Rafael Pérez Seguí'
+__authors__ = 'Rafael Pérez Seguí, Carmen De Rojas Pita-Romero'
 __copyright__ = 'Copyright (c) 2025 Universidad Politécnica de Madrid'
 __license__ = 'BSD-3-Clause'
 
@@ -40,7 +40,6 @@ import shutil
 import numpy as np
 from acados_template import AcadosOcp, AcadosOcpSolver, AcadosSim, AcadosSimSolver
 from mpc.model_definition.state import State
-from mpc.model_definition.actuation import Actuation
 from mpc.drone_model import get_acados_model
 from mpc.utils.yaml_to_dict import yaml_to_dict
 
@@ -100,61 +99,18 @@ class AcadosMPCSolver:
         ocp = AcadosOcp()
         ocp.model = self.acados_model
         state = State()
-        actuation = Actuation(
-            thrust=solver_definition.mpc.p[0] * 9.81
-        )
 
         # Parameters
-        ocp.parameter_values = solver_definition.mpc.p
+        ocp.parameter_values = self.get_parameters_vector(solver_definition.mpc)
 
         # Cost
         cost = ocp.cost
 
-        # Weight matrix at intermediate shooting nodes (1 to N-1)
-        cost.W = np.diag(np.zeros(
-            self.acados_model.cost_y_expr.shape[0]
-        ))
-        # Weight matrix at terminal shooting node (N)
-        cost.W_e = np.diag(np.zeros(
-            self.acados_model.cost_y_expr_e.shape[0]
-        ))
-
-        # Reference at intermediate shooting nodes (1 to N-1)
-        cost.yref = np.concatenate([
-            np.zeros(1),  # Contouring reference
-            np.zeros(1),  # Lag reference
-            np.zeros(3),  # Attitude reference
-            actuation.vector  # Control reference
-        ])
-        # Reference at terminal shooting node (N)
-        cost.yref_e = np.concatenate([
-            np.zeros(1),  # Contouring reference
-            np.zeros(1),  # Lag reference
-            np.zeros(3),  # Attitude reference
-        ])
-
-        # # For linear least squares cost
-        # # Set up the cost type
-        # cost.cost_type = 'LINEAR_LS'
-        # cost.cost_type_e = 'LINEAR_LS'
-        # # dimensions
-        # nx = ocp.model.x.size()[0]
-        # nu = ocp.model.u.size()[0]
-        # ny = nx + nu
-        # # x matrix coefficient at intermediate shooting nodes (1 to N-1)
-        # cost.Vx = np.eye(ny, nx)
-        # # u matrix coefficient at intermediate shooting nodes (1 to N-1)
-        # cost.Vu = np.vstack((np.zeros((nx, nu)), np.eye(nu)))
-        # # x matrix coefficient for cost at terminal shooting node (N)
-        # cost.Vx_e = np.eye(nx, nx)
-
-        # For nonlinear least squares cost
-        # Set up the cost type
+        # Set up the cost
         cost.cost_type = solver_definition.solver.cost_type
         cost.cost_type_e = solver_definition.solver.cost_type
-        # CasADi expression for nonlinear least squares
-        # ocp.model.cost_y_expr = ca.vertcat(ocp.model.x, ocp.model.u)
-        # ocp.model.cost_y_expr_e = ocp.model.x
+        ocp.model.cost_expr_ext_cost = self.acados_model.cost_expr_ext_cost
+        ocp.model.cost_expr_ext_cost_e = self.acados_model.cost_expr_ext_cost_e
 
         # Constraints
         constraints = ocp.constraints
@@ -233,6 +189,10 @@ class AcadosMPCSolver:
         # Default: ‘ERK’.
         solver_options.integrator_type = solver_definition.solver.integrator_type
 
+        # Regularization method for the Hessian. String in ('NO_REGULARIZE', 'MIRROR', 
+        # 'PROJECT', 'PROJECT_REDUC_HESS', 'CONVEXIFY', 'GERSHGORIN_LEVENBERG_MARQUARDT').
+        solver_options.regularize_method = solver_definition.solver.regularize_method
+
         # Create solver
         base_export_dir = solver_definition.solver.export_dir + 'mpc_generated_code/'
         ocp.code_export_directory = base_export_dir + 'mpc_generated_code'
@@ -245,6 +205,50 @@ class AcadosMPCSolver:
         )
 
         return self.solver
+
+    @staticmethod
+    def get_parameters_vector(solver_definition: dict) -> np.ndarray:
+        """
+        Get the parameters vector.
+
+        :return: Parameters vector
+        :rtype: np.ndarray
+        """
+        p_mass = solver_definition.p_mass
+        p_desired_orientation = solver_definition.p_desired_orientation
+        p_gains_contour_error = solver_definition.p_gains_contour_error
+        p_gain_lag_error = solver_definition.p_gain_lag_error
+        p_gains_orientation = solver_definition.p_gains_orientation
+        p_gains_actuation = solver_definition.p_gains_actuation
+        p_gains_actuation_theta_velocity = solver_definition.p_gains_actuation_theta_velocity
+        p_gain_progress = solver_definition.p_gain_progress
+        p_s1_p = solver_definition.p_s1_p
+        p_s1_m = solver_definition.p_s1_m
+        p_s2_p = solver_definition.p_s2_p
+        p_s2_m = solver_definition.p_s2_m
+        p_s3_p = solver_definition.p_s3_p
+        p_s3_m = solver_definition.p_s3_m
+        p_s_length = solver_definition.p_s_length
+        p_s_poly_coeffs = solver_definition.p_s_poly_coeffs
+        p_vector = np.concatenate([
+            p_mass,
+            p_desired_orientation,
+            p_gains_contour_error,
+            p_gain_lag_error,
+            p_gains_orientation,
+            p_gains_actuation,
+            p_gains_actuation_theta_velocity,
+            p_gain_progress,
+            p_s1_p,
+            p_s1_m,
+            p_s2_p,
+            p_s2_m,
+            p_s3_p,
+            p_s3_m,
+            p_s_length,
+            p_s_poly_coeffs
+        ])
+        return p_vector
 
     def get_acados_sim_solver(self, solver_definition: dict, generate_code: bool = True) -> AcadosSimSolver:
         """
@@ -260,7 +264,7 @@ class AcadosMPCSolver:
         # Create Integrator
         acados_sim = AcadosSim()
         acados_sim.model = self.acados_model
-        acados_sim.parameter_values = solver_definition.mpc.p
+        acados_sim.parameter_values = self.get_parameters_vector(solver_definition.mpc)
 
         # Solver options
         # integrator type. String in (‘ERK’, ‘IRK’, ‘GNSF’, ‘DISCRETE’, ‘LIFTED_IRK’).

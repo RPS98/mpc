@@ -48,6 +48,12 @@ class _ParametersDef:
     _names: ClassVar[List[str]] = [
         'mass',
         'desired_orientation',
+        'gains_contour_error',
+        'gain_lag_error',
+        'gains_orientation',
+        'gains_actuation',
+        'gains_actuation_theta_velocity',
+        'gain_progress',
         's1_p',
         's1_m',
         's2_p',
@@ -60,6 +66,12 @@ class _ParametersDef:
     _names_sx: ClassVar[List[str]] = [
         'sx_mass',
         'sx_desired_orientation',
+        'sx_gains_contour_error',
+        'sx_gain_lag_error',
+        'sx_gains_orientation',
+        'sx_gains_actuation',
+        'sx_gains_actuation_theta_velocity',
+        'sx_gain_progress',
         'sx_s1_p',
         'sx_s1_m',
         'sx_s2_p',
@@ -73,6 +85,12 @@ class _ParametersDef:
         1,
         4,
         3,
+        1,
+        3,
+        4,
+        1,
+        1,
+        3,
         3,
         3,
         3,
@@ -84,6 +102,12 @@ class _ParametersDef:
 
     mass: Union[ca.SX, ca.DM]
     desired_orientation: Union[ca.SX, ca.DM]
+    gains_contour_error: Union[ca.SX, ca.DM]
+    gain_lag_error: Union[ca.SX, ca.DM]
+    gains_orientation: Union[ca.SX, ca.DM]
+    gains_actuation: Union[ca.SX, ca.DM]
+    gains_actuation_theta_velocity: Union[ca.SX, ca.DM]
+    gain_progress: Union[ca.SX, ca.DM]
     s1_p: Union[ca.SX, ca.DM]
     s1_m: Union[ca.SX, ca.DM]
     s2_p: Union[ca.SX, ca.DM]
@@ -102,6 +126,18 @@ class CaParameters(_ParametersDef, VectorBase):
     :type mass: ca.SX
     :param desired_orientation: Desired orientation as a quaternion [qw, qx, qy, qz]
     :type desired_orientation: ca.SX
+    :param gains_contour_error: Gains for contour error [e_cx,e_cy,e_cz]
+    :type gains_contour_error: ca.SX
+    :param gain_lag_error: Gains for lag error [e_l]
+    :type gain_lag_error: ca.SX
+    :param gains_orientation: Gains for orientation error [e_roll,e_pitch,e_yaw]
+    :type gains_orientation: ca.SX
+    :param gains_actuation: Gains for actuation inputs [thrust, wx, wy, wz]
+    :type gains_actuation: ca.SX
+    :param gains_actuation_theta_velocity: Gain for actuation input [v_theta]
+    :type gains_actuation_theta_velocity: ca.SX
+    :param gain_progress: Gain for progress maximization
+    :type gain_progress: ca.SX
     :param s1_p: Spline: Position at Knot_1 [x, y, z] (m)
     :type s1_p: ca.SX
     :param s1_m: Spline: Tangent at Knot_1 [tx, ty, tz]
@@ -132,6 +168,12 @@ class Parameters(_ParametersDef, VectorBase):
             self,
             mass: np.array = np.array(1.0),
             desired_orientation: np.array = np.array([1.0, 0.0, 0.0, 0.0]),
+            gains_contour_error: np.array = np.array([0.0, 0.0, 0.0]),
+            gain_lag_error: np.array = np.array([0.0]),
+            gains_orientation: np.array = np.array([0.0, 0.0, 0.0]),
+            gains_actuation: np.array = np.array([0.0, 0.0, 0.0, 0.0]),
+            gains_actuation_theta_velocity: np.array = np.array(0.0),
+            gain_progress: np.array = np.array(1.0),
             s1_p: np.array = np.array([0.0, 0.0, 0.0]),
             s1_m: np.array = np.array([0.0, 0.0, 0.0]),
             s2_p: np.array = np.array([0.0, 0.0, 0.0]),
@@ -147,6 +189,18 @@ class Parameters(_ParametersDef, VectorBase):
         :type mass: np.array
         :param desired_orientation: Desired orientation as a quaternion [qw, qx, qy, qz]
         :type desired_orientation: np.array
+        :param gains_contour_error: Gains for contour error [e_cx,e_cy,e_cz]
+        :type gains_contour_error: np.array
+        :param gain_lag_error: Gains for lag error [e_l]
+        :type gain_lag_error: np.array
+        :param gains_orientation: Gains for orientation error [e_roll,e_pitch,e_yaw]
+        :type gains_orientation: np.array
+        :param gains_actuation: Gains for actuation inputs [thrust, wx, wy, wz]
+        :type gains_actuation: np.array
+        :param gains_actuation_theta_velocity: Gain for actuation input [v_theta]
+        :type gains_actuation_theta_velocity: np.array
+        :param gain_progress: Gain for progress maximization
+        :type gain_progress: np.array
         :param s1_p: Spline: Position at Knot_1 [x, y, z] (m)
         :type s1_p: np.array
         :param s1_m: Spline: Tangent at Knot_1 [tx, ty, tz]
@@ -167,6 +221,12 @@ class Parameters(_ParametersDef, VectorBase):
         super().__init__()
         self.mass = mass
         self.desired_orientation = desired_orientation
+        self.gains_contour_error = gains_contour_error
+        self.gain_lag_error = gain_lag_error
+        self.gains_orientation = gains_orientation
+        self.gains_actuation = gains_actuation
+        self.gains_actuation_theta_velocity = gains_actuation_theta_velocity
+        self.gain_progress = gain_progress
         self.s1_p = s1_p
         self.s1_m = s1_m
         self.s2_p = s2_p
@@ -185,6 +245,12 @@ if __name__ == '__main__':
     print('Vector:', parameters.vector)
     print('mass:', parameters.mass)
     print('desired_orientation:', parameters.desired_orientation)
+    print('gains_contour_error:', parameters.gains_contour_error)
+    print('gain_lag_error:', parameters.gain_lag_error)
+    print('gains_orientation:', parameters.gains_orientation)
+    print('gains_actuation:', parameters.gains_actuation)
+    print('gains_actuation_theta_velocity:', parameters.gains_actuation_theta_velocity)
+    print('gain_progress:', parameters.gain_progress)
     print('s1_p:', parameters.s1_p)
     print('s1_m:', parameters.s1_m)
     print('s2_p:', parameters.s2_p)

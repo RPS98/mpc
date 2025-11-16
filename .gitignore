@@ -10,3 +10,4 @@ __pycache__/
 mpc_generated_code/
 mpc.egg-info/
 dynamic_trajectory_generator/
+*.json

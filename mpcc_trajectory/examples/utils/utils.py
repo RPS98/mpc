@@ -40,6 +40,9 @@ import sys
 import math
 import numpy as np
 import importlib.util
+from mpc.spline.spline_evaluation import evaluate_arc_length_spline
+from mpc.model_definition.parameters import Parameters
+
 
 
 def euler_to_quaternion(roll: float, pitch: float, yaw: float) -> np.ndarray:
@@ -184,9 +187,9 @@ class CsvLogger:
         self.file = open(self.file_name, 'w')
         self.file.write(
             'time,'
-            'x,y,z,qw,qx,qy,qz,roll,pitch,yaw,vx,vy,vz,'
-            'x_ref,y_ref,z_ref,qw_ref,qx_ref,qy_ref,qz_ref,roll_ref,pitch_ref,yaw_ref,vx_ref,vy_ref,vz_ref,'
-            'thrust_ref,wx_ref,wy_ref,wz_ref\n')
+            'x,y,z,qw,qx,qy,qz,roll,pitch,yaw,vx,vy,vz,theta_ref,'
+            'x_ref,y_ref,z_ref,qw_ref,qx_ref,qy_ref,qz_ref,roll_ref,pitch_ref,yaw_ref,'
+            'thrust_ref,wx_ref,wy_ref,wz_ref,v_theta_ref\n')
 
     def add_double(self, data: float) -> None:
         """
@@ -225,12 +228,14 @@ class CsvLogger:
             elif add_final_comma:
                 self.file.write(',')
 
-    def save(self, time: float, x: np.ndarray, y: np.ndarray, u: np.ndarray) -> None:
+    def save(self, time: float, x: np.ndarray, p: Parameters, u: np.ndarray) -> None:
         """
         Save the simulation data to the csv file.
 
         :param time(float): Current simulation time.
-        :param simulator(ms.Simulator): Simulator object.
+        :param x(np.ndarray): Current state.
+        :param p(Parameters): Parameters object.
+        :param u(np.ndarray): Current control.
         """
         self.add_double(time)
 
@@ -239,20 +244,30 @@ class CsvLogger:
         q = x[3:7]
         euler_q = quaternion_to_euler(q)
         v = x[7:10]
+        theta = x[10:11]
         self.add_vector_row(x_pos)
         self.add_vector_row(q)
         self.add_vector_row(euler_q)
         self.add_vector_row(v)
+        self.add_double(theta[0])
 
         # Reference position
-        y_pos = y[0:3]
-        q_ref = y[3:7]
-        euler_q_ref = quaternion_to_euler(q_ref)
-        v_ref = y[7:10]
-        self.add_vector_row(y_pos)
+        position_ref, _ = evaluate_arc_length_spline(
+            theta,
+            [p.s1_p, p.s2_p, p.s3_p],
+            [p.s1_m, p.s2_m, p.s3_m],
+            [0.0, 1.0, 2.0],
+            p.s_length,
+            p.s_poly_coeffs,
+        )
+       
+        self.add_double(position_ref[0])
+        self.add_double(position_ref[1])
+        self.add_double(position_ref[2])
+        q_ref = p.desired_orientation
         self.add_vector_row(q_ref)
+        euler_q_ref = quaternion_to_euler(q_ref)
         self.add_vector_row(euler_q_ref)
-        self.add_vector_row(v_ref)
 
         # Control
         self.add_vector_row(u, False)

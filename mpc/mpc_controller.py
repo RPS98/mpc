@@ -52,12 +52,6 @@ class MPCParameters():
 
     :param dt: Time step.
     :type dt: float
-    :param Q: State weight matrix.
-    :type Q: np.ndarray
-    :param Qe: Terminal state weight matrix.
-    :type Qe: np.ndarray
-    :param R: Control weight matrix.
-    :type R: np.ndarray
     :param p: Parameter vector.
     :type p: np.ndarray
     :param lbu: Lower bounds on control input.
@@ -74,9 +68,6 @@ class MPCParameters():
     :type usbx: np.ndarray
     """
     dt: float
-    Q: np.ndarray
-    Qe: np.ndarray
-    R: np.ndarray
     p: np.ndarray
     lbu: np.ndarray
     ubu: np.ndarray
@@ -96,9 +87,6 @@ class MPCParameters():
     def __str__(self):
         return (
             f'dt: {self.dt}\n'
-            f'Q: \n{self.Q}\n'
-            f'Qe: \n{self.Qe}\n'
-            f'R: \n{self.R}\n'
             f'p: {self.p}\n'
             f'lbu: {self.lbu}\n'
             f'ubu: {self.ubu}\n'
@@ -147,29 +135,24 @@ class MPC():
         self._tf = ocp_json['solver_options']['tf']
         self._dt = self._tf / self._N
         # Alternative: use time_steps directly if non-uniform
-        # self._time_steps = np.array(ocp_json['solver_options']['time_steps'])
+        self._time_steps = np.array(ocp_json['solver_options']['time_steps'])
 
-        self._w_size = self.acados_ocp_solver.cost_get(0, 'W').shape[0]
-        self._we_size = self.acados_ocp_solver.cost_get(self._N, 'W').shape[0]
         self._x_size = self.acados_ocp_solver.get(0, 'x').shape[0]
         self._u_size = self.acados_ocp_solver.get(0, 'u').shape[0]
         self._p_size = self.acados_ocp_solver.get(0, 'p').shape[0]
-        self._lbu_size = self.acados_ocp_solver.constraints_get(0, 'lbu').shape[0]
-        self._ubu_size = self.acados_ocp_solver.constraints_get(0, 'ubu').shape[0]
-        # self._lbx_size = self.acados_ocp_solver.constraints_get(1, 'lbx').shape[0]
-        # self._ubx_size = self.acados_ocp_solver.constraints_get(1, 'ubx').shape[0]
-        # self._lsbx_size = self.acados_ocp_solver.constraints_get(1, 'lsbx').shape[0]
-        # self._usbx_size = self.acados_ocp_solver.constraints_get(1, 'usbx').shape[0]
-        self._lbx_size = 0.0
-        self._ubx_size = 0.0
-        self._lsbx_size = 0.0
-        self._usbx_size = 0.0
+
+        self._lbu_size  = len(ocp_json["constraints"]["lbu"])
+        self._ubu_size  = len(ocp_json["constraints"]["ubu"])
+        self._lbx_size  = len(ocp_json["constraints"]["lbx"])
+        self._ubx_size  = len(ocp_json["constraints"]["ubx"])
+        self._lsbx_size = len(ocp_json["constraints"]["lsbx"])
+        self._usbx_size = len(ocp_json["constraints"]["usbx"])
 
         print('MPC parameters:')
         print(f'Horizon N={self.N}, tf={self.tf}, dt={self.dt}')
+        print('Time steps:')
+        print(self._time_steps)
         print('Sizes:')
-        print(f'  w_size: {self.w_size}')
-        print(f'  we_size: {self.we_size}')
         print(f'  x_size: {self.x_size}')
         print(f'  u_size: {self.u_size}')
         print(f'  p_size: {self.p_size}')
@@ -200,16 +183,6 @@ class MPC():
     def dt(self) -> float:
         """Get the time step between prediction stages."""
         return self._dt
-
-    @property
-    def w_size(self) -> int:
-        """Get the size of the cost weighting matrix W."""
-        return self._w_size
-
-    @property
-    def we_size(self) -> int:
-        """Get the size of the terminal cost weighting matrix W_e."""
-        return self._we_size
 
     @property
     def x_size(self) -> int:
@@ -304,69 +277,9 @@ class MPC():
         :return: None
         :rtype: None
         """
-        self.set_gains(parameters.Q, parameters.R)
-        self.set_gain_terminal_state(parameters.Qe)
         self.set_parameters(parameters.p)
         self.set_u_bounds(parameters.lbu, parameters.ubu)
-        # self.set_x_bounds(parameters.lbx, parameters.ubx)
-
-    def set_gains(self, Q: np.ndarray, R: np.ndarray, stage: int = -1) -> None:
-        """
-        Set the state weighting matrix Q.
-
-        :param Q: State weighting matrix
-        :type Q: np.ndarray
-        :param R: Actuation weighting matrix
-        :type R: np.ndarray
-        :param stage: Stage index (default: -1 for all stages)
-        :type stage: int
-        :return: None
-        :rtype: None
-        """
-        # Check if Q and R are 2D quared matrices or 1D arrays
-        if Q.ndim == 1:
-            Q = np.diag(Q)
-        if R.ndim == 1:
-            R = np.diag(R)
-        # Build W as a block-diagonal matrix so Q and R can have different sizes
-        # Use scipy.linalg.block_diag which correctly handles matrices of
-        # different dimensions (e.g., state and input weight sizes).
-        w = scipy.linalg.block_diag(Q, R)
-
-        # Check size of Q and R
-        if w.shape != (self.w_size, self.w_size):
-            raise ValueError(
-                f"Size mismatch: Q and R result in W of shape {w.shape}, "
-                f"but expected shape is ({self.w_size}, {self.w_size}).")
-
-        if stage == -1:
-            for state_i in range(self.N):
-                self.acados_ocp_solver.cost_set(state_i, 'W', w)
-        else:
-            if stage >= self.N:
-                raise ValueError(
-                    f"Stage index {stage} out of bounds for N={self.N}.")
-            self.acados_ocp_solver.cost_set(stage, 'W', w)
-
-    def set_gain_terminal_state(self, Qe: np.ndarray) -> None:
-        """
-        Set the terminal state weighting matrix Qe.
-
-        :param Qe: Terminal state weighting matrix
-        :type Qe: np.ndarray
-        :return: None
-        :rtype: None
-        """
-        if Qe.ndim == 1:
-            Qe = np.diag(Qe)
-
-        # Check size of Qe
-        if Qe.shape != (self.we_size, self.we_size):
-            raise ValueError(
-                f"Size mismatch: Qe has shape {Qe.shape}, "
-                f"but expected shape is ({self.we_size}, {self.we_size}).")
-
-        self.acados_ocp_solver.cost_set(self.N, 'W', Qe)
+        self.set_x_bounds(parameters.lbx, parameters.ubx)
 
     def set_parameters(self, p: np.ndarray, stage: int = -1) -> None:
         """
@@ -437,6 +350,8 @@ class MPC():
         :return: None
         :rtype: None
         """
+        if self.lbx_size == 0:
+            return  # No state bounds to set
         # Check size of x_min and x_max
         if x_min.shape[0] != self.lbx_size or x_max.shape[0] != self.ubx_size:
             raise ValueError(
@@ -473,109 +388,6 @@ class MPC():
         self.acados_ocp_solver.set(0, 'lbx', x)
         self.acados_ocp_solver.set(0, 'ubx', x)
 
-    def set_u_ref(self, u_ref: np.ndarray) -> None:
-        """
-        Set the reference control input for yref.
-
-        :param u_ref: Reference control input array
-        :type u_ref: np.ndarray
-        :return: None
-        :rtype: None
-        """
-        # Check size of u_ref
-        if u_ref.shape[0] != self.u_size:
-            raise ValueError(
-                f"Size mismatch: u_ref has shape {u_ref.shape}, "
-                f"but expected size is ({self.u_size},).")
-        self._u_ref = u_ref
-        
-    def get_u_ref(self) -> np.ndarray:
-        """
-        Get the reference control input for yref.
-
-        :return: Reference control input array
-        :rtype: np.ndarray
-        """
-        return self._u_ref
-
-    def _expand_y_ref_with_u_ref(self, y_ref: np.ndarray) -> np.ndarray:
-        """
-        Expand y_ref by appending the reference control input u_ref.
-
-        :param y_ref: Reference state array
-        :type y_ref: np.ndarray
-        :return: Expanded reference state array
-        :rtype: np.ndarray
-        """
-        expanded_y_ref = np.zeros(self.w_size)
-        expanded_y_ref[:self.we_size] = y_ref
-        expanded_y_ref[self.we_size:] = self._u_ref
-        return expanded_y_ref
-
-    def set_y_ref_per_stage(self, y_ref: np.ndarray, stage: int) -> None:
-        """
-        Set the reference state of the MPC problem.
-
-        :param y_ref: Reference state array
-        :type y_ref: np.ndarray
-        :param stage: Stage index
-        :type stage: int
-        :return: None
-        :rtype: None
-        """
-        # Check size of y_ref
-        if y_ref.shape[0] == self.we_size:
-            y_ref = self._expand_y_ref_with_u_ref(y_ref)
-        if y_ref.shape[0] != self.w_size:
-            raise ValueError(
-                f"Size mismatch: y_ref has shape {y_ref.shape}, "
-                f"but expected size is ({self.w_size},).")
-        if stage < 0 or stage >= self.N:
-            raise ValueError(
-                f"Stage index {stage} out of bounds for N={self.N}.")
-        self.acados_ocp_solver.cost_set(stage, 'yref', y_ref)
-
-    def set_y_ref(self, y_ref: np.ndarray) -> None:
-        """
-        Set the reference state of the MPC problem.
-
-        :param y_ref: Reference state array
-        :type y_ref: np.ndarray
-        :return: None
-        :rtype: None
-        """
-        if y_ref.shape[0] != self.N:
-            raise ValueError(
-                f"Size mismatch: y_ref has shape {y_ref.shape}, "
-                f"but expected size is ({self.N},).")
-
-        for stage_i in range(self.N):
-            single_y_ref = y_ref[stage_i]
-            if single_y_ref.shape[0] == self.we_size:
-                single_y_ref = self._expand_y_ref_with_u_ref(single_y_ref)
-            if single_y_ref.shape[0] != self.w_size:
-                raise ValueError(
-                    f"Size mismatch: y_ref at stage {stage_i} has shape {single_y_ref.shape}, "
-                    f"but expected size is ({self.w_size},).")
-            self.acados_ocp_solver.cost_set(stage_i, 'yref', single_y_ref)
-
-    def set_y_ref_e(self, y_ref_e: np.ndarray) -> None:
-        """
-        Set the terminal state output of the MPC problem.
-
-        :param y_ref_e: Terminal reference state array
-        :type y_ref_e: np.ndarray
-        :return: None
-        :rtype: None
-        """
-        # Check size of y_ref_e
-        if y_ref_e.shape[0] != self.we_size:
-            raise ValueError(
-                f"Size mismatch: y_ref_e has shape {y_ref_e.shape}, "
-                f"but expected size is ({self.we_size},).")
-
-        self.acados_ocp_solver.cost_set(self.N, 'yref', y_ref_e)
-
     def set_new_time_steps(self, dt: float) -> None:
         """
         Set new uniform time steps for the MPC problem.
@@ -594,72 +406,9 @@ class MPC():
         self._dt = dt
         self._tf = dt * self.N
 
-    def compute_control_action(
-            self,
-            state: np.ndarray,
-            reference_trajectory_intermediate: np.ndarray,
-            reference_trajectory_final: np.ndarray) -> np.ndarray:
-        """
-        Simulate the system using MPC with a given state and reference trajectory.
-
-        Acados status:
-            ACADOS_SUCCESS = 0
-            ACADOS_NAN_DETECTED = 1
-            ACADOS_MAXITER = 2
-            ACADOS_MINSTEP = 3
-            ACADOS_QP_FAILURE = 4
-            ACADOS_READY = 5
-            ACADOS_UNBOUNDED = 6
-
-        :param state: The current state of the system.
-        :param reference_trajectory_intermediate: The intermediate reference trajectory
-        for the system (matrix of size [N, state_dim]).
-        :param reference_trajectory_final: The final reference trajectory for the system
-        (matrix of size [state_dim]).
-
-        :return: The control action u0.
-        """
-        # Set the reference trajectory
-        self.set_y_ref(reference_trajectory_intermediate)
-        self.set_y_ref_e(reference_trajectory_final)
-
-        # Set current state
-        self.set_state(state)
-
-        # Solve the MPC problem
-        status = self.acados_ocp_solver.solve()
-        if status != 0:
-            # Provide additional diagnostics to help debugging QP failures
-            print(f'MPC Solver failed with status {status}')
-            try:
-                stats = self.acados_ocp_solver.get_stats()
-                print('Acados solver stats:')
-                print(stats)
-            except Exception as _e:
-                print('Could not retrieve solver stats:', _e)
-            try:
-                diag = self.acados_ocp_solver.qp_diagnostics()
-                print('QP diagnostics:')
-                print(diag)
-            except Exception as _e:
-                print('Could not retrieve QP diagnostics:', _e)
-            try:
-                # Dump last QP to a JSON file for offline inspection
-                self.acados_ocp_solver.dump_last_qp_to_json('last_qp.json')
-                print('Dumped last QP to last_qp.json')
-            except Exception as _e:
-                print('Could not dump last QP to JSON:', _e)
-
-            raise Exception(
-                f'MPC solver returned status {status}. Exiting.')
-
-        return self.actuation[0]
-
     def solve(
             self,
             state: np.ndarray = None,
-            y_ref: np.ndarray = None,
-            y_ref_e: np.ndarray = None,
             p: np.ndarray = None) -> np.ndarray:
         """
         Simulate the system using MPC with a given state and reference trajectory.
@@ -674,19 +423,12 @@ class MPC():
             ACADOS_UNBOUNDED = 6
 
         :param state: The current state of the system.
-        :param reference_trajectory_intermediate: The intermediate reference trajectory
-        for the system (matrix of size [N, state_dim]).
-        :param reference_trajectory_final: The final reference trajectory for the system
-        (matrix of size [state_dim]).
+        :type state: np.ndarray
+        :param p: The parameters vector.
+        :type p: np.ndarray
 
         :return: The control action u0.
         """
-        # Set the reference trajectory
-        if y_ref is not None:
-            self.set_y_ref(y_ref)
-        if y_ref_e is not None:
-            self.set_y_ref_e(y_ref_e)
-
         # Set current state
         if state is not None:
             self.set_state(state)
