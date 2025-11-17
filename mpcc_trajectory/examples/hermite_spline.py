@@ -269,6 +269,77 @@ def compute_arc_length_reparametrization(
         'total_length': total_length             # scalar
     }
 
+def get_segment_from_arc_length(
+    s_eval: float,
+    ti: np.ndarray,
+    total_length: float,
+    poly_coeffs: np.ndarray
+) -> Tuple[int, float, float]:
+    """
+    Determine which spline segment corresponds to a given arc length s.
+    
+    This function takes an arc length value s and returns:
+    1. The segment index (which pair of control points)
+    2. The parameter t corresponding to s
+    3. The normalized parameter s in [0, 1]
+    
+    :param s_eval: Arc length value to query
+    :type s_eval: float
+    :param ti: Parameter values at control points (shape (N,))
+    :type ti: np.ndarray
+    :param total_length: Total arc length of the spline (scalar)
+    :type total_length: float
+    :param poly_coeffs: Polynomial coefficients for t(s_normalized) (shape (degree+1,))
+    :type poly_coeffs: np.ndarray
+    :return: Tuple of (segment_index, t_value, s_normalized) where:
+             - segment_index: int index of the segment [0, N-2]
+             - t_value: parameter t corresponding to s_eval
+             - s_normalized: normalized arc length s_eval/total_length in [0, 1]
+    :rtype: Tuple[int, float, float]
+    
+    Example:
+        >>> params = compute_arc_length_reparametrization(spline)
+        >>> s_eval = 0.5 * params['total_length']  # Midpoint
+        >>> segment_idx, t_val, s_norm = get_segment_from_arc_length(
+        ...     s_eval,
+        ...     params['ti'],
+        ...     params['total_length'],
+        ...     params['poly_coeffs']
+        ... )
+        >>> print(f"Arc length {s_eval:.2f} is in segment {segment_idx} at t={t_val:.2f}")
+    """
+    # Normalize s to [0, 1]
+    s_norm = s_eval / total_length
+    
+    # Clamp s_norm to [0, 1]
+    s_norm = np.clip(s_norm, 0.0, 1.0)
+    
+    # Get number of coefficients
+    n_coeffs = len(poly_coeffs)
+    
+    # Polynomial approximation: t(s_norm) = sum(c_i * s_norm^i)
+    # poly_coeffs are from np.polyfit, so highest degree first
+    t_of_s = 0.0
+    for i in range(n_coeffs):
+        t_of_s += poly_coeffs[i] * s_norm**(n_coeffs - 1 - i)
+    
+    # Clamp t to valid range
+    t_min = ti[0]
+    t_max = ti[-1]
+    t_of_s = np.clip(t_of_s, t_min, t_max)
+    
+    # Find which segment contains this t value
+    segment_idx = 0
+    for i in range(len(ti) - 1):
+        if t_of_s <= ti[i + 1]:
+            segment_idx = i
+            break
+    else:
+        segment_idx = len(ti) - 2  # Last segment
+    
+    return segment_idx, t_of_s, s_norm
+
+
 
 if __name__ == "__main__":
     """Example usage and validation."""
@@ -276,13 +347,7 @@ if __name__ == "__main__":
     
     def plot_3d_trajectory(ax, positions, points):
         """
-        Plot 3D trajectory with control points.
-        
-        :param ax: Matplotlib 3D axes
-        :param positions: Array of positions (N, 3)
-        :type positions: np.ndarray
-        :param points: List of control points
-        :type points: List[np.ndarray]
+e points: List[np.ndarray]
         """
         ax.plot(positions[:, 0], positions[:, 1], positions[:, 2], 
                 'b-', linewidth=2, label='Spline')
@@ -348,7 +413,7 @@ if __name__ == "__main__":
         np.array([0.0, 0.0, 1.0]),
         np.array([1.0, 1.0, 1.0]),
         np.array([2.0, 0.0, 1.0]),
-        np.array([3.0, 1.0, 1.0]),
+        np.array([4.0, 1.0, 1.0]),
     ]
     
     # Define tangent vectors at each waypoint
@@ -377,6 +442,13 @@ if __name__ == "__main__":
     print(f"Ti shape: {params['ti'].shape}")
     print(f"Poly coeffs shape: {params['poly_coeffs'].shape}")
     print(f"Total length: {params['total_length']:.4f}")
+
+    s_eval = 0.1 * params['total_length']  # Midpoint
+    segment_idx, t_val, s_norm = get_segment_from_arc_length(s_eval, params['ti'],
+        params['total_length'],
+        params['poly_coeffs']
+        )
+    print(f"Arc length {s_eval:.2f} is in segment {segment_idx} at t={t_val:.2f}")
     
     # Save parameters
     np.savez('spline_params.npz', **params)
