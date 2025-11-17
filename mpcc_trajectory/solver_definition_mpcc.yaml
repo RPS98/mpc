@@ -42,7 +42,7 @@ solver:
   generate_c_code: true
   verbose: true
   cost_type: EXTERNAL
-  qp_solver: FULL_CONDENSING_QPOASES
+  qp_solver: PARTIAL_CONDENSING_HPIPM
   nlp_solver_type: SQP_RTI
   hessian_approx: EXACT
   integrator_type: ERK
