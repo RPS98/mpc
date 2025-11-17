@@ -151,7 +151,6 @@ def test_controller(
         logger.save(t, x, p, u)
         pbar.update(dt)
         t += dt
-        logger.save(t, x, p, u)
     print(f'MPC solve time mean: {np.mean(mpc_solve_times)}')
 
 

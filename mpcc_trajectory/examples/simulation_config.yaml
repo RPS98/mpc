@@ -1,10 +1,10 @@
 sim_config:
-  sim_time: 1.0 # seconds
+  sim_time: 10.0 # seconds
   max_speed: 1.0 # m/s
   waypoints:
-    - [0.0, 0.0, 0.0]
-    - [1.0, 1.0, 0.1]
-    - [2.0, 2.0, 0.1]
+    - [0.0, 0.0, 1.0]
+    - [1.0, 1.0, 1.3]
+    - [2.0, 2.0, 1.5]
   waypoints_tg:
     - [0.0,0.0,0.1]
     - [0.0,0.0,0.1]
@@ -22,8 +22,8 @@ controller:
     ubu: [40.0, 2.0, 2.0, 0.5, 1.0] # Upper bounds for control inputs: [thrust, wx, wy, wz, v_theta]
     p_mass: [1.0] # Mass of the MAV (kg)
     p_desired_orientation: [1.0, 0.0, 0.0, 0.0] # Desired orientation as a quaternion [qw, qx, qy, qz]
-    p_gains_contour_error: [0.5,0.5,0.1] # Gains for contour error [e_cx,e_cy,e_cz]
-    p_gain_lag_error: [0.5] # Gains for lag error [e_l]
+    p_gains_contour_error: [1.0,1.0,2.0] # Gains for contour error [e_cx,e_cy,e_cz]
+    p_gain_lag_error: [1.0] # Gains for lag error [e_l]
     p_gains_orientation: [0.1,0.1,0.1] # Gains for orientation error [e_roll,e_pitch,e_yaw]
     p_gains_actuation: [0.1,0.1,0.1,0.1] # Gains for actuation inputs [thrust, wx, wy, wz]
     p_gains_actuation_theta_velocity: [0.5] # Gain for actuation input [v_theta]
