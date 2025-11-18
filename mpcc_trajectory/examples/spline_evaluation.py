@@ -343,4 +343,4 @@ def evaluate_arc_length_spline(
     norm_dp_ds = np.linalg.norm(dp_ds_raw, axis=-1, keepdims=True)
     dp_ds_unit = dp_ds_raw / (norm_dp_ds + 1e-10)
     
-    return p_s, dp_ds_unit
+    return p_s, dp_ds_unit, t_of_s

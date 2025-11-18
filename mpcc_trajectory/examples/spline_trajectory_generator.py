@@ -33,11 +33,12 @@ __authors__ = 'Carmen De Rojas Pita-Romero'
 __copyright__ = 'Copyright (c) 2025 Universidad Politécnica de Madrid'
 __license__ = 'BSD-3-Clause'
 
-from hermite_spline import HermiteSpline, compute_arc_length_reparametrization, get_segment_from_arc_length
+from hermite_spline import HermiteSpline, compute_arc_length_reparametrization
 from typing import List, Tuple, Dict
 from dataclasses import dataclass
 import numpy as np
 import matplotlib.pyplot as plt
+from spline_evaluation import evaluate_arc_length_spline
 
 
 @dataclass
@@ -115,12 +116,14 @@ class SplineTrajectoryGenerator:
         num_wp: int,
         spline_samples: int = 200,
         spline_degree: int = 5,
+        plot_on_regeneration: bool = False,
     ):
         """
         :param setpoints: list of Setpoint objects
         :param num_wp: number of waypoints to use for spline generation
         :param spline_samples: number of samples for arc length reparametrization
         :param spline_degree: degree of polynomial for arc length reparametrization
+        :param plot_on_regeneration: if True, plot spline every time it's regenerated
         """
         # Global parameters
         self.num_wp = num_wp
@@ -128,6 +131,8 @@ class SplineTrajectoryGenerator:
         self.spline_samples = spline_samples
         self.spline_degree = spline_degree
         self.spline_reparametrization = None
+        self.plot_on_regeneration = plot_on_regeneration
+        self.regeneration_count = 0
 
         # Create Path object to manage waypoints
         self.path = Path(setpoints)
@@ -139,6 +144,138 @@ class SplineTrajectoryGenerator:
         self.spline = HermiteSpline(wps, tgs)
         self.spline_reparametrization = compute_arc_length_reparametrization(
             self.spline, n_samples=self.spline_samples, poly_degree=self.spline_degree)
+        
+        # Plot if enabled
+        if self.plot_on_regeneration:
+            self._plot_spline_regeneration()
+    
+    def _plot_spline_regeneration(self):
+        """Plot the current spline in 3D and by axes."""
+        self.regeneration_count += 1
+        
+        # Sample the spline along its arc length
+        total_length = self.spline_reparametrization['total_length']
+        s_values = np.linspace(0, total_length, 100)
+        
+        positions = []
+        for s in s_values:
+            pos, _, _ = self.evaluate_arc_length_spline(s)
+            positions.append(pos)
+        
+        positions = np.array(positions)
+        
+        # Get current waypoints for visualization
+        wps, tgs = self.path.get_waypoints(self.num_wp)
+        wps = np.array(wps)
+        
+        # Create NEW figure with subplots (each regeneration gets its own figure)
+        fig = plt.figure(num=f'Regeneration #{self.regeneration_count}', figsize=(16, 10))
+        fig.suptitle(f'Spline Regeneration #{self.regeneration_count} | Arc Length: {total_length:.3f} m | Path Index: {self.path.current_index}',
+                     fontsize=14, fontweight='bold')
+        
+        # 3D plot
+        ax1 = fig.add_subplot(2, 2, 1, projection='3d')
+        ax1.plot(positions[:, 0], positions[:, 1], positions[:, 2],
+                'b-', linewidth=2, label='Spline Trajectory')
+        ax1.scatter(wps[:, 0], wps[:, 1], wps[:, 2],
+                   color='red', s=100, label='Waypoints', zorder=5, edgecolors='black')
+        
+        # Add tangent vectors at waypoints
+        for i, (wp, tg) in enumerate(zip(wps, tgs)):
+            ax1.quiver(wp[0], wp[1], wp[2],
+                      tg[0]*0.3, tg[1]*0.3, tg[2]*0.3,
+                      color='green', arrow_length_ratio=0.3, linewidth=2, alpha=0.6)
+        
+        # Mark start and end
+        ax1.scatter(positions[0, 0], positions[0, 1], positions[0, 2],
+                   color='lime', s=150, marker='o', label='Start', zorder=6, edgecolors='black')
+        ax1.scatter(positions[-1, 0], positions[-1, 1], positions[-1, 2],
+                   color='orange', s=150, marker='s', label='End', zorder=6, edgecolors='black')
+        
+        ax1.set_xlabel('X [m]')
+        ax1.set_ylabel('Y [m]')
+        ax1.set_zlabel('Z [m]')
+        ax1.legend(loc='upper left', fontsize=8)
+        ax1.set_title('3D View', fontweight='bold')
+        ax1.grid(True, alpha=0.3)
+        
+        # X-Y projection
+        ax2 = fig.add_subplot(2, 2, 2)
+        ax2.plot(positions[:, 0], positions[:, 1], 'b-', linewidth=2, label='Trajectory')
+        ax2.scatter(wps[:, 0], wps[:, 1],
+                   color='red', s=100, label='Waypoints', zorder=5, edgecolors='black')
+        for wp, tg in zip(wps, tgs):
+            ax2.arrow(wp[0], wp[1], tg[0]*0.3, tg[1]*0.3,
+                     head_width=0.15, head_length=0.15, fc='green', ec='green', alpha=0.6)
+        ax2.scatter(positions[0, 0], positions[0, 1],
+                   color='lime', s=150, marker='o', label='Start', zorder=6, edgecolors='black')
+        ax2.scatter(positions[-1, 0], positions[-1, 1],
+                   color='orange', s=150, marker='s', label='End', zorder=6, edgecolors='black')
+        ax2.set_xlabel('X [m]')
+        ax2.set_ylabel('Y [m]')
+        ax2.legend(loc='best', fontsize=8)
+        ax2.set_title('X-Y Projection', fontweight='bold')
+        ax2.grid(True, alpha=0.3)
+        ax2.axis('equal')
+        
+        # X-Z projection
+        ax3 = fig.add_subplot(2, 2, 3)
+        ax3.plot(positions[:, 0], positions[:, 2], 'b-', linewidth=2, label='Trajectory')
+        ax3.scatter(wps[:, 0], wps[:, 2],
+                   color='red', s=100, label='Waypoints', zorder=5, edgecolors='black')
+        ax3.scatter(positions[0, 0], positions[0, 2],
+                   color='lime', s=150, marker='o', label='Start', zorder=6, edgecolors='black')
+        ax3.scatter(positions[-1, 0], positions[-1, 2],
+                   color='orange', s=150, marker='s', label='End', zorder=6, edgecolors='black')
+        ax3.set_xlabel('X [m]')
+        ax3.set_ylabel('Z [m]')
+        ax3.legend(loc='best', fontsize=8)
+        ax3.set_title('X-Z Projection', fontweight='bold')
+        ax3.grid(True, alpha=0.3)
+        ax3.axis('equal')
+        
+        # Y-Z projection
+        ax4 = fig.add_subplot(2, 2, 4)
+        ax4.plot(positions[:, 1], positions[:, 2], 'b-', linewidth=2, label='Trajectory')
+        ax4.scatter(wps[:, 1], wps[:, 2],
+                   color='red', s=100, label='Waypoints', zorder=5, edgecolors='black')
+        ax4.scatter(positions[0, 1], positions[0, 2],
+                   color='lime', s=150, marker='o', label='Start', zorder=6, edgecolors='black')
+        ax4.scatter(positions[-1, 1], positions[-1, 2],
+                   color='orange', s=150, marker='s', label='End', zorder=6, edgecolors='black')
+        ax4.set_xlabel('Y [m]')
+        ax4.set_ylabel('Z [m]')
+        ax4.legend(loc='best', fontsize=8)
+        ax4.set_title('Y-Z Projection', fontweight='bold')
+        ax4.grid(True, alpha=0.3)
+        ax4.axis('equal')
+        
+        plt.tight_layout()
+        plt.draw()
+        plt.pause(0.001)  # Small pause to allow the figure to render
+
+    
+    def evaluate_arc_length_spline(
+        self, s: float
+    ) -> Tuple[np.ndarray, np.ndarray, float]:
+        """
+        Evaluate the spline at arc length s.
+        
+        :param s: Arc length value to evaluate (must be >= 0)
+        :return: Tuple of (position, derivative, theta) where:
+                 - position: np.ndarray (3,) - position at arc length s
+                 - derivative: np.ndarray (3,) - tangent vector at arc length s
+                 - theta: float - normalized arc length parameter [0, 1]
+        """
+        position, derivative, theta = evaluate_arc_length_spline(
+            s,
+            self.spline_reparametrization['points'],
+            self.spline_reparametrization['tangents'],
+            self.spline_reparametrization['ti'],
+            self.spline_reparametrization['total_length'],
+            self.spline_reparametrization['poly_coeffs']
+        )
+        return position, derivative, theta
     
     def evaluate_spline(self, s: float) -> Tuple[float, Dict]:
         """
@@ -176,27 +313,20 @@ class SplineTrajectoryGenerator:
             >>>     print(f"Position: {params['position']}")
             >>>     s = new_s  # Update s in case of regeneration
         """
-        # Get segment information for current s
-        segment_idx, t_val, s_norm = get_segment_from_arc_length(
-            s,
-            self.spline_reparametrization['ti'],
-            self.spline_reparametrization['total_length'],
-            self.spline_reparametrization['poly_coeffs']
-        )
-        
-        # Evaluate position and derivative at current s
-        position = self.spline.evaluate(t_val)
-        derivative = self.spline.evaluate_derivative(t_val)
+        # Evaluate spline at current arc length s
+        pos, vel, theta = self.evaluate_arc_length_spline(s)
         
         # Check if we've passed the first segment (first waypoint)
         new_s = s
-        if segment_idx > 0:
+        if theta >= 1.0:
             # Advance to next waypoint
             if self.path.advance():
                 # Regenerate spline with new waypoints
                 self.generate_spline()
                 # Reset s to 0 for the new spline
                 new_s = 0.0
+                # Regenerate evaluation at s=0
+                pos, vel, theta = self.evaluate_arc_length_spline(new_s)
             else:
                 # No more waypoints available, keep current spline
                 # Keep s as is (will be clamped to spline length)
@@ -204,8 +334,8 @@ class SplineTrajectoryGenerator:
         
         # Return adjusted s and spline parameters
         spline_params = {
-            'position': position,
-            'derivative': derivative,
+            'position': pos,
+            'derivative': vel,
             'reparametrization': self.spline_reparametrization
         }
         
@@ -215,53 +345,57 @@ class SplineTrajectoryGenerator:
 def main():
     """Demo: Evaluate trajectory until no waypoints remain and plot in 3D."""
     
+    # Enable interactive mode for non-blocking plots
+    # plt.ion()
+    
     # Create list of setpoints based on gates_config.yaml (SEASON 2 TRACK)
     # Format: [x, y, z, yaw] -> tangent perpendicular to yaw angle
     # tangent = [cos(yaw), sin(yaw), 0]
+    speed = 6.0  # m/s
     setpoints = [
         # gate01: [12.5, 2.0, 1.45, 3.14159]
         Setpoint(id=1, position=np.array([12.5, 2.0, 1.45]), 
-                 tangent=np.array([-1.0, 0.0, 0.0])),  # cos(π) = -1, sin(π) = 0
+                 tangent=speed * np.array([-1.0, 0.0, 0.0])),  # cos(π) = -1, sin(π) = 0
         
         # gate02: [6.5, 6.0, 1.45, 2.35619]
         Setpoint(id=2, position=np.array([6.5, 6.0, 1.45]), 
-                 tangent=np.array([-0.707, 0.707, 0.0])),  # cos(3π/4) ≈ -0.707, sin(3π/4) ≈ 0.707
+                 tangent=speed * np.array([-0.707, 0.707, 0.0])),  # cos(3π/4) ≈ -0.707, sin(3π/4) ≈ 0.707
         
         # gate03: [5.5, 14.0, 1.45, 2.0944]
         Setpoint(id=3, position=np.array([5.5, 14.0, 1.45]), 
-                 tangent=np.array([-0.5, 0.866, 0.0])),  # cos(2π/3) = -0.5, sin(2π/3) ≈ 0.866
+                 tangent=speed * np.array([-0.5, 0.866, 0.0])),  # cos(2π/3) = -0.5, sin(2π/3) ≈ 0.866
         
         # gate04: [2.5, 24.0, 1.45, 1.5708]
         Setpoint(id=4, position=np.array([2.5, 24.0, 1.45]), 
-                 tangent=np.array([0.0, 1.0, 0.0])),  # cos(π/2) = 0, sin(π/2) = 1
+                 tangent=speed * np.array([0.0, 1.0, 0.0])),  # cos(π/2) = 0, sin(π/2) = 1
         
         # gate05: [7.5, 30.0, 1.45, -0.174533]
         Setpoint(id=5, position=np.array([7.5, 30.0, 1.45]), 
-                 tangent=np.array([0.985, -0.174, 0.0])),  # cos(-π/18) ≈ 0.985, sin(-π/18) ≈ -0.174
+                 tangent=speed * np.array([0.985, -0.174, 0.0])),  # cos(-π/18) ≈ 0.985, sin(-π/18) ≈ -0.174
         
         # gate06: [12.2, 22.0, 1.45, 0.0]
         Setpoint(id=6, position=np.array([12.2, 22.0, 1.45]), 
-                 tangent=np.array([1.0, 0.0, 0.0])),  # cos(0) = 1, sin(0) = 0
+                 tangent=speed * np.array([1.0, 0.0, 0.0])),  # cos(0) = 1, sin(0) = 0
         
         # gate07_splitup: [17.5, 30.0, 4.15, 1.39626]
         Setpoint(id=7, position=np.array([17.5, 30.0, 4.15]), 
-                 tangent=np.array([0.174, 0.985, 0.0])),  # cos(1.39626) ≈ 0.174, sin(1.39626) ≈ 0.985
+                 tangent=speed * np.array([0.174, 0.985, 0.0])),  # cos(1.39626) ≈ 0.174, sin(1.39626) ≈ 0.985
         
         # gate08: [18.5, 22.0, 1.45, -1.39626]
         Setpoint(id=8, position=np.array([18.5, 22.0, 1.45]), 
-                 tangent=np.array([0.174, -0.985, 0.0])),  # cos(-1.39626) ≈ 0.174, sin(-1.39626) ≈ -0.985
+                 tangent=speed * np.array([0.174, -0.985, 0.0])),  # cos(-1.39626) ≈ 0.174, sin(-1.39626) ≈ -0.985
         
         # gate09: [20.5, 14.0, 1.45, -1.74533]
         Setpoint(id=9, position=np.array([20.5, 14.0, 1.45]), 
-                 tangent=np.array([-0.174, -0.985, 0.0])),  # cos(-π+0.4) ≈ -0.174, sin(-π+0.4) ≈ -0.985
+                 tangent=speed * np.array([-0.174, -0.985, 0.0])),  # cos(-π+0.4) ≈ -0.174, sin(-π+0.4) ≈ -0.985
         
         # gate10_ladderup: [18.5, 6.0, 4.15, -2.35619]
         Setpoint(id=10, position=np.array([18.5, 6.0, 4.15]), 
-                 tangent=np.array([-0.707, -0.707, 0.0])),  # cos(-3π/4) ≈ -0.707, sin(-3π/4) ≈ -0.707
+                 tangent=speed * np.array([-0.707, -0.707, 0.0])),  # cos(-3π/4) ≈ -0.707, sin(-3π/4) ≈ -0.707
     ]
     
-    # Create spline generator with 3 waypoints per spline
-    spline_gen = SplineTrajectoryGenerator(setpoints, num_wp=3)
+    # Create spline generator with 3 waypoints per spline and plot on regeneration
+    spline_gen = SplineTrajectoryGenerator(setpoints, num_wp=5, plot_on_regeneration=True)
     
     print("=== Spline Trajectory Evaluation Demo ===")
     print(f"Total waypoints: {len(setpoints)}")
@@ -271,7 +405,7 @@ def main():
     # Collect trajectory by incrementing arc length
     trajectory = []
     s = 0.0
-    ds = 0.1  # Arc length increment
+    ds = 0.01  # Arc length increment
     regeneration_count = 0
     iteration = 0
     
