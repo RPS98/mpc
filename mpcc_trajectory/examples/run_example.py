@@ -40,11 +40,13 @@ from acados_template import AcadosSimSolver
 from mpc.mpc_controller import MPC, MPCParameters
 from mpc.acados_solver import get_acados_sim_solver
 from mpc.utils.yaml_to_dict import yaml_to_dict
+from mpcc_trajectory.examples.spline_trajectory_generator import SplineTrajectoryGenerator
 from utils.utils import euler_to_quaternion, CsvLogger
 from mpc.model_definition.actuation import Actuation
 from mpc.model_definition.state import State
 from mpc.model_definition.parameters import Parameters
 from hermite_spline import HermiteSpline, compute_arc_length_reparametrization
+from spline_trajectory_generator import SplineTrajectoryGenerator
 from mpc.spline.spline_evaluation import evaluate_arc_length_spline
 import numpy as np
 import time
@@ -86,15 +88,16 @@ def test_controller(
     ).vector
     u = Actuation().vector
 
+    origin= {'waypoints': np.array(simulation_data.sim_config.origin_wp), 'waypoints_tg': np.array(simulation_data.sim_config.origin_wp_tg)}
     position_references = simulation_data.sim_config.waypoints
     tg_references = simulation_data.sim_config.waypoints_tg
-
+    references = {'waypoints': position_references, 'waypoints_tg': tg_references}
     mpc_solve_times = np.zeros(0)
 
 
     # Create spline
-    spline = HermiteSpline(position_references, tg_references)
-    spline_params = compute_arc_length_reparametrization(spline, n_samples=200, poly_degree=5)
+    spline_generator = SplineTrajectoryGenerator(references, origin,3, False)    
+    spline_generator.first_spline()
 
     params_dict = simulation_data.controller.mpc
     p = Parameters(
@@ -106,16 +109,15 @@ def test_controller(
         gains_actuation= params_dict.p_gains_actuation,
         gains_actuation_theta_velocity= params_dict.p_gains_actuation_theta_velocity,
         gain_progress= params_dict.p_gain_progress,
-        s1_p=spline_params['points'][0],
-        s1_m=spline_params['tangents'][0],
-        s2_p=spline_params['points'][1],
-        s2_m=spline_params['tangents'][1],
-        s3_p=spline_params['points'][2],
-        s3_m=spline_params['tangents'][2],
-        s_length=spline_params['total_length'],
-        s_poly_coeffs=spline_params['poly_coeffs']
+        s1_p=spline_generator.spline_reparametrization['points'][0],
+        s1_m=spline_generator.spline_reparametrization['tangents'][0],
+        s2_p=spline_generator.spline_reparametrization['points'][1],
+        s2_m=spline_generator.spline_reparametrization['tangents'][1],
+        s3_p=spline_generator.spline_reparametrization['points'][2],
+        s3_m=spline_generator.spline_reparametrization['tangents'][2],
+        s_length=spline_generator.spline_reparametrization['total_length'],
+        s_poly_coeffs=spline_generator.spline_reparametrization['poly_coeffs']
     )
-
     t = 0.0
     max_time = simulation_data.sim_config.sim_time
     logger.save(t, x, p, u)
@@ -145,6 +147,26 @@ def test_controller(
         # Theta update for next iteration
         x_1 = mpc.acados_ocp_solver.get(1, "x")
         theta_1 = x_1[10]  # theta is at index 10
+        if spline_generator.check_status_trajectory(theta_1):
+            p = Parameters(
+            mass=params_dict.p_mass,
+            desired_orientation=params_dict.p_desired_orientation,
+            gains_contour_error=params_dict.p_gains_contour_error,
+            gain_lag_error= params_dict.p_gain_lag_error,
+            gains_orientation= params_dict.p_gains_orientation,
+            gains_actuation= params_dict.p_gains_actuation,
+            gains_actuation_theta_velocity= params_dict.p_gains_actuation_theta_velocity,
+            gain_progress= params_dict.p_gain_progress,
+            s1_p=spline_generator.spline_reparametrization['points'][0],
+            s1_m=spline_generator.spline_reparametrization['tangents'][0],
+            s2_p=spline_generator.spline_reparametrization['points'][1],
+            s2_m=spline_generator.spline_reparametrization['tangents'][1],
+            s3_p=spline_generator.spline_reparametrization['points'][2],
+            s3_m=spline_generator.spline_reparametrization['tangents'][2],
+            s_length=spline_generator.spline_reparametrization['total_length'],
+            s_poly_coeffs=spline_generator.spline_reparametrization['poly_coeffs']
+            )
+            theta_1 = 0.0  # Reset theta if trajectory is regenerated   
         x[10] = theta_1
 
         # Update logger

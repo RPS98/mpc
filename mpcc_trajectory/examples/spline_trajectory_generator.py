@@ -43,98 +43,135 @@ class SplineTrajectoryGenerator:
         
     def __init__(
         self,
-        wp: list[str, np.ndarray, np.ndarray],
-        origin: np.ndarray,
+        wp: dict,
+        origin: dict,
+        num_wp: int,
+        cyclic: bool,
     ):
+        """
+        :param wp: dict of waypoints and tangents
+        :param origin: dict position and tangent of the drone"""
         # Global parameters
-        self.waypoints = wp # id, position, tg
-        self.drone_pose = origin # position, tg
+
+        self.drone_pose = origin 
+        self.num_wp = num_wp
+        self.cyclic =cyclic
         self.theta = None
         self.spline_reparametrization = None
         self.theta_intervals = None
-        self.first_wp=True
 
+        # Add key to waypoints dict
+        self.waypoints = {
+            f'wp_{i}': {'waypoints': pos, 'waypoints_tg': tg}
+            for i, (pos, tg) in enumerate(zip(wp['waypoints'], wp['waypoints_tg']))
+        }
+        
     def first_spline(self):
-        wps = [self.drone_pose['position']] + [wp['position'] for wp in self.waypoints[:3]]
-        tgs = [self.drone_pose['tg']] + [wp['tg'] for wp in self.waypoints[:3]]
-        self.generate_path(wps, tgs)
 
-    def generate_path(self, point: list[np.ndarray],tg: list[np.ndarray]):
-        print(f"Generating spline with points: {point} and tangents: {tg}\n")
+        """Generate the first spline trajectory."""
+
+        wps = [self.drone_pose['waypoints']] + [self.waypoints[f'wp_{i}']['waypoints'] for i in range(self.num_wp-1 )]
+        tgs = [self.drone_pose['waypoints_tg']] + [self.waypoints[f'wp_{i}']['waypoints_tg'] for i in range(self.num_wp -1)]
+        self.generate_spline(wps, tgs)
+
+    def generate_spline(self, point: list[np.ndarray],tg: list[np.ndarray]):
+
+        """Generate spline trajectory from waypoints and tangents."""
+
+        # print(f"Generating spline with points: {point} and tangents: {tg}\n")
         spline = HermiteSpline(point, tg)
         self.spline_reparametrization = compute_arc_length_reparametrization(spline, n_samples=200, poly_degree=5)
-    
-
+        print(f"Spline generated with total length: {self.spline_reparametrization['total_length']}\n")
+        print(f"Spline generated with total length: {self.spline_reparametrization['ti']}\n")
     
     def check_status_trajectory(self, s_eval,)-> bool:
+
+        """Check the status of the trajectory and regenerate if needed."""
+
         segment_idx, t_val, s_norm = get_segment_from_arc_length(s_eval, self.spline_reparametrization['ti'],
             self.spline_reparametrization['total_length'],
             self.spline_reparametrization['poly_coeffs']
             )
-        print(f"Segment idx: {segment_idx}, t_val: {t_val}, s_norm: {s_norm}\n")
         if segment_idx !=0:
+            print(f"Segment idx: {segment_idx}, t_val: {t_val}, s_norm: {s_norm}\n")
             print('Regenerating spline...\n')
-            wps = [wp['position'] for wp in self.waypoints[:4]]
-            tgs = [wp['tg'] for wp in self.waypoints[:4]]
-            self.generate_path(wps, tgs)
-            if self.first_wp:
-                self.first_wp=False
-                return True
-            first_wp = self.waypoints.pop(0) 
-            self.waypoints.append(first_wp)
+            wps = [data['waypoints'] for data in list(self.waypoints.values())[:self.num_wp ]]
+            tgs = [data['waypoints_tg'] for data in list(self.waypoints.values())[:self.num_wp ]]
+            if not self.cyclic:
+                if len(self.waypoints) < self.num_wp:
+                    return False
+            self.generate_spline(wps, tgs)
 
+            # Remove the first waypoint and add it to the end
+            first_wp_key, first_wp_value = list(self.waypoints.items())[0]
+            self.waypoints.pop(first_wp_key)
+
+            if  self.cyclic:
+                self.waypoints[first_wp_key] = first_wp_value
+                return True
             return True
         return False
 
 def main():
     drone_pose = {
-        'position': np.array([0.0, 0.0, 0.0]),
-        'tg': np.array([1.0, 0.0, 0.0])  
+        'waypoints': np.array([0.0, 0.0, 0.0]),
+        'waypoints_tg': np.array([1.0, 0.0, 0.0])  
     }
 
-    waypoints = [
-        {'id': 'wp0', 'position': [0.0, 0.0, 0.5], 'tg': [1.0, 0.0, 0.0]},
-        {'id': 'wp1', 'position': [1.0, 0.0, 1.0], 'tg': [1.0, 0.0, 0.0]},
-        {'id': 'wp2', 'position': [2.0, 0.0, 1.0], 'tg': [1.0, 0.0, 0.0]},
-        {'id': 'wp3', 'position': [3.0, 0.0, 1.0], 'tg': [1.0, 0.0, 0.0]},
-        {'id': 'wp4', 'position': [4.0, 0.0, 1.0], 'tg': [1.0, 0.0, 0.0]},
-        {'id': 'wp5', 'position': [5.0, 0.0, 1.0], 'tg': [1.0, 0.0, 0.0]},
-        {'id': 'wp6', 'position': [6.0, 0.0, 1.0], 'tg': [1.0, 0.0, 0.0]},
-        {'id': 'wp7', 'position': [7.0, 0.0, 1.0], 'tg': [1.0, 0.0, 0.0]},
-        {'id': 'wp8', 'position': [8.0, 0.0, 1.0], 'tg': [1.0, 0.0, 0.0]},
-        {'id': 'wp9', 'position': [9.0, 0.0, 1.0], 'tg': [1.0, 0.0, 0.0]},
-    ]
+    waypoints = {
+        'waypoints': [
+            [0.0, 0.0, 0.5],
+            [1.0, 0.0, 1.0],
+            [2.0, 0.0, 1.0],
+            [3.0, 0.0, 1.0],
+            [4.0, 0.0, 1.0],
+            [5.0, 0.0, 1.0],
+            [6.0, 0.0, 1.0],
+            [7.0, 0.0, 1.0],
+            [8.0, 0.0, 1.0],
+            [9.0, 0.0, 1.0],
+        ],
+        'waypoints_tg': [
+            [1.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+        ]
+    }
 
-    spline_generator = SplineTrajectoryGenerator(waypoints, drone_pose)
-    
+    spline_generator = SplineTrajectoryGenerator(waypoints, drone_pose,3,True)
     spline_generator.first_spline()
 
-    trajectory_points = [drone_pose['position']]
+    trajectory_points = [drone_pose['waypoints']]
     loop_count = 0
     s_eval = 0.0
     loop_count_wp = 0
-    
     while True:
         s_eval = s_eval + spline_generator.spline_reparametrization['total_length'] * 0.1
-        print(f"Evaluating s_eval: {s_eval}\n")
-        print(f"arc_lenght: {spline_generator.spline_reparametrization['total_length']}\n")
         if spline_generator.check_status_trajectory(s_eval):
             s_eval = 0.0
-            trajectory_points.append(spline_generator.waypoints[0]['position']) 
+            first_wp_key = list(spline_generator.waypoints.keys())[0]
+            trajectory_points.append(spline_generator.waypoints[first_wp_key]['waypoints'])
             loop_count_wp += 1
         loop_count += 1
-        if loop_count > 200 or loop_count_wp >= 14:  
+        if loop_count > 100 or loop_count_wp >= 14:  
             break
     trajectory_points = np.array(trajectory_points)
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
     ax.plot(trajectory_points[:, 0], trajectory_points[:, 1], trajectory_points[:, 2], label='Trajectory')
-    ax.scatter(drone_pose['position'][0], drone_pose['position'][1], drone_pose['position'][2], color='red', label='Initial Position')
-    ax.scatter(
-        [wp['position'][0] for wp in waypoints],
-        [wp['position'][1] for wp in waypoints],
-        [wp['position'][2] for wp in waypoints],
+    ax.scatter(drone_pose['waypoints'][0], drone_pose['waypoints'][1], drone_pose['waypoints'][2], color='red', label='Initial Position')
+    ax.scatter( 
+    [wp[0] for wp in waypoints['waypoints']],
+    [wp[1] for wp in waypoints['waypoints']],
+    [wp[2] for wp in waypoints['waypoints']],
         color='green', label='Waypoints'
     )
     ax.legend()
