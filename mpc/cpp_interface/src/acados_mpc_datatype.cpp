@@ -170,7 +170,8 @@ std::array<double, Gains::Nr> Gains::get_R() const
 {
   std::array<double, Gains::Nr> R;
   for (size_t i = 0; i < Nr; ++i) {
-    R[i] = W[MPC_NYN + i * MPC_NY + MPC_NYN + i];
+    auto index = (MPC_NYN + i) * MPC_NY + (MPC_NYN + i);
+    R[i] = W[index];
   }
   return R;
 }

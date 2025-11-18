@@ -41,49 +41,53 @@ namespace acados_mpc {
 MPC::MPC() { initializeSolver(); }
 
 MPC::~MPC() {
-  ocp_nlp_dims_destroy(nlp_dims_);
-  ocp_nlp_config_destroy(nlp_config_);
-  ocp_nlp_solver_destroy(nlp_solver_);
-  ocp_nlp_out_destroy(nlp_out_);
-  ocp_nlp_in_destroy(nlp_in_);
-  mpc_acados_free_capsule(capsule_);
+  ocp_nlp_dims_destroy(acados_pointers_.nlp_dims);
+  ocp_nlp_config_destroy(acados_pointers_.nlp_config);
+  ocp_nlp_solver_destroy(acados_pointers_.nlp_solver);
+  ocp_nlp_out_destroy(acados_pointers_.nlp_out);
+  ocp_nlp_in_destroy(acados_pointers_.nlp_in);
+  mpc_acados_free_capsule(acados_pointers_.capsule);
 }
 
 void MPC::initializeSolver() {
   // Acados capsule
-  capsule_ = mpc_acados_create_capsule();
+  acados_pointers_.capsule = mpc_acados_create_capsule();
 
   // Create acados solver
-  status_ = mpc_acados_create(capsule_);
+  status_ = mpc_acados_create(acados_pointers_.capsule);
   validateStatus(status_);
 
   // Get acados structs
-  nlp_in_     = mpc_acados_get_nlp_in(capsule_);
-  nlp_out_    = mpc_acados_get_nlp_out(capsule_);
-  nlp_solver_ = mpc_acados_get_nlp_solver(capsule_);
-  nlp_config_ = mpc_acados_get_nlp_config(capsule_);
-  nlp_dims_   = mpc_acados_get_nlp_dims(capsule_);
+  acados_pointers_.nlp_in     = mpc_acados_get_nlp_in(acados_pointers_.capsule);
+  acados_pointers_.nlp_out    = mpc_acados_get_nlp_out(acados_pointers_.capsule);
+  acados_pointers_.nlp_solver = mpc_acados_get_nlp_solver(acados_pointers_.capsule);
+  acados_pointers_.nlp_config = mpc_acados_get_nlp_config(acados_pointers_.capsule);
+  acados_pointers_.nlp_dims   = mpc_acados_get_nlp_dims(acados_pointers_.capsule);
 }
 
 void MPC::setSolverState() {
-  status_ = ocp_nlp_constraints_model_set(nlp_config_, nlp_dims_, nlp_in_, nlp_out_, 0, "lbx",
-                                          mpc_data_.state.data.data());
+  status_ = ocp_nlp_constraints_model_set(acados_pointers_.nlp_config, acados_pointers_.nlp_dims,
+                                          acados_pointers_.nlp_in, acados_pointers_.nlp_out, 0,
+                                          "lbx", mpc_data_.state.data.data());
   validateStatus(status_);
-  status_ = ocp_nlp_constraints_model_set(nlp_config_, nlp_dims_, nlp_in_, nlp_out_, 0, "ubx",
-                                          mpc_data_.state.data.data());
+  status_ = ocp_nlp_constraints_model_set(acados_pointers_.nlp_config, acados_pointers_.nlp_dims,
+                                          acados_pointers_.nlp_in, acados_pointers_.nlp_out, 0,
+                                          "ubx", mpc_data_.state.data.data());
   validateStatus(status_);
 }
 
 void MPC::setSolverRefence() {
   for (int i = 0; i < MPC_N; i++) {
-    status_ = ocp_nlp_cost_model_set(nlp_config_, nlp_dims_, nlp_in_, i, "yref",
-                                     mpc_data_.reference.get_data(i));
+    status_ =
+        ocp_nlp_cost_model_set(acados_pointers_.nlp_config, acados_pointers_.nlp_dims,
+                               acados_pointers_.nlp_in, i, "yref", mpc_data_.reference.get_data(i));
     validateStatus(status_);
   }
 }
 
 void MPC::setSolverRefenceEnd() {
-  status_ = ocp_nlp_cost_model_set(nlp_config_, nlp_dims_, nlp_in_, MPC_N, "yref",
+  status_ = ocp_nlp_cost_model_set(acados_pointers_.nlp_config, acados_pointers_.nlp_dims,
+                                   acados_pointers_.nlp_in, MPC_N, "yref",
                                    mpc_data_.reference_end.data.data());
   validateStatus(status_);
 }
@@ -91,8 +95,8 @@ void MPC::setSolverRefenceEnd() {
 void MPC::setSolverOnlineParams() {
   // initial values for parameter vector - can be updated stagewise
   for (int i = 0; i <= MPC_N; i++) {
-    ocp_nlp_in_set(nlp_config_, nlp_dims_, nlp_in_, i, "parameter_values",
-                   mpc_data_.p_params.get_data(i));
+    ocp_nlp_in_set(acados_pointers_.nlp_config, acados_pointers_.nlp_dims, acados_pointers_.nlp_in,
+                   i, "parameter_values", mpc_data_.p_params.get_data(i));
   }
 }
 
@@ -104,11 +108,12 @@ int MPC::solve() {
   setSolverOnlineParams();
 
   // Solve OCP
-  status_ = mpc_acados_solve(capsule_);
+  status_ = mpc_acados_solve(acados_pointers_.capsule);
   validateStatus(status_);
 
   // Get solution
-  ocp_nlp_out_get(nlp_config_, nlp_dims_, nlp_out_, 0, "u", mpc_data_.actuation.data.data());
+  ocp_nlp_out_get(acados_pointers_.nlp_config, acados_pointers_.nlp_dims, acados_pointers_.nlp_out,
+                  0, "u", mpc_data_.actuation.data.data());
 
   if (status_ != 0) {
     std::cerr << "MPC solver returned status " << status_ << std::endl;
@@ -117,26 +122,44 @@ int MPC::solve() {
   return status_;
 }
 
+void MPC::update_time_step(const double time_step) {
+  for (int i = 0; i <= MPC_N; i++) {
+    prediction_time_steps_[i] = time_step;
+  }
+  mpc_acados_update_time_steps(acados_pointers_.capsule, get_prediction_steps(),
+                               prediction_time_steps_.data());
+}
+
+void MPC::update_time_step(const std::array<double, MPC_N> time_steps) {
+  prediction_time_steps_ = time_steps;
+  mpc_acados_update_time_steps(acados_pointers_.capsule, get_prediction_steps(),
+                               prediction_time_steps_.data());
+}
+
 void MPC::update_gains() {
   // weight matrix at intermediate shooting nodes (1 to N-1)
-  for (int i = 1; i < MPC_N; i++) {
-    status_ = ocp_nlp_cost_model_set(nlp_config_, nlp_dims_, nlp_in_, i, "W", gains_.get_W());
+  for (int i = 0; i < MPC_N; i++) {
+    status_ = ocp_nlp_cost_model_set(acados_pointers_.nlp_config, acados_pointers_.nlp_dims,
+                                     acados_pointers_.nlp_in, i, "W", gains_.get_W());
     validateStatus(status_);
   }
 
   // weight matrix at terminal shooting node (N)
-  status_ = ocp_nlp_cost_model_set(nlp_config_, nlp_dims_, nlp_in_, MPC_N, "W", gains_.get_We());
+  status_ = ocp_nlp_cost_model_set(acados_pointers_.nlp_config, acados_pointers_.nlp_dims,
+                                   acados_pointers_.nlp_in, MPC_N, "W", gains_.get_We());
 }
 
 void MPC::update_actuation_bounds() {
   // lower actuation_bounds on u at shooting nodes (0 to N-1)
   // upper actuation_bounds on u at shooting nodes (0 to N-1)
   for (int i = 0; i < MPC_N; i++) {
-    status_ = ocp_nlp_constraints_model_set(nlp_config_, nlp_dims_, nlp_in_, nlp_out_, i, "lbu",
-                                            actuation_bounds_.lbu.data());
+    status_ = ocp_nlp_constraints_model_set(acados_pointers_.nlp_config, acados_pointers_.nlp_dims,
+                                            acados_pointers_.nlp_in, acados_pointers_.nlp_out, i,
+                                            "lbu", actuation_bounds_.lbu.data());
     validateStatus(status_);
-    status_ = ocp_nlp_constraints_model_set(nlp_config_, nlp_dims_, nlp_in_, nlp_out_, i, "ubu",
-                                            actuation_bounds_.ubu.data());
+    status_ = ocp_nlp_constraints_model_set(acados_pointers_.nlp_config, acados_pointers_.nlp_dims,
+                                            acados_pointers_.nlp_in, acados_pointers_.nlp_out, i,
+                                            "ubu", actuation_bounds_.ubu.data());
     validateStatus(status_);
   }
 }
@@ -145,11 +168,13 @@ void MPC::update_state_bounds() {
   // lower state_bounds on u at shooting nodes (0 to N-1)
   // upper state_bounds on u at shooting nodes (0 to N-1)
   for (int i = 1; i < MPC_N; i++) {
-    status_ = ocp_nlp_constraints_model_set(nlp_config_, nlp_dims_, nlp_in_, nlp_out_, i, "lbx",
-                                            state_bounds_.lbx.data());
+    status_ = ocp_nlp_constraints_model_set(acados_pointers_.nlp_config, acados_pointers_.nlp_dims,
+                                            acados_pointers_.nlp_in, acados_pointers_.nlp_out, i,
+                                            "lbx", state_bounds_.lbx.data());
     validateStatus(status_);
-    status_ = ocp_nlp_constraints_model_set(nlp_config_, nlp_dims_, nlp_in_, nlp_out_, i, "ubx",
-                                            state_bounds_.ubx.data());
+    status_ = ocp_nlp_constraints_model_set(acados_pointers_.nlp_config, acados_pointers_.nlp_dims,
+                                            acados_pointers_.nlp_in, acados_pointers_.nlp_out, i,
+                                            "ubx", state_bounds_.ubx.data());
     validateStatus(status_);
   }
 }
@@ -158,55 +183,63 @@ void MPC::update_soft_state_bounds() {
   // lower soft state bounds at shooting nodes (1 to N-1)
   // upper soft state bounds at shooting nodes (1 to N-1)
   for (int i = 1; i < MPC_N; i++) {
-    status_ = ocp_nlp_constraints_model_set(nlp_config_, nlp_dims_, nlp_in_, nlp_out_, i, "lsbx",
-                                            soft_state_bounds_.lsbx.data());
+    status_ = ocp_nlp_constraints_model_set(acados_pointers_.nlp_config, acados_pointers_.nlp_dims,
+                                            acados_pointers_.nlp_in, acados_pointers_.nlp_out, i,
+                                            "lsbx", soft_state_bounds_.lsbx.data());
     validateStatus(status_);
-    status_ = ocp_nlp_constraints_model_set(nlp_config_, nlp_dims_, nlp_in_, nlp_out_, i, "usbx",
-                                            soft_state_bounds_.usbx.data());
+    status_ = ocp_nlp_constraints_model_set(acados_pointers_.nlp_config, acados_pointers_.nlp_dims,
+                                            acados_pointers_.nlp_in, acados_pointers_.nlp_out, i,
+                                            "usbx", soft_state_bounds_.usbx.data());
     validateStatus(status_);
   }
 
   // lower soft state bounds at terminal shooting node (N)
   // upper soft state bounds at terminal shooting node (N)
-  status_ = ocp_nlp_constraints_model_set(nlp_config_, nlp_dims_, nlp_in_, nlp_out_, MPC_N, "lsbx",
-                                          soft_state_bounds_.lsbx.data());
+  status_ = ocp_nlp_constraints_model_set(acados_pointers_.nlp_config, acados_pointers_.nlp_dims,
+                                          acados_pointers_.nlp_in, acados_pointers_.nlp_out, MPC_N,
+                                          "lsbx", soft_state_bounds_.lsbx.data());
   validateStatus(status_);
-  status_ = ocp_nlp_constraints_model_set(nlp_config_, nlp_dims_, nlp_in_, nlp_out_, MPC_N, "usbx",
-                                          soft_state_bounds_.usbx.data());
+  status_ = ocp_nlp_constraints_model_set(acados_pointers_.nlp_config, acados_pointers_.nlp_dims,
+                                          acados_pointers_.nlp_in, acados_pointers_.nlp_out, MPC_N,
+                                          "usbx", soft_state_bounds_.usbx.data());
   validateStatus(status_);
 }
 
 void MPC::update_slack_weights() {
   // slack weights at shooting nodes (1 to N-1)
   for (int i = 1; i < MPC_N; i++) {
-    status_ =
-        ocp_nlp_cost_model_set(nlp_config_, nlp_dims_, nlp_in_, i, "Zl", slack_weights_.Zl.data());
+    status_ = ocp_nlp_cost_model_set(acados_pointers_.nlp_config, acados_pointers_.nlp_dims,
+                                     acados_pointers_.nlp_in, i, "Zl", slack_weights_.Zl.data());
     validateStatus(status_);
-    status_ =
-        ocp_nlp_cost_model_set(nlp_config_, nlp_dims_, nlp_in_, i, "Zu", slack_weights_.Zu.data());
+    status_ = ocp_nlp_cost_model_set(acados_pointers_.nlp_config, acados_pointers_.nlp_dims,
+                                     acados_pointers_.nlp_in, i, "Zu", slack_weights_.Zu.data());
     validateStatus(status_);
-    status_ =
-        ocp_nlp_cost_model_set(nlp_config_, nlp_dims_, nlp_in_, i, "zl", slack_weights_.zl.data());
+    status_ = ocp_nlp_cost_model_set(acados_pointers_.nlp_config, acados_pointers_.nlp_dims,
+                                     acados_pointers_.nlp_in, i, "zl", slack_weights_.zl.data());
     validateStatus(status_);
-    status_ =
-        ocp_nlp_cost_model_set(nlp_config_, nlp_dims_, nlp_in_, i, "zu", slack_weights_.zu.data());
+    status_ = ocp_nlp_cost_model_set(acados_pointers_.nlp_config, acados_pointers_.nlp_dims,
+                                     acados_pointers_.nlp_in, i, "zu", slack_weights_.zu.data());
     validateStatus(status_);
   }
 }
 
 void MPC::update_slack_weights_end() {
   // slack weights at terminal shooting node (N)
-  status_ = ocp_nlp_cost_model_set(nlp_config_, nlp_dims_, nlp_in_, MPC_N, "Zl",
-                                   slack_weights_end_.Zl_e.data());
+  status_ =
+      ocp_nlp_cost_model_set(acados_pointers_.nlp_config, acados_pointers_.nlp_dims,
+                             acados_pointers_.nlp_in, MPC_N, "Zl", slack_weights_end_.Zl_e.data());
   validateStatus(status_);
-  status_ = ocp_nlp_cost_model_set(nlp_config_, nlp_dims_, nlp_in_, MPC_N, "Zu",
-                                   slack_weights_end_.Zu_e.data());
+  status_ =
+      ocp_nlp_cost_model_set(acados_pointers_.nlp_config, acados_pointers_.nlp_dims,
+                             acados_pointers_.nlp_in, MPC_N, "Zu", slack_weights_end_.Zu_e.data());
   validateStatus(status_);
-  status_ = ocp_nlp_cost_model_set(nlp_config_, nlp_dims_, nlp_in_, MPC_N, "zl",
-                                   slack_weights_end_.zl_e.data());
+  status_ =
+      ocp_nlp_cost_model_set(acados_pointers_.nlp_config, acados_pointers_.nlp_dims,
+                             acados_pointers_.nlp_in, MPC_N, "zl", slack_weights_end_.zl_e.data());
   validateStatus(status_);
-  status_ = ocp_nlp_cost_model_set(nlp_config_, nlp_dims_, nlp_in_, MPC_N, "zu",
-                                   slack_weights_end_.zu_e.data());
+  status_ =
+      ocp_nlp_cost_model_set(acados_pointers_.nlp_config, acados_pointers_.nlp_dims,
+                             acados_pointers_.nlp_in, MPC_N, "zu", slack_weights_end_.zu_e.data());
   validateStatus(status_);
 }
 

@@ -101,7 +101,7 @@ class AcadosMPCSolver:
         ocp.model = self.acados_model
         state = State()
         actuation = Actuation(
-            thrust=solver_definition.mpc.p[0] * solver_definition.mpc.p[1]
+            thrust=solver_definition.mpc.p[0] * 9.81
         )
 
         # Parameters
@@ -161,28 +161,32 @@ class AcadosMPCSolver:
         # Initial state
         constraints.x0 = state.vector
 
-        # Indices of bounds on u at shooting nodes (0 to N-1)
-        constraints.idxbu = solver_definition.mpc.idxbu
-        # Lower bounds on u at shooting nodes (0 to N-1)
-        constraints.lbu = solver_definition.mpc.lbu
-        # Upper bounds on u at shooting nodes (0 to N-1)
-        constraints.ubu = solver_definition.mpc.ubu
+        # Hard constraints on inputs
+        if hasattr(solver_definition.mpc, 'idxbu') and solver_definition.mpc.idxbu is not None:
+            if solver_definition.mpc.idxbu.shape[0] > 0:
+                # Indices of bounds on u at shooting nodes (0 to N-1)
+                constraints.idxbu = solver_definition.mpc.idxbu
+                # Lower bounds on u at shooting nodes (0 to N-1)
+                constraints.lbu = solver_definition.mpc.lbu
+                # Upper bounds on u at shooting nodes (0 to N-1)
+                constraints.ubu = solver_definition.mpc.ubu
 
         # Hard constraints on states
-        if solver_definition.mpc.idxbx.shape[0] > 0:
-            # Indices of bounds on x at shooting nodes (1 to N)
-            constraints.idxbx = solver_definition.mpc.idxbx
-            # Lower bounds on x at shooting nodes (1 to N)
-            constraints.lbx = solver_definition.mpc.lbx[constraints.idxbx]
-            # Upper bounds on x at shooting nodes (1 to N)
-            constraints.ubx = solver_definition.mpc.ubx[constraints.idxbx]
-        if solver_definition.mpc.idxbx_e.shape[0] > 0:
-            # Indices of bounds on x at terminal shooting node (N)
-            constraints.idxbx_e = solver_definition.mpc.idxbx
-            # Lower bounds on x at terminal shooting node (N)
-            constraints.lbx_e = solver_definition.mpc.lbx[constraints.idxbx_e]
-            # Upper bounds on x at terminal shooting node (N)
-            constraints.ubx_e = solver_definition.mpc.ubx[constraints.idxbx_e]
+        if hasattr(solver_definition.mpc, 'idxbx') and solver_definition.mpc.idxbx is not None:
+            if solver_definition.mpc.idxbx.shape[0] > 0:
+                # Indices of bounds on x at shooting nodes (1 to N)
+                constraints.idxbx = solver_definition.mpc.idxbx
+                # Lower bounds on x at shooting nodes (1 to N)
+                constraints.lbx = solver_definition.mpc.lbx[constraints.idxbx]
+                # Upper bounds on x at shooting nodes (1 to N)
+                constraints.ubx = solver_definition.mpc.ubx[constraints.idxbx]
+            if solver_definition.mpc.idxbx_e.shape[0] > 0:
+                # Indices of bounds on x at terminal shooting node (N)
+                constraints.idxbx_e = solver_definition.mpc.idxbx
+                # Lower bounds on x at terminal shooting node (N)
+                constraints.lbx_e = solver_definition.mpc.lbx[constraints.idxbx_e]
+                # Upper bounds on x at terminal shooting node (N)
+                constraints.ubx_e = solver_definition.mpc.ubx[constraints.idxbx_e]
         
         # Soft constraints on states
         if hasattr(solver_definition.mpc, 'idxsbx') and solver_definition.mpc.idxsbx is not None:

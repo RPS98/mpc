@@ -52,6 +52,27 @@
 namespace acados_mpc {
 
 /**
+ * @brief AcadosSolverPointers
+ *
+ * Data structure to hold the acados solver pointers.
+ *
+ * @param capsule Acados solver capsule.
+ * @param nlp_in Acados NLP input.
+ * @param nlp_out Acados NLP output.
+ * @param nlp_solver Acados NLP solver.
+ * @param nlp_config Acados NLP configuration.
+ * @param nlp_dims Acados NLP dimensions.
+ */
+struct AcadosSolverPointers {
+  mpc_solver_capsule* capsule = nullptr;
+  ocp_nlp_in* nlp_in          = nullptr;
+  ocp_nlp_out* nlp_out        = nullptr;
+  ocp_nlp_solver* nlp_solver  = nullptr;
+  ocp_nlp_config* nlp_config  = nullptr;
+  ocp_nlp_dims* nlp_dims      = nullptr;
+};
+
+/**
  * @brief MPCData
  *
  * Data structure to hold the MPC data.
@@ -117,12 +138,12 @@ public:
    *
    * It is the prediction steps multiplied by the prediction time step.
    */
-  inline double get_prediction_time_horizon() const { return MPC_N * *nlp_in_->Ts; }
+  inline double get_prediction_time_horizon() const { return MPC_N * *acados_pointers_.nlp_in->Ts; }
 
   /**
    * @brief Get the prediction time step in seconds.
    */
-  inline double get_prediction_time_step() const { return *nlp_in_->Ts; }
+  inline double get_prediction_time_step() const { return *acados_pointers_.nlp_in->Ts; }
 
   /**
    * @brief Get the MPCData pointer to modify the data.
@@ -171,7 +192,28 @@ public:
    */
   SlackWeightsEnd* get_slack_weights_end() { return &slack_weights_end_; }
 
+  /**
+   * @brief Get the AcadosSolverPointers to access internal acados structures.
+   *
+   * Allows direct access to acados solver internals for advanced operations.
+   */
+  const AcadosSolverPointers* get_acados_solver_pointers() const { return &acados_pointers_; }
+
   // Setters
+
+  /**
+   * @brief Update the time step used in the prediction model.
+   *
+   * @param time_step time step in seconds.
+   */
+  void update_time_step(const double time_step);
+
+  /**
+   * @brief Update the time steps used in the prediction model.
+   *
+   * @param time_steps array of time steps in seconds.
+   */
+  void update_time_step(std::array<double, MPC_N> time_steps);
 
   /**
    * @brief Update the gains Q, R and Qe.
@@ -260,16 +302,11 @@ private:
 
 private:
   // acados
-  mpc_solver_capsule* capsule_ = nullptr;
-  ocp_nlp_in* nlp_in_          = nullptr;
-  ocp_nlp_out* nlp_out_        = nullptr;
-  ocp_nlp_solver* nlp_solver_  = nullptr;
-  ocp_nlp_config* nlp_config_  = nullptr;
-  ocp_nlp_dims* nlp_dims_      = nullptr;
+  AcadosSolverPointers acados_pointers_;
 
   // Internal variables
   int status_;
-  double prediction_time_step_;
+  std::array<double, MPC_N> prediction_time_steps_;
 
   // Dynamic input
   MPCData mpc_data_ = MPCData();
