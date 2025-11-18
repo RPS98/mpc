@@ -86,9 +86,10 @@ class Path:
         
         :return: True if advanced successfully, False if at the end
         """
-        if self.current_index + 1 < len(self.setpoints):
-            self.current_index += 1
-            return True
+        if self.remaining_waypoints()> 3:
+            if self.current_index + 1 < len(self.setpoints):
+                self.current_index += 1
+                return True
         return False
     
     def get_current_setpoint(self) -> Setpoint:
@@ -395,7 +396,7 @@ def main():
     ]
     
     # Create spline generator with 3 waypoints per spline and plot on regeneration
-    spline_gen = SplineTrajectoryGenerator(setpoints, num_wp=5, plot_on_regeneration=True)
+    spline_gen = SplineTrajectoryGenerator(setpoints, num_wp=3, plot_on_regeneration=True)
     
     print("=== Spline Trajectory Evaluation Demo ===")
     print(f"Total waypoints: {len(setpoints)}")
