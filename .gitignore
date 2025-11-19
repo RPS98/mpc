@@ -11,3 +11,4 @@ mpc_generated_code/
 mpc.egg-info/
 dynamic_trajectory_generator/
 *.json
+acados_mpcc_solver/
