@@ -28,122 +28,179 @@
 
 /**
  * @file spline_example.cpp
- * @brief Example using SplineTrajectoryGenerator to manage waypoints and spline regeneration
+ *
+ * @brief Hermite Spline Example with lookup table arc-length reparametrization
+ *
  * @authors Rafael Pérez Seguí, Carmen De Rojas Pita-Romero
- * @copyright Copyright (c) 2025 Universidad Politécnica de Madrid
- * @license BSD-3-Clause
  */
 
-#include "spline/spline.hpp"
-#include "spline/spline_trajectory_generator.hpp"
 #include <iostream>
 #include <iomanip>
 #include <cmath>
+#include <fstream>
+#include <vector>
+#include <numeric>
+#include <algorithm>
 
-int main(int argc, char ** argv)
+#include "spline/spline.hpp"
+#include "spline/trajectory_generator.hpp"
+
+class CsvLogger
 {
-  std::cout << "=== Spline Trajectory Generator Example ===" << std::endl;
-
-  try {
-    // Step 1: Define setpoints (waypoints with tangents)
-    std::cout << "\n1. Creating trajectory setpoints" << std::endl;
-    std::vector<trajectory::TrajectorySetpoint> setpoints;
-
-    // Define a series of waypoints similar to a race track
-    double speed = 6.0;  // m/s - defines the magnitude of tangent vectors
-
-    setpoints.emplace_back(
-      0, Eigen::Vector3d(0.0, 0.0, 1.0),
-      speed * Eigen::Vector3d(1.0, 0.0, 0.0));
-    setpoints.emplace_back(
-      1, Eigen::Vector3d(5.0, 0.0, 1.0),
-      speed * Eigen::Vector3d(1.0, 0.0, 0.0));
-    setpoints.emplace_back(
-      2, Eigen::Vector3d(10.0, 5.0, 1.0),
-      speed * Eigen::Vector3d(0.0, 1.0, 0.0));
-    setpoints.emplace_back(
-      3, Eigen::Vector3d(10.0, 10.0, 1.5),
-      speed * Eigen::Vector3d(-1.0, 0.0, 0.0));
-    setpoints.emplace_back(
-      4, Eigen::Vector3d(5.0, 10.0, 1.0),
-      speed * Eigen::Vector3d(-1.0, 0.0, 0.0));
-    setpoints.emplace_back(
-      5, Eigen::Vector3d(0.0, 5.0, 1.0),
-      speed * Eigen::Vector3d(0.0, -1.0, 0.0));
-
-    std::cout << "   Created " << setpoints.size() << " setpoints" << std::endl;
-
-    // Step 2: Create SplineTrajectoryGenerator
-    std::cout << "\n2. Creating SplineTrajectoryGenerator" << std::endl;
-    const int num_waypoints_per_spline = 3;
-    trajectory::SplineTrajectoryGenerator spline_gen(
-      setpoints, num_waypoints_per_spline, 200, 5);
-
-    std::cout << "   Using " << num_waypoints_per_spline
-              << " waypoints per spline" << std::endl;
-    std::cout << "   Initial spline length: " << std::fixed << std::setprecision(4)
-              << spline_gen.getReparametrization().total_length << " m" << std::endl;
-
-    // Step 3: Evaluate trajectory by incrementing arc length
-    std::cout << "\n3. Evaluating trajectory along arc length" << std::endl;
-    std::cout << std::setw(10) << "s [m]" << std::setw(10) << "theta"
-              << std::setw(12) << "x [m]" << std::setw(12) << "y [m]"
-              << std::setw(12) << "z [m]" << std::setw(15) << "regenerations"
-              << std::endl;
-    std::cout << std::string(71, '-') << std::endl;
-
-    double s = 0.0;
-    const double ds = 0.5;  // Arc length increment
-    int last_regen_count = 0;
-    int iterations = 0;
-    const int max_iterations = 100;  // Safety limit
-
-    while (iterations < max_iterations) {
-      // Evaluate spline at current arc length
-      auto [new_s, result] = spline_gen.evaluateSpline(s);
-
-      // Check if spline was regenerated
-      int current_regen_count = spline_gen.getRegenerationCount();
-      bool regenerated = (current_regen_count > last_regen_count);
-      last_regen_count = current_regen_count;
-
-      // Print current state
-      std::cout << std::setw(10) << std::setprecision(3) << s
-                << std::setw(10) << std::setprecision(3) << result.theta
-                << std::setw(12) << std::setprecision(4) << result.position.x()
-                << std::setw(12) << std::setprecision(4) << result.position.y()
-                << std::setw(12) << std::setprecision(4) << result.position.z()
-                << std::setw(15) << current_regen_count;
-
-      if (regenerated) {
-        std::cout << "  <- REGENERATED";
-      }
-      std::cout << std::endl;
-
-      // Update s
-      s = new_s + ds;
-
-      // Check if we should stop (no more waypoints and reached end)
-      if (result.theta >= 0.99 && spline_gen.getPath().remainingWaypoints() <= 1) {
-        std::cout << "\n   Reached end of trajectory" << std::endl;
-        break;
-      }
-
-      iterations++;
+public:
+  explicit CsvLogger(const std::string & filename)
+  : file_(filename)
+  {
+    if (!file_.is_open()) {
+      std::cerr << "Failed to open CSV file: " << filename << std::endl;
+      return;
     }
 
-    // Step 4: Summary
-    std::cout << "\n4. Summary" << std::endl;
-    std::cout << "   Total iterations: " << iterations << std::endl;
-    std::cout << "   Total regenerations: " << spline_gen.getRegenerationCount() << std::endl;
-    std::cout << "   Remaining waypoints: "
-              << spline_gen.getPath().remainingWaypoints() << std::endl;
+    // Set fixed format with reasonable precision for floating-point values
+    file_ << std::fixed << std::setprecision(6);
 
-    std::cout << "\n=== Done! ===" << std::endl;
-    return 0;
-
-  } catch (const std::exception & e) {
-    std::cerr << "Error: " << e.what() << std::endl;
-    return 1;
+    // CSV header: theta, position (px,py,pz), velocity (vx,vy,vz)
+    file_ << "theta,px,py,pz,vx,vy,vz\n";
   }
+
+  ~CsvLogger()
+  {
+    if (file_.is_open()) {
+      file_.close();
+    }
+  }
+
+  void logSample(
+    double theta,
+    const Eigen::Vector3d & position,
+    const Eigen::Vector3d & velocity)
+  {
+    if (!file_.is_open()) {
+      return;
+    }
+
+    file_ << theta << ","
+          << position.x() << "," << position.y() << "," << position.z() << ","
+          << velocity.x() << "," << velocity.y() << "," << velocity.z() << "\n";
+  }
+
+private:
+  std::ofstream file_;
+};
+
+int main()
+{
+  std::cout << "Spline Example - Hermite Spline Evaluation" << std::endl;
+
+  // Create setpoints for the spline
+  double speed = 6.0;  // m/s
+  std::vector<spline::Setpoint> setpoints;
+  setpoints.emplace_back(
+    "gate01",
+    Eigen::Vector3d(12.5, 2.0, 1.45),
+    Eigen::Vector3d(cos(3.14159), sin(3.14159), 0.0) * speed);
+  setpoints.emplace_back(
+    "gate02",
+    Eigen::Vector3d(6.5, 6.0, 1.45),
+    Eigen::Vector3d(cos(2.35619), sin(2.35619), 0.0) * speed);
+  setpoints.emplace_back(
+    "gate03",
+    Eigen::Vector3d(5.5, 14.0, 1.45),
+    Eigen::Vector3d(cos(2.0944), sin(2.0944), 0.0) * speed);
+  setpoints.emplace_back(
+    "gate04",
+    Eigen::Vector3d(2.5, 24.0, 1.45),
+    Eigen::Vector3d(cos(1.5708), sin(1.5708), 0.0) * speed);
+  setpoints.emplace_back(
+    "gate05",
+    Eigen::Vector3d(7.5, 30.0, 1.45),
+    Eigen::Vector3d(cos(-0.174533), sin(-0.174533), 0.0) * speed);
+  setpoints.emplace_back(
+    "gate06",
+    Eigen::Vector3d(12.2, 22.0, 1.45),
+    Eigen::Vector3d(cos(0.0), sin(0.0), 0.0) * speed);
+  setpoints.emplace_back(
+    "gate07_splitup",
+    Eigen::Vector3d(17.5, 30.0, 4.15),
+    Eigen::Vector3d(cos(1.39626), sin(1.39626), 0.0) * speed);
+  setpoints.emplace_back(
+    "gate08",
+    Eigen::Vector3d(18.5, 22.0, 1.45),
+    Eigen::Vector3d(cos(-1.39626), sin(-1.39626), 0.0) * speed);
+  setpoints.emplace_back(
+    "gate09",
+    Eigen::Vector3d(20.5, 14.0, 1.45),
+    Eigen::Vector3d(cos(-1.74533), sin(-1.74533), 0.0) * speed);
+  setpoints.emplace_back(
+    "gate10_ladderup",
+    Eigen::Vector3d(18.5, 6.0, 4.15),
+    Eigen::Vector3d(cos(-2.35619), sin(-2.35619), 0.0) * speed);
+  setpoints.emplace_back(
+    "gate10_ladderdown",
+    Eigen::Vector3d(18.5, 6.0, 1.45),
+    Eigen::Vector3d(cos(-2.35619), sin(-2.35619), 0.0) * speed);
+  setpoints.emplace_back(
+    "end_point",
+    Eigen::Vector3d(12.5, 2.0, 1.45),
+    Eigen::Vector3d(cos(3.14159), sin(3.14159), 0.0) * speed);
+
+  // Create spline
+  spline::HermiteSpline spline(setpoints);
+
+  // Logger
+  CsvLogger spline_logger("spline_theta.csv");
+
+  // Evaluate
+  double t = 0.0;
+  double dt = 0.01;
+  double t_max = spline.getTmax();
+  while (t <= t_max) {
+    auto [position, velocity] = spline.evaluateWithDerivative(t);
+
+    spline_logger.logSample(t, position, velocity);
+    t += dt;
+  }
+
+  // Reparametrization by arc length
+  int n_samples = setpoints.size() * 100;
+  int poly_degree = 5;
+  spline::ArcLengthReparametrizationResult reparam = spline::computeArcLengthReparametrization(
+    spline, n_samples);
+
+  // Logger
+  CsvLogger arclength_logger("spline_arc_length.csv");
+
+  // Evaluate
+  double s = 0.0;
+  double ds = 0.01;
+  double s_max = reparam.total_length;
+  while (s <= s_max) {
+    auto [position, velocity] = spline::evaluateArcLengthSplineWithDerivative(s, reparam, spline);
+
+    arclength_logger.logSample(s, position, velocity);
+    s += ds;
+  }
+
+  // Trayectory Generator example
+  spline::TrajectoryGenerator traj_gen(setpoints, 4, 400);
+
+  // Logger
+  CsvLogger traj_logger("spline_trajectory_generator.csv");
+
+  // Evaluate
+  Eigen::Vector3d position;
+  Eigen::Vector3d derivative;
+  s = 0.0;
+  ds = 0.01;
+  double s_global = 0.0;
+  while (!traj_gen.isFinished(s)) {
+    auto [reparam_result, updated_s] = traj_gen.evaluateSpline(s, position, derivative);
+    s = updated_s;
+
+    traj_logger.logSample(s_global, position, derivative);
+    s += ds;
+    s_global += ds;
+  }
+
+  return 0;
 }

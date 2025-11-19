@@ -28,21 +28,21 @@
 
 /**
  * @file spline.hpp
- * @brief Hermite Spline implementation in C++
+ *
+ * @brief Hermite Spline header in C++
+ *
  * @authors Rafael Pérez Seguí, Carmen De Rojas Pita-Romero
- * @copyright Copyright (c) 2025 Universidad Politécnica de Madrid
- * @license BSD-3-Clause
  */
 
-#ifndef HERMITE_SPLINE_HPP
-#define HERMITE_SPLINE_HPP
+#ifndef SPLINE_HPP
+#define SPLINE_HPP
 
 #include <Eigen/Dense>
 #include <vector>
+#include <string>
 #include <stdexcept>
 #include <tuple>
-#include <algorithm>
-#include <string>
+#include <utility>
 
 namespace spline
 {
@@ -59,7 +59,7 @@ struct Setpoint
   /**
    * @brief Constructor for Setpoint
    *
-   * @param id Identifier string
+   * @param id Identifier
    * @param pos 3D position vector
    * @param tan 3D tangent vector
    */
@@ -68,179 +68,163 @@ struct Setpoint
 };
 
 /**
- * @brief Piecewise cubic Hermite spline in 3D
+ * @brief Hermite Spline class
  *
- * Given N setpoints with positions and tangent vectors, creates a smooth curve
- * through the points with specified tangents.
+ * Represents a piecewise cubic Hermite spline interpolating through setpoints.
  */
 class HermiteSpline
 {
 public:
   /**
-   * @brief Constructor for HermiteSpline from setpoints
+   * @brief Constructor for HermiteSpline
    *
-   * @param setpoints Vector of Setpoint objects (N setpoints)
-   * @param ti Optional vector of parameter values. If empty, uses [0, 1, 2, ..., N-1]
-   *
-   * @throws std::invalid_argument if less than 2 setpoints provided
-   * @throws std::invalid_argument if ti size doesn't match setpoints size
+   * @param setpoints Vector of Setpoint objects with positions and tangents
    */
-  HermiteSpline(
-    const std::vector<Setpoint> & setpoints,
-    const std::vector<double> & ti = {});
-
-  /**
-   * @brief Constructor for HermiteSpline from separate vectors (legacy)
-   *
-   * @param points Vector of control points (N x 3D vectors)
-   * @param tangents Vector of tangent vectors at control points (N x 3D vectors)
-   * @param ti Optional vector of parameter values. If empty, uses [0, 1, 2, ..., N-1]
-   *
-   * @throws std::invalid_argument if points and tangents don't match in size
-   * @throws std::invalid_argument if less than 2 points provided
-   * @throws std::invalid_argument if ti size doesn't match points size
-   */
-  HermiteSpline(
-    const std::vector<Eigen::Vector3d> & points,
-    const std::vector<Eigen::Vector3d> & tangents,
-    const std::vector<double> & ti = {});
+  explicit HermiteSpline(const std::vector<Setpoint> & setpoints);
 
   /**
    * @brief Evaluate spline position at parameter t
    *
-   * @param t Parameter value
-   * @return Position as Eigen::Vector3d
+   * @param t Parameter value (0 to getTmax())
+   * @return 3D position vector
    */
   Eigen::Vector3d evaluate(double t) const;
 
   /**
-   * @brief Evaluate spline derivative dp/dt at parameter t
+   * @brief Evaluate spline derivative at parameter t
    *
-   * @param t Parameter value
-   * @return Derivative as Eigen::Vector3d
+   * @param t Parameter value (0 to getTmax())
+   * @return 3D derivative/velocity vector
    */
   Eigen::Vector3d evaluateDerivative(double t) const;
 
   /**
-   * @brief Get setpoints
+   * @brief Evaluate both position and derivative at parameter t
+   *
+   * @param t Parameter value (0 to getTmax())
+   * @return Pair of (position, derivative)
+   */
+  std::pair<Eigen::Vector3d, Eigen::Vector3d> evaluateWithDerivative(double t) const;
+
+  /**
+   * @brief Get maximum parameter value
+   *
+   * For N setpoints, t ranges from 0 to N-1
+   *
+   * @return Maximum t value
+   */
+  double getTmax() const {return static_cast<double>(setpoints_.size() - 1);}
+
+  /**
+   * @brief Get the setpoints
    *
    * @return Vector of setpoints
    */
   const std::vector<Setpoint> & getSetpoints() const {return setpoints_;}
 
-  /**
-   * @brief Get spline control points
-   *
-   * @return Vector of control points
-   */
-  const std::vector<Eigen::Vector3d> & getPoints() const {return points_;}
-
-  /**
-   * @brief Get spline tangent vectors
-   *
-   * @return Vector of tangent vectors
-   */
-  const std::vector<Eigen::Vector3d> & getTangents() const {return tangents_;}
-
-  /**
-   * @brief Get parameter values at control points
-   *
-   * @return Vector of parameter values
-   */
-  const std::vector<double> & getTi() const {return ti_;}
-
-  /**
-   * @brief Get number of control points
-   *
-   * @return Number of control points
-   */
-  size_t size() const {return setpoints_.size();}
-
 private:
   /**
-   * @brief Compute Hermite basis functions at s ∈ [0, 1]
+   * @brief Hermite basis functions for cubic interpolation
    *
-   * @param s Normalized parameter in [0, 1]
-   * @return Tuple of four basis functions (h00, h10, h01, h11)
+   * @param t Parameter in [0, 1]
+   * @return Tuple of (h00, h10, h01, h11)
    */
-  std::tuple<double, double, double, double> hermiteBasis(double s) const;
+  std::tuple<double, double, double, double> hermiteBasis(double t) const;
 
   /**
-   * @brief Compute derivatives of Hermite basis functions at s ∈ [0, 1]
+   * @brief Derivatives of Hermite basis functions
    *
-   * @param s Normalized parameter in [0, 1]
-   * @return Tuple of four basis function derivatives (h00', h10', h01', h11')
+   * @param t Parameter in [0, 1]
+   * @return Tuple of (h00', h10', h01', h11')
    */
-  std::tuple<double, double, double, double> hermiteBasisDerivative(double s) const;
+  std::tuple<double, double, double, double> hermiteBasisDerivative(double t) const;
 
   /**
    * @brief Find which segment contains parameter t
    *
-   * @param t Parameter value to search for
+   * @param t Parameter value
    * @return Index of the segment containing t
    */
   int findSegment(double t) const;
 
-  /**
-   * @brief Clamp value to range [min, max]
-   *
-   * @param value Value to clamp
-   * @param min Minimum value
-   * @param max Maximum value
-   * @return Clamped value
-   */
-  static double clamp(double value, double min, double max);
-
   // Member variables
   std::vector<Setpoint> setpoints_;        // Setpoints with id, position and tangent
-  std::vector<Eigen::Vector3d> points_;    // Control points (N, 3) - extracted from setpoints
-  std::vector<Eigen::Vector3d> tangents_;  // Tangent vectors at control points (N, 3) - extracted from setpoints
-  std::vector<double> ti_;                 // Parameter values at control points (N,)
 };
 
 /**
  * @brief Result of arc length reparametrization computation
- *
- * This structure contains all the data required for symbolic evaluation
- * of the reparametrized Hermite spline.
  */
 struct ArcLengthReparametrizationResult
 {
-  std::vector<Eigen::Vector3d> points;    // Control points (N, 3)
-  std::vector<Eigen::Vector3d> tangents;  // Tangent vectors at control points (N, 3)
-  std::vector<double> ti;                 // Original parameter values at control points (N,)
-  Eigen::VectorXd poly_coeffs;            // Polynomial coefficients for t(s_normalized), highest degree first
-  double total_length;                    // Total arc length of the spline
+  std::vector<Setpoint> setpoints;  // Original setpoints
+  std::vector<double> arc_lengths;  // Arc length values for lookup
+  std::vector<double> t_values;     // Corresponding t parameter values
+  double total_length;              // Total arc length in meters
 };
 
 /**
- * @brief Compute arc length reparametrization parameters for a Hermite spline.
+ * @brief Compute arc-length reparametrization of a Hermite spline
  *
- * This function computes an approximate arc length parametrization s(t) and
- * fits a polynomial approximation of the inverse mapping t(s_normalized),
- * where s_normalized = s / L ∈ [0, 1] and L is the total arc length.
- *
- * Steps:
- * 1. Sample parameter t uniformly in [t_min, t_max].
- * 2. Evaluate ||dp/dt|| at each sample using HermiteSpline::evaluateDerivative().
- * 3. Integrate using the trapezoidal rule to obtain the cumulative arc length s(t).
- * 4. Normalize s by the total length L to get s_normalized ∈ [0, 1].
- * 5. Fit a polynomial t(s_normalized) of degree poly_degree using least squares.
+ * Creates a lookup table mapping arc length to spline parameter t using
+ * binary search and linear interpolation. This method provides the most
+ * accurate arc-length parametrization at the cost of memory usage.
  *
  * @param spline HermiteSpline object to reparametrize
- * @param n_samples Number of samples for numerical integration (default 200)
- * @param poly_degree Degree of polynomial to approximate t(s_normalized) (default 5)
- * @return ArcLengthReparametrizationResult with points, tangents, ti, poly_coeffs and total_length
+ * @param n_samples Number of samples for arc length computation (default 200)
+ * @return LookupTableArcLengthReparametrization with lookup table data
  *
- * @throws std::invalid_argument if n_samples < 2 or poly_degree < 1
- * @throws std::runtime_error if the spline has no parameter values or total length is non-positive
+ * @throws std::invalid_argument if n_samples < 2
+ * @throws std::runtime_error if total length is non-positive
  */
 ArcLengthReparametrizationResult computeArcLengthReparametrization(
   const HermiteSpline & spline,
-  int n_samples = 200,
-  int poly_degree = 5);
+  int n_samples = 200);
 
+/**
+ * @brief Reparametrize arc length s to spline parameter t
+ *
+ * Uses the lookup table from ArcLengthReparametrizationResult to find
+ * the corresponding spline parameter t for a given arc length s.
+ *
+ * @param s Arc length parameter in meters
+ * @param reparametrization Result from ArcLengthReparametrizationResult
+ * @return Corresponding spline parameter t
+ */
+double reparametrizeArcLengthToT(
+  double s,
+  const ArcLengthReparametrizationResult & reparametrization);
+
+/**
+ * @brief Evaluate position on arc-length parametrized spline
+ *
+ * Returns the position p(s) where s is the arc length parameter.
+ * Uses binary search O(log n) and linear interpolation.
+ *
+ * @param s Arc length parameter in meters (0 to total_length)
+ * @param reparametrization Result from ArcLengthReparametrizationResult
+ * @param spline Original HermiteSpline object
+ * @return 3D position at arc length s
+ */
+Eigen::Vector3d evaluateArcLengthSpline(
+  double s,
+  const ArcLengthReparametrizationResult & reparametrization,
+  const HermiteSpline & spline);
+
+/**
+   * @brief Evaluate position and derivative dp/ds on arc-length parametrized spline
+   *
+   * Uses binary search O(log n) and linear interpolation.
+   *
+   * @param s Arc length parameter in meters (0 to total_length)
+   * @param reparametrization Result from ArcLengthReparametrizationResult
+   * @param spline Original HermiteSpline object
+   * @return Pair of (position, derivative dp/ds) at arc length s
+   */
+std::pair<Eigen::Vector3d, Eigen::Vector3d> evaluateArcLengthSplineWithDerivative(
+  double s,
+  const ArcLengthReparametrizationResult & reparametrization,
+  const HermiteSpline & spline);
 
 }  // namespace spline
 
-#endif  // HERMITE_SPLINE_HPP
+#endif  // SPLINE_HPP

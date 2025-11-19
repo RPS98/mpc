@@ -19,7 +19,7 @@ foreach(EXAMPLE_FILE ${EXAMPLES_SOURCE})
 
   add_executable(${PROJECT_NAME}_${EXAMPLE_NAME} 
     ${EXAMPLE_FILE} 
-    spline/spline.cpp 
-    spline/spline_trajectory_generator.cpp)
+    spline/spline.cpp
+    spline/trajectory_generator.cpp)
   target_link_libraries(${PROJECT_NAME}_${EXAMPLE_NAME} acados_mpcc_solver yaml-cpp)
 endforeach()

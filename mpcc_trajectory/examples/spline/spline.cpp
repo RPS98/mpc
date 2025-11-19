@@ -28,22 +28,22 @@
 
 /**
  * @file spline.cpp
+ *
  * @brief Hermite Spline implementation in C++
+ *
  * @authors Rafael Pérez Seguí, Carmen De Rojas Pita-Romero
- * @copyright Copyright (c) 2025 Universidad Politécnica de Madrid
- * @license BSD-3-Clause
  */
 
 #include "spline.hpp"
 #include <cmath>
+#include <iostream>
 #include <sstream>
 
 namespace spline
 {
 
 HermiteSpline::HermiteSpline(
-  const std::vector<Setpoint> & setpoints,
-  const std::vector<double> & ti)
+  const std::vector<Setpoint> & setpoints)
 : setpoints_(setpoints)
 {
   // Validate input
@@ -52,129 +52,67 @@ HermiteSpline::HermiteSpline(
   }
 
   // Extract points and tangents from setpoints
-  points_.reserve(setpoints_.size());
-  tangents_.reserve(setpoints_.size());
-
-  for (const auto & sp : setpoints_) {
-    points_.push_back(sp.position);
-    tangents_.push_back(sp.tangent);
-  }
-
-  // Set parameter values
-  if (ti.empty()) {
-    // Default: [0, 1, 2, ..., N-1]
-    ti_.resize(setpoints_.size());
-    for (size_t i = 0; i < setpoints_.size(); ++i) {
-      ti_[i] = static_cast<double>(i);
-    }
-  } else {
-    if (ti.size() != setpoints_.size()) {
-      throw std::invalid_argument("Length of ti must match number of setpoints");
-    }
-    ti_ = ti;
-  }
+  setpoints_ = setpoints;
 }
 
-HermiteSpline::HermiteSpline(
-  const std::vector<Eigen::Vector3d> & points,
-  const std::vector<Eigen::Vector3d> & tangents,
-  const std::vector<double> & ti)
-: points_(points), tangents_(tangents)
+std::tuple<double, double, double, double> HermiteSpline::hermiteBasis(double t) const
 {
-  // Validate input
-  if (points_.size() != tangents_.size()) {
-    throw std::invalid_argument("Number of points and tangents must match");
-  }
+  double t2 = t * t;
+  double t3 = t2 * t;
 
-  if (points_.size() < 2) {
-    throw std::invalid_argument("Need at least 2 points");
-  }
-
-  // Create setpoints from points and tangents
-  setpoints_.reserve(points_.size());
-  for (size_t i = 0; i < points_.size(); ++i) {
-    setpoints_.emplace_back(std::to_string(i), points_[i], tangents_[i]);
-  }
-
-  // Set parameter values
-  if (ti.empty()) {
-    // Default: [0, 1, 2, ..., N-1]
-    ti_.resize(points_.size());
-    for (size_t i = 0; i < points_.size(); ++i) {
-      ti_[i] = static_cast<double>(i);
-    }
-  } else {
-    if (ti.size() != points_.size()) {
-      throw std::invalid_argument("Length of ti must match number of points");
-    }
-    ti_ = ti;
-  }
-}
-
-double HermiteSpline::clamp(double value, double min, double max)
-{
-  return std::max(min, std::min(max, value));
-}
-
-std::tuple<double, double, double, double> HermiteSpline::hermiteBasis(double s) const
-{
-  double s2 = s * s;
-  double s3 = s2 * s;
-
-  double h00 = 2.0 * s3 - 3.0 * s2 + 1.0;
-  double h10 = s3 - 2.0 * s2 + s;
-  double h01 = -2.0 * s3 + 3.0 * s2;
-  double h11 = s3 - s2;
+  double h00 = 2.0 * t3 - 3.0 * t2 + 1.0;
+  double h10 = t3 - 2.0 * t2 + t;
+  double h01 = -2.0 * t3 + 3.0 * t2;
+  double h11 = t3 - t2;
 
   return std::make_tuple(h00, h10, h01, h11);
 }
 
-std::tuple<double, double, double, double> HermiteSpline::hermiteBasisDerivative(double s) const
+std::tuple<double, double, double, double> HermiteSpline::hermiteBasisDerivative(double t) const
 {
-  double s2 = s * s;
+  double t2 = t * t;
 
-  double h00_d = 6.0 * s2 - 6.0 * s;
-  double h10_d = 3.0 * s2 - 4.0 * s + 1.0;
-  double h01_d = -6.0 * s2 + 6.0 * s;
-  double h11_d = 3.0 * s2 - 2.0 * s;
+  double h00_d = 6.0 * t2 - 6.0 * t;
+  double h10_d = 3.0 * t2 - 4.0 * t + 1.0;
+  double h01_d = -6.0 * t2 + 6.0 * t;
+  double h11_d = 3.0 * t2 - 2.0 * t;
 
   return std::make_tuple(h00_d, h10_d, h01_d, h11_d);
 }
 
 int HermiteSpline::findSegment(double t) const
 {
-  for (size_t i = 0; i < ti_.size() - 1; ++i) {
-    if (t <= ti_[i + 1]) {
-      return static_cast<int>(i);
-    }
+  if (t < 0.0 || t > static_cast<double>(setpoints_.size() - 1)) {
+    throw std::out_of_range("Parameter t is out of bounds");
   }
-  // Last segment
-  return static_cast<int>(ti_.size() - 2);
+  // Check if t is in [0, 1, 2, ..., N-1]
+  // For t in [0,1) -> idx=0, [1,2) -> idx=1, etc.
+  return static_cast<int>(std::floor(t));
 }
 
 Eigen::Vector3d HermiteSpline::evaluate(double t) const
 {
   // Clamp to valid range
-  t = clamp(t, ti_.front(), ti_.back());
+  t = std::clamp(t, 0.0, static_cast<double>(setpoints_.size() - 1));
 
   // Find segment
   int idx = findSegment(t);
 
   // Get segment data
-  const Eigen::Vector3d & p0 = points_[idx];
-  const Eigen::Vector3d & p1 = points_[idx + 1];
-  const Eigen::Vector3d & m0 = tangents_[idx];
-  const Eigen::Vector3d & m1 = tangents_[idx + 1];
-  double t0 = ti_[idx];
-  double t1 = ti_[idx + 1];
+  const Setpoint & sp0 = setpoints_[idx];
+  const Setpoint & sp1 = setpoints_[idx + 1];
 
-  // Normalize to [0, 1]
-  double dt = t1 - t0;
-  double s = (t - t0) / dt;
-  s = clamp(s, 0.0, 1.0);
+  const Eigen::Vector3d & p0 = sp0.position;
+  const Eigen::Vector3d & p1 = sp1.position;
+  const Eigen::Vector3d & m0 = sp0.tangent;
+  const Eigen::Vector3d & m1 = sp1.tangent;
+
+  // Normalize to [0, 1] within the segment
+  double t_segment = t - static_cast<double>(idx);
 
   // Evaluate Hermite polynomial
-  auto [h00, h10, h01, h11] = hermiteBasis(s);
+  const double dt = 1.0;  // Since segments are normally spaced by 1.0
+  auto [h00, h10, h01, h11] = hermiteBasis(t_segment);
 
   return h00 * p0 + h10 * m0 * dt + h01 * p1 + h11 * m1 * dt;
 }
@@ -182,26 +120,26 @@ Eigen::Vector3d HermiteSpline::evaluate(double t) const
 Eigen::Vector3d HermiteSpline::evaluateDerivative(double t) const
 {
   // Clamp to valid range
-  t = clamp(t, ti_.front(), ti_.back());
+  t = std::clamp(t, 0.0, static_cast<double>(setpoints_.size() - 1));
 
   // Find segment
   int idx = findSegment(t);
 
   // Get segment data
-  const Eigen::Vector3d & p0 = points_[idx];
-  const Eigen::Vector3d & p1 = points_[idx + 1];
-  const Eigen::Vector3d & m0 = tangents_[idx];
-  const Eigen::Vector3d & m1 = tangents_[idx + 1];
-  double t0 = ti_[idx];
-  double t1 = ti_[idx + 1];
+  const Setpoint & sp0 = setpoints_[idx];
+  const Setpoint & sp1 = setpoints_[idx + 1];
 
-  // Normalize to [0, 1]
-  double dt = t1 - t0;
-  double s = (t - t0) / dt;
-  s = clamp(s, 0.0, 1.0);
+  const Eigen::Vector3d & p0 = sp0.position;
+  const Eigen::Vector3d & p1 = sp1.position;
+  const Eigen::Vector3d & m0 = sp0.tangent;
+  const Eigen::Vector3d & m1 = sp1.tangent;
 
-  // Evaluate derivative
-  auto [h00_d, h10_d, h01_d, h11_d] = hermiteBasisDerivative(s);
+  // Normalize to [0, 1] within the segment
+  double t_segment = t - static_cast<double>(idx);
+
+  // Evaluate Hermite polynomial
+  const double dt = 1.0;  // Since segments are normally spaced by 1.0
+  auto [h00_d, h10_d, h01_d, h11_d] = hermiteBasisDerivative(t_segment);
   Eigen::Vector3d dp_ds = h00_d * p0 + h10_d * m0 * dt + h01_d * p1 + h11_d * m1 * dt;
 
   // Chain rule: dp/dt = dp/ds * ds/dt
@@ -209,105 +147,179 @@ Eigen::Vector3d HermiteSpline::evaluateDerivative(double t) const
   return dp_ds * ds_dt;
 }
 
+std::pair<Eigen::Vector3d, Eigen::Vector3d> HermiteSpline::evaluateWithDerivative(double t) const
+{
+  Eigen::Vector3d position = evaluate(t);
+  Eigen::Vector3d derivative = evaluateDerivative(t);
+  return std::make_pair(position, derivative);
+}
+
 ArcLengthReparametrizationResult computeArcLengthReparametrization(
   const HermiteSpline & spline,
-  int n_samples,
-  int poly_degree)
+  int n_samples)
 {
-  // Basic sanity checks
+  // Validate input parameters
   if (n_samples < 2) {
-    throw std::invalid_argument("computeArcLengthReparametrization: n_samples must be >= 2");
+    throw std::invalid_argument(
+            "computeArcLengthReparametrization: n_samples must be >= 2");
   }
 
-  if (poly_degree < 1) {
-    throw std::invalid_argument("computeArcLengthReparametrization: poly_degree must be >= 1");
-  }
+  ArcLengthReparametrizationResult result;
 
-  // Get original parameter vector ti
-  const std::vector<double> & ti = spline.getTi();
-  if (ti.empty()) {
-    throw std::runtime_error("computeArcLengthReparametrization: spline has no parameter values");
-  }
+  // Reserve memory
+  result.arc_lengths.reserve(n_samples);
+  result.t_values.reserve(n_samples);
 
-  const double t_min = ti.front();
-  const double t_max = ti.back();
-
-  // Sample parameter t uniformly in [t_min, t_max]
-  Eigen::VectorXd t_samples(n_samples);
+  // Define parameter range and sampling interval
+  const double t_min = 0.0;
+  const double t_max = spline.getTmax();
   const double dt = (t_max - t_min) / static_cast<double>(n_samples - 1);
 
-  for (int i = 0; i < n_samples; ++i) {
-    t_samples[i] = t_min + static_cast<double>(i) * dt;
-  }
+  // Initialize first point
+  result.arc_lengths.push_back(0.0);
+  result.t_values.push_back(t_min);
 
-  // Evaluate ||dp/dt|| at each sample point
-  Eigen::VectorXd norms(n_samples);
-  for (int i = 0; i < n_samples; ++i) {
-    Eigen::Vector3d deriv = spline.evaluateDerivative(t_samples[i]);
-    norms[i] = deriv.norm();  // Euclidean norm of the derivative (speed)
-  }
+  double arc_length = 0.0;
+  double norm_prev = spline.evaluateDerivative(t_min).norm();
 
-  // Trapezoidal integration:
-  // s(t) = ∫ ||dp/dt|| dt
-  // Approximated cumulative integral:
-  // s_{k} = s_{k-1} + 0.5 * (norms_{k-1} + norms_{k}) * dt
-  Eigen::VectorXd arc_lengths(n_samples);
-  arc_lengths.setZero();
-
+  // Compute cumulative arc length using trapezoidal integration
   for (int i = 1; i < n_samples; ++i) {
-    const double trapezoid_area =
-      0.5 * (norms[i - 1] + norms[i]) * dt;
-    arc_lengths[i] = arc_lengths[i - 1] + trapezoid_area;
+    const double t_curr = t_min + static_cast<double>(i) * dt;
+    const double norm_curr = spline.evaluateDerivative(t_curr).norm();
+
+    // Trapezoidal rule: area = 0.5 * (f(x_i) + f(x_i+1)) * dx
+    arc_length += 0.5 * (norm_prev + norm_curr) * dt;
+
+    result.arc_lengths.push_back(arc_length);
+    result.t_values.push_back(t_curr);
+
+    norm_prev = norm_curr;
   }
 
-  // Total arc length L = s(t_max)
-  const double total_length = arc_lengths[n_samples - 1];
-  if (total_length <= 0.0) {
-    throw std::runtime_error("computeArcLengthReparametrization: non-positive total length");
+  result.total_length = arc_length;
+  result.setpoints = spline.getSetpoints();
+
+  if (result.total_length <= 0.0) {
+    throw std::runtime_error("Total arc length is non-positive");
   }
-
-  // Normalize arc length: s_normalized = s / L ∈ [0, 1]
-  Eigen::VectorXd s_normalized = arc_lengths / total_length;
-
-  // Fit polynomial t(s_normalized) of degree poly_degree using least squares.
-  //
-  // We construct a Vandermonde matrix A where each row is:
-  // [s^d, s^(d-1), ..., s^1, s^0]
-  // so that:
-  // A * c = t_samples,
-  // where c are the polynomial coefficients (highest degree first),
-  // consistent with NumPy's np.polyfit convention.
-  const int num_coeffs = poly_degree + 1;
-  Eigen::MatrixXd A(n_samples, num_coeffs);
-
-  for (int i = 0; i < n_samples; ++i) {
-    const double s = s_normalized[i];
-
-    // Compute powers s^0, s^1, ..., s^poly_degree
-    Eigen::VectorXd powers(num_coeffs);
-    powers[0] = 1.0;
-    for (int k = 1; k < num_coeffs; ++k) {
-      powers[k] = powers[k - 1] * s;
-    }
-
-    // Fill row i with [s^poly_degree, ..., s^1, s^0]
-    for (int j = 0; j < num_coeffs; ++j) {
-      A(i, j) = powers[poly_degree - j];
-    }
-  }
-
-  // Solve least-squares problem A * c = t_samples
-  Eigen::VectorXd poly_coeffs = A.colPivHouseholderQr().solve(t_samples);
-
-  // Fill result structure
-  ArcLengthReparametrizationResult result;
-  result.points = spline.getPoints();      // Copy control points
-  result.tangents = spline.getTangents();  // Copy tangents
-  result.ti = spline.getTi();              // Copy original parameter values
-  result.poly_coeffs = poly_coeffs;        // Polynomial coefficients for t(s_normalized)
-  result.total_length = total_length;      // Total arc length
 
   return result;
 }
+
+double reparametrizeArcLengthToT(
+  double s,
+  const ArcLengthReparametrizationResult & reparametrization)
+{
+  // Clamp s to valid range
+  double s_clamped = std::clamp(s, 0.0, reparametrization.total_length);
+
+  // Binary search to find the interval containing s
+  auto it = std::lower_bound(
+    reparametrization.arc_lengths.begin(),
+    reparametrization.arc_lengths.end(),
+    s_clamped);
+
+  // Handle edge cases
+  if (it == reparametrization.arc_lengths.begin()) {
+    // s is at or before the first point
+    return 0.0;
+  }
+
+  if (it == reparametrization.arc_lengths.end()) {
+    // s is at or after the last point
+    return reparametrization.t_values.back();
+  }
+
+  // Linear interpolation between two points
+  size_t idx_high = std::distance(reparametrization.arc_lengths.begin(), it);
+  size_t idx_low = idx_high - 1;
+
+  double s_low = reparametrization.arc_lengths[idx_low];
+  double s_high = reparametrization.arc_lengths[idx_high];
+  double t_low = reparametrization.t_values[idx_low];
+  double t_high = reparametrization.t_values[idx_high];
+
+  // Interpolation factor
+  double alpha = (s_clamped - s_low) / (s_high - s_low);
+
+  // Interpolate t
+  double t = t_low + alpha * (t_high - t_low);
+
+  return t;
+}
+
+
+Eigen::Vector3d evaluateArcLengthSpline(
+  double s,
+  const ArcLengthReparametrizationResult & reparametrization,
+  const HermiteSpline & spline)
+{
+  // Compute corresponding t for given s
+  double t = reparametrizeArcLengthToT(s, reparametrization);
+
+  // Evaluate spline at interpolated t
+  return spline.evaluate(t);
+}
+
+std::pair<Eigen::Vector3d, Eigen::Vector3d> evaluateArcLengthSplineWithDerivative(
+  double s,
+  const ArcLengthReparametrizationResult & reparametrization,
+  const HermiteSpline & spline)
+{
+  // Compute corresponding t for given s
+  double t = reparametrizeArcLengthToT(s, reparametrization);
+
+  // Evaluate position and derivative wrt t
+  Eigen::Vector3d p = spline.evaluate(t);
+  Eigen::Vector3d dp_dt = spline.evaluateDerivative(t);
+
+  // Clamp s to valid range
+  double s_clamped = std::clamp(s, 0.0, reparametrization.total_length);
+
+  // Binary search to find the interval containing s for dt/ds calculation
+  auto it = std::lower_bound(
+    reparametrization.arc_lengths.begin(),
+    reparametrization.arc_lengths.end(),
+    s_clamped);
+
+  // Convert dp/dt to dp/ds using chain rule: dp/ds = dp/dt * dt/ds
+  double dt_ds = 0.0;
+  const double eps = 1e-12;
+
+  // Handle edge cases
+  if (it == reparametrization.arc_lengths.begin() ||
+    it == reparametrization.arc_lengths.end())
+  {
+    // Fallback: ds/dt ~= ||dp/dt|| => dt/ds = 1/||dp/dt||
+    double ds_dt = dp_dt.norm();
+    if (ds_dt > eps) {
+      dt_ds = 1.0 / ds_dt;
+    }
+  } else {
+    // Linear approximation of dt/ds from neighboring points
+    size_t idx_high = std::distance(reparametrization.arc_lengths.begin(), it);
+    size_t idx_low = idx_high - 1;
+
+    double s_low = reparametrization.arc_lengths[idx_low];
+    double s_high = reparametrization.arc_lengths[idx_high];
+    double t_low = reparametrization.t_values[idx_low];
+    double t_high = reparametrization.t_values[idx_high];
+
+    if (std::abs(s_high - s_low) > eps) {
+      dt_ds = (t_high - t_low) / (s_high - s_low);
+    } else {
+      // Fallback if interval is too small
+      double ds_dt = dp_dt.norm();
+      if (ds_dt > eps) {
+        dt_ds = 1.0 / ds_dt;
+      }
+    }
+  }
+
+  Eigen::Vector3d dp_ds = dp_dt * dt_ds;
+
+  return std::make_pair(p, dp_ds);
+}
+
 
 }  // namespace spline
