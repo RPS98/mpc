@@ -134,8 +134,38 @@ class YamlConfig:
         with open(filepath, 'r') as f:
             self.yaml_data = yaml.safe_load(f)
 
+        # Expand dynamic parameters in 'parameters' section if it exists
+        if 'parameters' in self.yaml_data:
+            self.yaml_data['parameters'] = self._expand_parameters(self.yaml_data['parameters'])
+
         # Parse with comments line by line
         self._parse_with_comments()
+    def _expand_parameters(self, params: dict) -> dict:
+        """Expande parámetros con sintaxis especial."""
+        expanded = {}
+        self._expanded_params_descriptions = {}  # Guardar descripciones generadas
+        
+        for key, value in params.items():
+            if key == 'spline_knots' and isinstance(value, (int, float)):
+                count = int(value)
+                array_length = count * 3
+                expanded['spline_points'] = [0.0] * array_length
+                expanded['spline_tangents'] = [0.0] * array_length
+                self._expanded_params_descriptions['spline_points'] = f'Spline knot positions array (size {array_length} for {count} knots * 3 coords)'
+                self._expanded_params_descriptions['spline_tangents'] = f'Spline knot tangents array (size {array_length} for {count} knots * 3 coords)' 
+            elif key == 'n_samples' and isinstance(value, (int, float)):
+                count = int(value)
+                expanded['n_samples'] = [0.0] * count
+                self._expanded_params_descriptions['n_samples'] = f'Number of samples array (size {count})'
+            
+            elif key == 't_samples' and isinstance(value, (int, float)):
+                count = int(value)
+                expanded['t_samples'] = [0.0] * count
+                self._expanded_params_descriptions['t_samples'] = f'Time samples array (size {count})'
+            else:
+                expanded[key] = value
+        
+        return expanded
 
     def _parse_with_comments(self):
         with open(self.filepath, 'r') as f:
@@ -143,9 +173,14 @@ class YamlConfig:
 
         current_section = None
         indent_level = None
+        processed_params = set()  # Track which params we've processed from file
 
         for line in lines:
             stripped = line.strip()
+
+            # Skip lines that start with special keys (no queremos parsear _count, etc.)
+            if stripped.startswith('_'):
+                continue
 
             # Detect new section
             if stripped and not stripped.startswith('#') and ':' in stripped and not stripped.startswith('-'):
@@ -163,6 +198,10 @@ class YamlConfig:
                         key_part, rest = line.split(':', 1)
                         param_name = key_part.strip()
 
+                        section_data = self.yaml_data.get(current_section.name, {})
+                        if param_name not in section_data:
+                            continue
+
                         if '#' in rest:
                             val_part, comment = rest.split('#', 1)
                             description = comment.strip()
@@ -170,9 +209,34 @@ class YamlConfig:
                             val_part = rest
                             description = 'No description provided'
 
-                        val_str = val_part.strip()
-                        value, param_type = self._convert_value(val_str)
+                        value = section_data[param_name]
+                        param_type = self._infer_type(value)
                         current_section.add_parameter(param_name, value, description, param_type)
+                        processed_params.add(param_name)
+        
+        # Añadir parámetros expandidos que no se encontraron en el archivo
+        # (porque sus líneas originales empezaban con _ o no existían)
+        if hasattr(self, '_expanded_params_descriptions'):
+            for section_name, section in self.sections.items():
+                section_data = self.yaml_data.get(section_name, {})
+                for param_name, value in section_data.items():
+                    if param_name not in processed_params:
+                        # Es un parámetro expandido sin comentario en archivo original
+                        description = self._expanded_params_descriptions.get(
+                            param_name, 'Auto-generated parameter')
+                        param_type = self._infer_type(value)
+                        section.add_parameter(param_name, value, description, param_type)
+    @staticmethod
+    def _infer_type(value):
+        """Infer the type of a value."""
+        if isinstance(value, list):
+            return 'list'
+        elif isinstance(value, int):
+            return 'int'
+        elif isinstance(value, float):
+            return 'float'
+        else:
+            return 'str'
 
     @staticmethod
     def _convert_value(val_str):
@@ -222,7 +286,7 @@ def build_flat_expected_data(section):
 
 
 if __name__ == '__main__':
-    config = YamlConfig('config.yaml')
+    config = YamlConfig('/home/carmen/a2rl/thirdparty_libs/mpc/generate_model_definition/model_definition.yaml')
 
     for section_name, section in config.sections.items():
         print(f"{section_name}:")
