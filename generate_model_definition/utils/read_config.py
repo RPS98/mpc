@@ -130,20 +130,18 @@ class YamlConfig:
         self.sections = {}
         self.use_camel_case = use_camel_case
 
-        # Load YAML keys and values (ignoring comments initially)
         with open(filepath, 'r') as f:
             self.yaml_data = yaml.safe_load(f)
 
-        # Expand dynamic parameters in 'parameters' section if it exists
         if 'parameters' in self.yaml_data:
             self.yaml_data['parameters'] = self._expand_parameters(self.yaml_data['parameters'])
 
-        # Parse with comments line by line
         self._parse_with_comments()
+
     def _expand_parameters(self, params: dict) -> dict:
-        """Expande parámetros con sintaxis especial."""
+        """Expande parámetros con sintaxis especial manteniendo orden específico."""
         expanded = {}
-        self._expanded_params_descriptions = {}  # Guardar descripciones generadas
+        self._expanded_params_descriptions = {}
         
         for key, value in params.items():
             if key == 'spline_knots' and isinstance(value, (int, float)):
@@ -152,7 +150,17 @@ class YamlConfig:
                 expanded['spline_points'] = [0.0] * array_length
                 expanded['spline_tangents'] = [0.0] * array_length
                 self._expanded_params_descriptions['spline_points'] = f'Spline knot positions array (size {array_length} for {count} knots * 3 coords)'
-                self._expanded_params_descriptions['spline_tangents'] = f'Spline knot tangents array (size {array_length} for {count} knots * 3 coords)' 
+                self._expanded_params_descriptions['spline_tangents'] = f'Spline knot tangents array (size {array_length} for {count} knots * 3 coords)'
+                
+                if 's_length' in params:
+                    expanded['s_length'] = params['s_length']
+            
+            elif key == 's_length':
+                if 'spline_points' in expanded:
+                    continue
+                else:
+                    expanded[key] = value
+            
             elif key == 'n_samples' and isinstance(value, (int, float)):
                 count = int(value)
                 expanded['n_samples'] = [0.0] * count
@@ -164,7 +172,6 @@ class YamlConfig:
                 self._expanded_params_descriptions['t_samples'] = f'Time samples array (size {count})'
             else:
                 expanded[key] = value
-        
         return expanded
 
     def _parse_with_comments(self):
@@ -173,16 +180,14 @@ class YamlConfig:
 
         current_section = None
         indent_level = None
-        processed_params = set()  # Track which params we've processed from file
+        processed_params = set()
 
         for line in lines:
             stripped = line.strip()
-
-            # Skip lines that start with special keys (no queremos parsear _count, etc.)
+            
             if stripped.startswith('_'):
                 continue
-
-            # Detect new section
+            
             if stripped and not stripped.startswith('#') and ':' in stripped and not stripped.startswith('-'):
                 if not line.startswith(' '):
                     section_name = stripped.split(':')[0]
@@ -191,14 +196,39 @@ class YamlConfig:
                         self.sections[section_name] = current_section
                         indent_level = len(line) - len(line.lstrip())
                     continue
-
-                # Parse parameter inside section
+                
                 if current_section and len(line) - len(line.lstrip()) > indent_level:
                     if ':' in line:
                         key_part, rest = line.split(':', 1)
                         param_name = key_part.strip()
 
                         section_data = self.yaml_data.get(current_section.name, {})
+                        
+                        if param_name == 'spline_knots':
+                            if 'spline_points' in section_data:
+                                description = self._expanded_params_descriptions.get('spline_points', 'Spline knot positions')
+                                value = section_data['spline_points']
+                                param_type = self._infer_type(value)
+                                current_section.add_parameter('spline_points', value, description, param_type)
+                                processed_params.add('spline_points')
+                            
+                            if 'spline_tangents' in section_data:
+                                description = self._expanded_params_descriptions.get('spline_tangents', 'Spline knot tangents')
+                                value = section_data['spline_tangents']
+                                param_type = self._infer_type(value)
+                                current_section.add_parameter('spline_tangents', value, description, param_type)
+                                processed_params.add('spline_tangents')
+                            
+                            if 's_length' in section_data and 's_length' not in processed_params:
+                                s_length_desc = 'Total length of the spline path'
+                                value = section_data['s_length']
+                                param_type = self._infer_type(value)
+                                current_section.add_parameter('s_length', value, s_length_desc, param_type)
+                                processed_params.add('s_length')
+                            
+                            processed_params.add('spline_knots')
+                            continue
+                        
                         if param_name not in section_data:
                             continue
 
@@ -213,15 +243,12 @@ class YamlConfig:
                         param_type = self._infer_type(value)
                         current_section.add_parameter(param_name, value, description, param_type)
                         processed_params.add(param_name)
-        
-        # Añadir parámetros expandidos que no se encontraron en el archivo
-        # (porque sus líneas originales empezaban con _ o no existían)
+
         if hasattr(self, '_expanded_params_descriptions'):
             for section_name, section in self.sections.items():
                 section_data = self.yaml_data.get(section_name, {})
                 for param_name, value in section_data.items():
                     if param_name not in processed_params:
-                        # Es un parámetro expandido sin comentario en archivo original
                         description = self._expanded_params_descriptions.get(
                             param_name, 'Auto-generated parameter')
                         param_type = self._infer_type(value)
