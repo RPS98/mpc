@@ -40,13 +40,13 @@ from acados_template import AcadosSimSolver
 from mpc.mpc_controller import MPC, MPCParameters
 from mpc.acados_solver import get_acados_sim_solver
 from mpc.utils.yaml_to_dict import yaml_to_dict
-from mpcc_trajectory.examples.spline_trajectory_generator import SplineTrajectoryGenerator
+from mpcc_trajectory.examples.spline_py.spline_trajectory_generator import SplineTrajectoryGenerator
 from utils.utils import euler_to_quaternion, CsvLogger
 from mpc.model_definition.actuation import Actuation
 from mpc.model_definition.state import State
 from mpc.model_definition.parameters import Parameters
-from hermite_spline import HermiteSpline, compute_arc_length_reparametrization
-from spline_trajectory_generator import SplineTrajectoryGenerator, Setpoint
+from spline_py.hermite_spline import HermiteSpline, compute_arc_length_reparametrization
+from spline_py.spline_trajectory_generator import SplineTrajectoryGenerator, Setpoint
 from mpc.spline.spline_evaluation import evaluate_arc_length_spline
 import numpy as np
 import time

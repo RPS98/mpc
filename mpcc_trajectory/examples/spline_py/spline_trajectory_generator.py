@@ -33,12 +33,12 @@ __authors__ = 'Carmen De Rojas Pita-Romero'
 __copyright__ = 'Copyright (c) 2025 Universidad Politécnica de Madrid'
 __license__ = 'BSD-3-Clause'
 
-from hermite_spline import HermiteSpline, compute_arc_length_reparametrization
+from spline_py.hermite_spline import HermiteSpline, compute_arc_length_reparametrization
 from typing import List, Tuple, Dict
 from dataclasses import dataclass
 import numpy as np
 import matplotlib.pyplot as plt
-from spline_evaluation import evaluate_arc_length_spline
+from spline_py.spline_evaluation import evaluate_arc_length_spline
 
 
 @dataclass
@@ -396,7 +396,7 @@ def main():
     ]
     
     # Create spline generator with 3 waypoints per spline and plot on regeneration
-    spline_gen = SplineTrajectoryGenerator(setpoints, num_wp=3, plot_on_regeneration=True)
+    spline_gen = SplineTrajectoryGenerator(setpoints, num_wp=3, plot_on_regeneration=False)
     
     print("=== Spline Trajectory Evaluation Demo ===")
     print(f"Total waypoints: {len(setpoints)}")
@@ -428,6 +428,7 @@ def main():
             print(f"  - Arc length reset from {prev_s:.2f} to {new_s:.2f}")
             print(f"  - Path index: {spline_gen.path.current_index}")
             print(f"  - New spline length: {params['reparametrization']['total_length']:.4f}\n")
+            print(f"  - Poly Coeffs after regeneration: {params['reparametrization']['poly_coeffs']}\n") 
         
         # Update arc length
         s = new_s + ds
