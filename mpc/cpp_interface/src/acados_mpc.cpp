@@ -31,7 +31,7 @@
  *
  * Acados MPC class implementation.
  *
- * @author Rafael Perez-Segui <r.psegui@upm.es>
+ * @author Rafael Perez-Segui, Carmen De Rojas Pita-Romero <r.psegui@upm.es> <c.derojas@upm.es>
  */
 
 #include "acados_mpc/acados_mpc.hpp"
@@ -74,20 +74,6 @@ void MPC::setSolverState() {
   validateStatus(status_);
 }
 
-void MPC::setSolverRefence() {
-  for (int i = 0; i < MPC_N; i++) {
-    status_ = ocp_nlp_cost_model_set(nlp_config_, nlp_dims_, nlp_in_, i, "yref",
-                                     mpc_data_.reference.get_data(i));
-    validateStatus(status_);
-  }
-}
-
-void MPC::setSolverRefenceEnd() {
-  status_ = ocp_nlp_cost_model_set(nlp_config_, nlp_dims_, nlp_in_, MPC_N, "yref",
-                                   mpc_data_.reference_end.data.data());
-  validateStatus(status_);
-}
-
 void MPC::setSolverOnlineParams() {
   // initial values for parameter vector - can be updated stagewise
   for (int i = 0; i <= MPC_N; i++) {
@@ -96,11 +82,89 @@ void MPC::setSolverOnlineParams() {
   }
 }
 
+void MPC::setSolverOnlineMassParams(const double value) {
+  mpc_data_.p_params.set_data(MPC_NP, P_IDX_MASS, value);
+}
+
+void MPC::setSolverOnlineContourErrorGainParams(const std::array<double, 3> value) {
+  for ( int i = P_IDX_G_CONTOUR_ERROR; i< P_IDX_G_CONTOUR_ERROR +value.size(); i++ ){
+  mpc_data_.p_params.set_data(MPC_NP, i, value[i - P_IDX_G_CONTOUR_ERROR]);
+  }
+}
+
+void MPC::setSolverOnlineLagErrorGainParams(const double value) {
+  mpc_data_.p_params.set_data(MPC_NP, P_IDX_G_LAG_ERROR, value);
+}
+
+void MPC::setSolverOnlineOrientationErrorGainParams(const std::array<double, 3> value) {
+  for ( int i = P_IDX_D_ORIENTATION; i< P_IDX_D_ORIENTATION +value.size(); i++ ){
+  mpc_data_.p_params.set_data(MPC_NP, i, value[i - P_IDX_D_ORIENTATION]);
+  }
+}
+
+void MPC::setSolverOnlineActuationGainParams(const std::array<double, 4> value) {
+  for ( int i = P_IDX_G_ACTUATION; i< P_IDX_G_ACTUATION +value.size(); i++ ){
+  mpc_data_.p_params.set_data(MPC_NP, i, value[i - P_IDX_G_ACTUATION]);
+  }
+}
+
+void MPC::setSolverOnlineThetaVelocityGainParams(const double value) {
+  mpc_data_.p_params.set_data(MPC_NP, P_IDX_G_THETA_VELOCITY, value);
+}
+
+void MPC::setSolverOnlineProgressGainParams(const double value) {
+  mpc_data_.p_params.set_data(MPC_NP, P_IDX_G_PROGRESS, value);
+}
+
+void MPC::setSolverOnlineS1PParams(const std::array<double, 3> value) {
+  for ( int i = P_IDX_S1_P; i< P_IDX_S1_P +value.size(); i++ ){
+  mpc_data_.p_params.set_data(MPC_NP, i, value[i - P_IDX_S1_P]);
+  }
+}
+
+void MPC::setSolverOnlineS1MParams(const std::array<double, 3> value) {
+  for ( int i = P_IDX_S1_M; i< P_IDX_S1_M +value.size(); i++ ){
+  mpc_data_.p_params.set_data(MPC_NP, i, value[i - P_IDX_S1_M]);
+  }
+}
+
+void MPC::setSolverOnlineS2PParams(const std::array<double, 3> value) {
+  for ( int i = P_IDX_S2_P; i< P_IDX_S2_P +value.size(); i++ ){
+  mpc_data_.p_params.set_data(MPC_NP, i, value[i - P_IDX_S2_P]);
+  }
+}
+
+void MPC::setSolverOnlineS2MParams(const std::array<double, 3> value) {
+  for ( int i = P_IDX_S2_M; i< P_IDX_S2_M +value.size(); i++ ){
+  mpc_data_.p_params.set_data(MPC_NP, i, value[i - P_IDX_S2_M]);
+  }
+}
+
+void MPC::setSolverOnlineS3PParams(const std::array<double, 3> value) {
+  for ( int i = P_IDX_S3_P; i< P_IDX_S3_P +value.size(); i++ ){
+  mpc_data_.p_params.set_data(MPC_NP, i, value[i - P_IDX_S3_P]);
+  }
+}
+
+void MPC::setSolverOnlineS3MParams(const std::array<double, 3> value) {
+  for ( int i = P_IDX_S3_M; i< P_IDX_S3_M +value.size(); i++ ){
+  mpc_data_.p_params.set_data(MPC_NP, i, value[i - P_IDX_S3_M]);
+  }
+}
+
+void MPC::setSolverOnlineSLengthParams(const double value) {
+  mpc_data_.p_params.set_data(MPC_NP, P_IDX_S_LENGTH, value);
+}
+
+void MPC::setSolverOnlineSPolyCoeffsParams(const std::array<double, 6> value) {
+  for ( int i = P_IDX_S_POLY_COEFFS; i< P_IDX_S_POLY_COEFFS +value.size(); i++ ){
+  mpc_data_.p_params.set_data(MPC_NP, i, value[i - P_IDX_S_POLY_COEFFS]);
+  }
+}
+
 int MPC::solve() {
   // Set solver state and reference
   setSolverState();
-  setSolverRefence();
-  setSolverRefenceEnd();
   setSolverOnlineParams();
 
   // Solve OCP
@@ -117,15 +181,14 @@ int MPC::solve() {
   return status_;
 }
 
-void MPC::update_gains() {
-  // weight matrix at intermediate shooting nodes (1 to N-1)
-  for (int i = 1; i < MPC_N; i++) {
-    status_ = ocp_nlp_cost_model_set(nlp_config_, nlp_dims_, nlp_in_, i, "W", gains_.get_W());
+
+void MPC::update_online_parameters() {
+  // ToDo(Carmendrpr): check if this is correct
+  for (int i = 0; i <= MPC_N; i++) {
+  ocp_nlp_in_set(nlp_config_, nlp_dims_, nlp_in_, i, "parameter_values",
+                   mpc_data_.p_params.get_data());
     validateStatus(status_);
   }
-
-  // weight matrix at terminal shooting node (N)
-  status_ = ocp_nlp_cost_model_set(nlp_config_, nlp_dims_, nlp_in_, MPC_N, "W", gains_.get_We());
 }
 
 void MPC::update_actuation_bounds() {

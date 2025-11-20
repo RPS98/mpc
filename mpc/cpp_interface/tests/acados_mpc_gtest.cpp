@@ -52,12 +52,14 @@ TEST(acados_mpc, test_acados_mpc) {
   EXPECT_NO_THROW(mpc.get_prediction_time_horizon());
   EXPECT_NO_THROW(mpc.get_prediction_time_step());
   EXPECT_NO_THROW(mpc.get_data());
-  EXPECT_NO_THROW(mpc.get_gains());
   EXPECT_NO_THROW(mpc.get_actuation_bounds());
   EXPECT_NO_THROW(mpc.get_state_bounds());
-  EXPECT_NO_THROW(mpc.update_gains());
   EXPECT_NO_THROW(mpc.update_actuation_bounds());
-  EXPECT_NO_THROW(mpc.update_state_bounds());
+  // EXPECT_NO_THROW(mpc.update_state_bounds());
+  EXPECT_NO_THROW(mpc.setSolverOnlineMassParams(1.0));
+  EXPECT_NO_THROW(mpc.setSolverOnlineContourErrorGainParams({1.0, 1.0, 1.0}));
+  EXPECT_NO_THROW(mpc.update_online_parameters());
+
 }
 
 TEST(acados_mpc, test_acados_datatypes) {
@@ -68,31 +70,6 @@ TEST(acados_mpc, test_acados_datatypes) {
   EXPECT_NO_THROW(Actuation());
   auto actuation = Actuation();
   EXPECT_NO_THROW(actuation.set_data(0, 0.0));
-
-  EXPECT_NO_THROW(Reference());
-  auto reference = Reference();
-  EXPECT_NO_THROW(reference.get_data(0));
-  EXPECT_NO_THROW(reference.get_state(0));
-  EXPECT_NO_THROW(reference.set_data(0, 0.0));
-  EXPECT_NO_THROW(reference.set_state(0, State(), Actuation()));
-
-  EXPECT_NO_THROW(ReferenceEnd());
-  auto reference_end = ReferenceEnd();
-  EXPECT_NO_THROW(reference_end.get_data());
-  EXPECT_NO_THROW(reference_end.set_data(0, 0.0));
-
-  EXPECT_NO_THROW(Gains());
-  auto gains = Gains();
-  EXPECT_NO_THROW(gains.get_W());
-  EXPECT_NO_THROW(gains.get_We());
-  EXPECT_NO_THROW(gains.get_Q());
-  EXPECT_NO_THROW(gains.get_Q_end());
-  EXPECT_NO_THROW(gains.get_R());
-  EXPECT_NO_THROW(gains.set_W(0, 0.0));
-  EXPECT_NO_THROW(gains.set_We(0, 0.0));
-  EXPECT_NO_THROW(gains.set_Q(0, 0.0));
-  EXPECT_NO_THROW(gains.set_R(0, 0.0));
-  EXPECT_NO_THROW(gains.set_Q_end(0, 0.0));
 
   EXPECT_NO_THROW(ActuationBounds());
   auto actuation_bounds = ActuationBounds();

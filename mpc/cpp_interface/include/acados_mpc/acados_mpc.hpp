@@ -31,8 +31,8 @@
  *
  * Acados MPC class definition.
  *
- * @author Rafael Perez-Segui <r.psegui@upm.es>
- */
+ * @author Rafael Perez-Segui, Carmen De Rojas Pita-Romero <r.psegui@upm.es> <c.derojas@upm.es>
+  */
 
 #ifndef ACADOS_MPC_ACADOS_MPC_HPP_
 #define ACADOS_MPC_ACADOS_MPC_HPP_
@@ -51,21 +51,34 @@
 
 namespace acados_mpc {
 
+static constexpr int P_IDX_MASS    = 0;
+static constexpr int P_IDX_D_ORIENTATION = 1;
+static constexpr int P_IDX_G_CONTOUR_ERROR    = 5;
+static constexpr int P_IDX_G_LAG_ERROR    = 8;
+static constexpr int P_IDX_G_ORIENTATION    = 9;
+static constexpr int P_IDX_G_ACTUATION    = 12;
+static constexpr int P_IDX_G_THETA_VELOCITY    = 16;
+static constexpr int P_IDX_G_PROGRESS = 17;
+static constexpr int P_IDX_S1_P = 18;
+static constexpr int P_IDX_S1_M = 21;
+static constexpr int P_IDX_S2_P = 24;
+static constexpr int P_IDX_S2_M = 27;
+static constexpr int P_IDX_S3_P = 30;
+static constexpr int P_IDX_S3_M = 33;
+static constexpr int P_IDX_S_LENGTH = 36;
+static constexpr int P_IDX_S_POLY_COEFFS = 37;
+
 /**
  * @brief MPCData
  *
  * Data structure to hold the MPC data.
  *
  * @param state state.
- * @param reference reference.
- * @param reference_end reference_end.
  * @param p_params online parameters.
  * @param actuation actuation.
  */
 struct MPCData {
   State state;
-  Reference reference;
-  ReferenceEnd reference_end;
   OnlineParams p_params;
   Actuation actuation;
 };
@@ -129,12 +142,6 @@ public:
    */
   MPCData* get_data() { return &mpc_data_; }
 
-  /**
-   * @brief Get the Gains pointer to modify the gains.
-   *
-   * update_gains() must be called to update the gains.
-   */
-  Gains* get_gains() { return &gains_; }
 
   /**
    * @brief Get the ActuationBounds pointer to modify the actuation_bounds.
@@ -173,13 +180,80 @@ public:
 
   // Setters
 
-  /**
-   * @brief Update the gains Q, R and Qe.
-   *
-   * It uses the Gains pointer to update the gains.
-   * It can be accessed using get_gains().
+   /**
+   * @brief Set the solver online mass parameter of p
    */
-  void update_gains();
+  void setSolverOnlineMassParams(const double value);
+
+  /**
+   * @brief Set the solver online contouring error gain parameter of p
+   */
+  void setSolverOnlineContourErrorGainParams(const std::array<double, 3> value);
+
+  /**
+   * @brief Set the solver online lag error gain parameter of p
+   */
+  void setSolverOnlineLagErrorGainParams(const double value);
+
+  /** 
+   * @brief Set the solver online orientation error gain parameter of p
+  */
+  void setSolverOnlineOrientationErrorGainParams(const std::array<double, 3> value);
+
+  /** 
+  * @brief Set the solver online actuation error gain parameter of p
+  */
+  void setSolverOnlineActuationGainParams(const std::array<double, 4> value);
+
+  /** 
+  * @brief Set the solver online theta velocity gain parameter of p
+  */
+  void setSolverOnlineThetaVelocityGainParams(const double value);
+
+  /**
+   * @brief Set the solver online progress gain parameter of p
+   */
+  void setSolverOnlineProgressGainParams(const double value);
+
+  /**
+   * @brief Set the solver online s1_p parameters of p
+   */
+  void setSolverOnlineS1PParams(const std::array<double, 3> value);
+
+  /**
+   * @brief Set the solver online s1_m parameters of p
+   */
+  void setSolverOnlineS1MParams(const std::array<double, 3> value);
+
+  /**
+   * @brief Set the solver online s2_p parameters of p
+   */
+  void setSolverOnlineS2PParams(const std::array<double, 3> value);
+
+  /**
+   * @brief Set the solver online s2_m parameters of p
+   */
+  void setSolverOnlineS2MParams(const std::array<double, 3> value);
+
+  /** 
+   * @brief Set the solver online s3_p parameters of p
+   */
+  void setSolverOnlineS3PParams(const std::array<double, 3> value);
+
+  /**
+   * @brief Set the solver online s3_m parameters of p
+   */
+  void setSolverOnlineS3MParams(const std::array<double, 3> value);
+
+  /**
+   * @brief Set the solver online s_length parameters of p
+   */
+  void setSolverOnlineSLengthParams(const double value);
+
+  /**
+   * @brief Set the solver online s_poly_coeffs parameters of p
+   */
+  void setSolverOnlineSPolyCoeffsParams(const std::array<double, 6> value);
 
   /**
    * @brief Update the actuation_bounds lbx and ubx.
@@ -196,6 +270,12 @@ public:
    * It can be accessed using get_state_bounds().
    */
   void update_state_bounds();
+
+  /** 
+   * @brief Update the parameters p.
+   * It uses the OnlineParams pointer in MPCData to update the parameters p.
+   */
+  void update_online_parameters();
 
   /**
    * @brief Update the soft_state_bounds lsbx and usbx.
@@ -233,20 +313,11 @@ private:
   void setSolverState();
 
   /**
-   * @brief Set the solver reference yref
-   */
-  void setSolverRefence();
-
-  /**
-   * @brief Set the solver reference yref_N
-   */
-  void setSolverRefenceEnd();
-
-  /**
    * @brief Set the solver online parameters p
    */
   void setSolverOnlineParams();
 
+ 
   /**
    * @brief Validate the status
    *
@@ -275,7 +346,6 @@ private:
   MPCData mpc_data_ = MPCData();
 
   // Parameters
-  Gains gains_                       = Gains();
   ActuationBounds actuation_bounds_  = ActuationBounds();
   StateBounds state_bounds_          = StateBounds();
   SoftStateBounds soft_state_bounds_ = SoftStateBounds();
