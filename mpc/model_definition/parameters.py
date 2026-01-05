@@ -47,19 +47,55 @@ class _ParametersDef:
 
     _names: ClassVar[List[str]] = [
         'mass',
-        'desired_orientation'
+        'desired_orientation',
+        'inertia',
+        'motors_dx',
+        'motors_dy',
+        'motors_cf',
+        'motors_ct',
+        'motors_tau',
+        'motors_direction',
+        'motors_min_angular_velocity',
+        'motors_max_angular_velocity'
     ]
     _names_sx: ClassVar[List[str]] = [
         'sx_mass',
-        'sx_desired_orientation'
+        'sx_desired_orientation',
+        'sx_inertia',
+        'sx_motors_dx',
+        'sx_motors_dy',
+        'sx_motors_cf',
+        'sx_motors_ct',
+        'sx_motors_tau',
+        'sx_motors_direction',
+        'sx_motors_min_angular_velocity',
+        'sx_motors_max_angular_velocity'
     ]
     _sizes: ClassVar[List[int]] = [
         1,
+        4,
+        3,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
         4
     ]
 
     mass: Union[ca.SX, ca.DM]
     desired_orientation: Union[ca.SX, ca.DM]
+    inertia: Union[ca.SX, ca.DM]
+    motors_dx: Union[ca.SX, ca.DM]
+    motors_dy: Union[ca.SX, ca.DM]
+    motors_cf: Union[ca.SX, ca.DM]
+    motors_ct: Union[ca.SX, ca.DM]
+    motors_tau: Union[ca.SX, ca.DM]
+    motors_direction: Union[ca.SX, ca.DM]
+    motors_min_angular_velocity: Union[ca.SX, ca.DM]
+    motors_max_angular_velocity: Union[ca.SX, ca.DM]
 
 
 class CaParameters(_ParametersDef, VectorBase):
@@ -70,6 +106,24 @@ class CaParameters(_ParametersDef, VectorBase):
     :type mass: ca.SX
     :param desired_orientation: Desired orientation as a quaternion [qw, qx, qy, qz]
     :type desired_orientation: ca.SX
+    :param inertia: Inertia matrix diagonal elements [Ixx, Iyy, Izz] (kg*m^2)
+    :type inertia: ca.SX
+    :param motors_dx: Distance from the center of mass to the motors in x direction (m)
+    :type motors_dx: ca.SX
+    :param motors_dy: Distance from the center of mass to the motors in y direction (m)
+    :type motors_dy: ca.SX
+    :param motors_cf: Thrust coefficient for each motor (N/(rad/s)^2)
+    :type motors_cf: ca.SX
+    :param motors_ct: Torque coefficient for each motor (N*m/(rad/s)^2)
+    :type motors_ct: ca.SX
+    :param motors_tau: Time constant for each motor (s)
+    :type motors_tau: ca.SX
+    :param motors_direction: Direction of each motor (1 for clockwise, -1 for counter-clockwise)
+    :type motors_direction: ca.SX
+    :param motors_min_angular_velocity: Minimum angular velocity for each motor (rad/s)
+    :type motors_min_angular_velocity: ca.SX
+    :param motors_max_angular_velocity: Maximum angular velocity for each motor (rad/s)
+    :type motors_max_angular_velocity: ca.SX
     """
 
     _type = 'ca.SX'
@@ -83,7 +137,16 @@ class Parameters(_ParametersDef, VectorBase):
     def __init__(
             self,
             mass: np.array = np.array(1.0),
-            desired_orientation: np.array = np.array([1.0, 0.0, 0.0, 0.0])):
+            desired_orientation: np.array = np.array([1.0, 0.0, 0.0, 0.0]),
+            inertia: np.array = np.array([0.0049, 0.0049, 0.0069]),
+            motors_dx: np.array = np.array([-0.08, 0.08, -0.08, 0.08]),
+            motors_dy: np.array = np.array([-0.08, -0.08, 0.08, 0.08]),
+            motors_cf: np.array = np.array([1.91e-06, 1.91e-06, 1.91e-06, 1.91e-06]),
+            motors_ct: np.array = np.array([2.6e-07, 2.6e-07, 2.6e-07, 2.6e-07]),
+            motors_tau: np.array = np.array([0.02, 0.02, 0.02, 0.02]),
+            motors_direction: np.array = np.array([-1, 1, 1, -1]),
+            motors_min_angular_velocity: np.array = np.array([0.0, 0.0, 0.0, 0.0]),
+            motors_max_angular_velocity: np.array = np.array([2200.0, 2200.0, 2200.0, 2200.0])):
         """
         Parameters for the UAV Model.
 
@@ -91,10 +154,37 @@ class Parameters(_ParametersDef, VectorBase):
         :type mass: np.array
         :param desired_orientation: Desired orientation as a quaternion [qw, qx, qy, qz]
         :type desired_orientation: np.array
+        :param inertia: Inertia matrix diagonal elements [Ixx, Iyy, Izz] (kg*m^2)
+        :type inertia: np.array
+        :param motors_dx: Distance from the center of mass to the motors in x direction (m)
+        :type motors_dx: np.array
+        :param motors_dy: Distance from the center of mass to the motors in y direction (m)
+        :type motors_dy: np.array
+        :param motors_cf: Thrust coefficient for each motor (N/(rad/s)^2)
+        :type motors_cf: np.array
+        :param motors_ct: Torque coefficient for each motor (N*m/(rad/s)^2)
+        :type motors_ct: np.array
+        :param motors_tau: Time constant for each motor (s)
+        :type motors_tau: np.array
+        :param motors_direction: Direction of each motor (1 for clockwise, -1 for counter-clockwise)
+        :type motors_direction: np.array
+        :param motors_min_angular_velocity: Minimum angular velocity for each motor (rad/s)
+        :type motors_min_angular_velocity: np.array
+        :param motors_max_angular_velocity: Maximum angular velocity for each motor (rad/s)
+        :type motors_max_angular_velocity: np.array
         """
         super().__init__()
         self.mass = mass
         self.desired_orientation = desired_orientation
+        self.inertia = inertia
+        self.motors_dx = motors_dx
+        self.motors_dy = motors_dy
+        self.motors_cf = motors_cf
+        self.motors_ct = motors_ct
+        self.motors_tau = motors_tau
+        self.motors_direction = motors_direction
+        self.motors_min_angular_velocity = motors_min_angular_velocity
+        self.motors_max_angular_velocity = motors_max_angular_velocity
 
 
 if __name__ == '__main__':
@@ -105,4 +195,13 @@ if __name__ == '__main__':
     print('Vector:', parameters.vector)
     print('mass:', parameters.mass)
     print('desired_orientation:', parameters.desired_orientation)
+    print('inertia:', parameters.inertia)
+    print('motors_dx:', parameters.motors_dx)
+    print('motors_dy:', parameters.motors_dy)
+    print('motors_cf:', parameters.motors_cf)
+    print('motors_ct:', parameters.motors_ct)
+    print('motors_tau:', parameters.motors_tau)
+    print('motors_direction:', parameters.motors_direction)
+    print('motors_min_angular_velocity:', parameters.motors_min_angular_velocity)
+    print('motors_max_angular_velocity:', parameters.motors_max_angular_velocity)
     print(parameters)

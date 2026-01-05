@@ -48,22 +48,30 @@ class _StateDef:
     _names: ClassVar[List[str]] = [
         'position',
         'orientation',
-        'linear_velocity'
+        'linear_velocity',
+        'angular_velocity',
+        'motor_angular_velocity'
     ]
     _names_sx: ClassVar[List[str]] = [
         'sx_position',
         'sx_orientation',
-        'sx_linear_velocity'
+        'sx_linear_velocity',
+        'sx_angular_velocity',
+        'sx_motor_angular_velocity'
     ]
     _sizes: ClassVar[List[int]] = [
         3,
         4,
-        3
+        3,
+        3,
+        4
     ]
 
     position: Union[ca.SX, ca.DM]
     orientation: Union[ca.SX, ca.DM]
     linear_velocity: Union[ca.SX, ca.DM]
+    angular_velocity: Union[ca.SX, ca.DM]
+    motor_angular_velocity: Union[ca.SX, ca.DM]
 
 
 class CaState(_StateDef, VectorBase):
@@ -76,6 +84,10 @@ class CaState(_StateDef, VectorBase):
     :type orientation: ca.SX
     :param linear_velocity: Linear velocity in world frame [vx, vy, vz] (m/s)
     :type linear_velocity: ca.SX
+    :param angular_velocity: Angular velocity in body frame [wx, wy, wz] (rad/s)
+    :type angular_velocity: ca.SX
+    :param motor_angular_velocity: Motor angular velocity [w0, w1, w2, w3] (rad/s)
+    :type motor_angular_velocity: ca.SX
     """
 
     _type = 'ca.SX'
@@ -90,7 +102,9 @@ class State(_StateDef, VectorBase):
             self,
             position: np.array = np.array([0.0, 0.0, 0.0]),
             orientation: np.array = np.array([1.0, 0.0, 0.0, 0.0]),
-            linear_velocity: np.array = np.array([0.0, 0.0, 0.0])):
+            linear_velocity: np.array = np.array([0.0, 0.0, 0.0]),
+            angular_velocity: np.array = np.array([0.0, 0.0, 0.0]),
+            motor_angular_velocity: np.array = np.array([0.0, 0.0, 0.0, 0.0])):
         """
         State for the UAV Model.
 
@@ -100,11 +114,17 @@ class State(_StateDef, VectorBase):
         :type orientation: np.array
         :param linear_velocity: Linear velocity in world frame [vx, vy, vz] (m/s)
         :type linear_velocity: np.array
+        :param angular_velocity: Angular velocity in body frame [wx, wy, wz] (rad/s)
+        :type angular_velocity: np.array
+        :param motor_angular_velocity: Motor angular velocity [w0, w1, w2, w3] (rad/s)
+        :type motor_angular_velocity: np.array
         """
         super().__init__()
         self.position = position
         self.orientation = orientation
         self.linear_velocity = linear_velocity
+        self.angular_velocity = angular_velocity
+        self.motor_angular_velocity = motor_angular_velocity
 
 
 if __name__ == '__main__':
@@ -116,4 +136,6 @@ if __name__ == '__main__':
     print('position:', state.position)
     print('orientation:', state.orientation)
     print('linear_velocity:', state.linear_velocity)
+    print('angular_velocity:', state.angular_velocity)
+    print('motor_angular_velocity:', state.motor_angular_velocity)
     print(state)

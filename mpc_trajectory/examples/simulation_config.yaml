@@ -3,29 +3,40 @@ sim_config:
   trajectory_generator_waypoints:
     - [0.0, 0.0, 1.0]
     - [0.0, 0.0, 2.0]
-    - [30.0, 19.0, 1.23]
-    - [46.0, 22.0, 1.23]
-    - [63.0, 20.0, 3.93]
-    - [85.0, 18.0, 3.93]
-    - [93.0, 16.0, 2.93]
-    - [88.0, 19.0, 1.5]
-    - [85.0, 18.0, 1.23]
-    - [68.0, 13.0, 1.23]
-    - [55.0, 07.0, 1.23]
-    - [37.0, 12.0, 1.23]
-    - [19.7, 07.0, 1.23]
-    - [09.0, 14.0, 1.23]
+    - [0.0, 0.0, 3.0]
+    - [0.0, 0.0, 4.0]
+    - [0.0, 0.0, 5.0]
+    # - [30.0, 19.0, 1.23]
+    # - [46.0, 22.0, 1.23]
+    # - [63.0, 20.0, 3.93]
+    # - [85.0, 18.0, 3.93]
+    # - [93.0, 16.0, 2.93]
+    # - [88.0, 19.0, 1.5]
+    # - [85.0, 18.0, 1.23]
+    # - [68.0, 13.0, 1.23]
+    # - [55.0, 07.0, 1.23]
+    # - [37.0, 12.0, 1.23]
+    # - [19.7, 07.0, 1.23]
+    # - [09.0, 14.0, 1.23]
   path_facing: true 
 controller:
   solver_definition_path: 'solver_definition_mpc_trajectory.yaml'
   ocp_json_file_path: 'acados_trajectory_mpc/mpc_generated_code/acados_ocp.json'
   mpc:
     dt: 0.2 # Delta time between control steps in seconds
-    Q: [5.0, 5.0, 10.0, 0.1, 0.1, 20.0, 0.1, 0.1, 0.1] # Weight for internal states: [x, y, z, roll, pitch, yaw, vx, vy, vz]
-    Qe: [10.0, 10.0, 20.0, 0.1, 0.1, 20.0, 0.1, 0.1, 0.1] # Weight for end states: [x, y, z, roll, pitch, yaw, vx, vy, vz]
-    R: [0.8, 1.0, 1.0, 0.5] # Weight for control inputs: [thrust, wx, wy, wz]
-    lbu: [0.01, -5.0, -5.0, -5.0] # Lower bounds for control inputs: [thrust, wx, wy, wz]
-    ubu: [40.0, 5.0, 5.0, 5.0] # Upper bounds for control inputs: [thrust, wx, wy, wz]
-    lbx: [] # Lower bounds for states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
-    ubx: [] # Upper bounds for states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
-    p: [1.0, 1.0, 0.0, 0.0, 0.0] # Online parameter: [mass, gravity] 
+    Q: [5.0, 5.0, 10.0, 0.1, 0.1, 20.0, 0.1, 0.1, 0.1, 0.01, 0.01, 0.01, 0.0, 0.0, 0.0, 0.0]
+    Qe: [10.0, 10.0, 20.0, 0.1, 0.1, 20.0, 0.1, 0.1, 0.1, 0.01, 0.01, 0.01, 0.0, 0.0, 0.0, 0.0] # Weight for end states: [x, y, z, roll, pitch, yaw, vx, vy, vz, wx, wy, wz, w0, w1, w2, w3]
+    R: [1.0, 1.0, 1.0, 1.0] # Weight for control inputs: [w0, w1, w2, w3]
+    lbu: [0.0, 0.0, 0.0, 0.0] # Lower bounds for control inputs: [w0, w1, w2, w3]
+    ubu: [1.0, 1.0, 1.0, 1.0] # Upper bounds for control inputs: [w0, w1, w2, w3]
+    p_mass: [1.0] # Mass of the MAV (kg)
+    p_desired_orientation: [1.0, 0.0, 0.0, 0.0] # Desired orientation as a quaternion [qw, qx, qy, qz]
+    p_inertia: [0.0049, 0.0049, 0.0069] # Inertia matrix diagonal elements [Ixx, Iyy, Izz] (kg*m^2)
+    p_motors_dx: [-0.08, 0.08, -0.08, 0.08] # Distance from the center of mass to the motors in x direction (m)
+    p_motors_dy: [-0.08, -0.08, 0.08, 0.08] # Distance from the center of mass to the motors in y direction (m)
+    p_motors_cf: [1.91e-6, 1.91e-6, 1.91e-6, 1.91e-6] # Thrust coefficient for each motor (N/(rad/s)^2)
+    p_motors_ct: [2.6e-7, 2.6e-7, 2.6e-7, 2.6e-7] # Torque coefficient for each motor (N*m/(rad/s)^2)
+    p_motors_tau: [0.02, 0.02, 0.02, 0.02] # Time constant for each motor (s)
+    p_motors_direction: [-1, 1, 1, -1] # Direction of each motor (1 for clockwise, -1 for counter-clockwise)
+    p_motors_min_angular_velocity: [0.0, 0.0, 0.0, 0.0] # Minimum angular velocity for each motor (rad/s)
+    p_motors_max_angular_velocity: [2200.0, 2200.0, 2200.0, 2200.0] # Maximum angular velocity for each motor (rad/s)

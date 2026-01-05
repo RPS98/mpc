@@ -40,7 +40,7 @@ from acados_template import AcadosSimSolver
 from mpc.mpc_controller import MPC, MPCParameters
 from mpc.acados_solver import get_acados_sim_solver
 from mpc.utils.yaml_to_dict import yaml_to_dict
-from examples.utils.utils import euler_to_quaternion, get_trajectory_generator, CsvLogger
+from utils.utils import euler_to_quaternion, get_trajectory_generator, CsvLogger
 from mpc.model_definition.actuation import Actuation
 from mpc.model_definition.state import State
 from mpc.model_definition.parameters import Parameters
@@ -76,20 +76,26 @@ def test_trajectory_controller(
     """Test trajectory controller."""
     # MPC parameters
     mass = mpc.parameters[0][0]
-    u_ref = mpc.get_u_ref()
+    u_ref = np.ones(4) * 0.5  # Hovering 
     prediction_steps = mpc.N
     dt = mpc.dt
     
-    x = State().vector
-    u = Actuation().vector
+    x = State(
+        motor_angular_velocity=np.ones(4) * 0.0
+    )
+    u = Actuation(
+        motor_angular_velocity=np.ones(4) * 0.0
+    )
+    p = get_parameters(yaml_data.controller.mpc)
     y_ref = np.zeros((prediction_steps, mpc.w_size))
     y_ref_e = np.zeros((1, mpc.we_size))
     
-    p = mpc.parameters
     y_ref_0 = np.array([
         0.0, 0.0, 0.0,  # position
-        0.0, 0.0, 0.0,  # orientation (Euler angles)
+        0.0, 0.0, 0.0,  # orientation
         0.0, 0.0, 0.0,   # linear velocity
+        0.0, 0.0, 0.0,   # angular velocity
+        0.0, 0.0, 0.0, 0.0,  # motor speeds
         u_ref[0], u_ref[1], u_ref[2], u_ref[3]   # control inputs
     ])
     y_ref[0, :] = y_ref_0
@@ -100,8 +106,13 @@ def test_trajectory_controller(
 
     mpc_solve_times = np.zeros(0)
     reference_setpoint = np.zeros(10)
+    reference_setpoint = np.array([
+        y_ref[0][0], y_ref[0][1], y_ref[0][2], # position
+        p.desired_orientation[0], p.desired_orientation[1], p.desired_orientation[2], p.desired_orientation[3],  # orientation (quaternion)
+        y_ref[0][6], y_ref[0][7], y_ref[0][8]  # velocity
+    ])
 
-    logger.save(t, x, y_ref_0, u)
+    logger.save(t, x, y_ref_0, u, p)
     while t <= max_time:
         t_eval = t
         for i in range(prediction_steps + 1):
@@ -112,11 +123,7 @@ def test_trajectory_controller(
             trajectory_point = trajectory_generator.evaluate_trajectory(t_eval)
             ref_position, ref_velocity, _, ref_yaw = \
                 trajectory_point
-
-            p[i, :] = Parameters(
-                mass=mass,
-                desired_orientation=euler_to_quaternion(0.0, 0.0, ref_yaw)
-            ).vector
+            # p.desired_orientation=euler_to_quaternion(0.0, 0.0, ref_yaw)
             
             if i < prediction_steps:
                 y_ref[i, :] = np.array([
@@ -129,6 +136,13 @@ def test_trajectory_controller(
                     ref_velocity[0],
                     ref_velocity[1],
                     ref_velocity[2],
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
                     u_ref[0],
                     u_ref[1],
                     u_ref[2],
@@ -144,40 +158,96 @@ def test_trajectory_controller(
                     0.0,
                     ref_velocity[0],
                     ref_velocity[1],
-                    ref_velocity[2]
+                    ref_velocity[2],
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0
                 ])
             
             t_eval += dt
 
         current_time = time.time()
-        u = mpc.solve(
-            state=x,
+        actuation = mpc.solve(
+            state=x.vector,
             y_ref=y_ref,
             y_ref_e=y_ref_e,
-            p=p
+            p=p.vector
         )
+        u.motor_angular_velocity = actuation
         mpc_solve_times = np.append(mpc_solve_times, time.time() - current_time)
 
-        integrator.set('x', x)
-        integrator.set('u', u)
+        integrator.set('x', x.vector)
+        integrator.set('u', u.vector)
         status = integrator.solve()
         if status != 0:
             raise Exception(
                 'acados integrator returned status {}. Exiting.'.format(status))
-        x = integrator.get('x')
+        xn = integrator.get('x')
+        x.position = xn[0:3]
+        x.orientation = xn[3:7]
+        x.linear_velocity = xn[7:10]
+        x.angular_velocity = xn[10:13]
+        x.motor_angular_velocity = xn[13:17]
 
         # Update logger
         reference_setpoint = np.array([
             y_ref[0][0], y_ref[0][1], y_ref[0][2], # position
-            p[0][1], p[0][2], p[0][3], p[0][4],    # orientation (quaternion)
+            p.desired_orientation[0], p.desired_orientation[1], p.desired_orientation[2], p.desired_orientation[3],  # orientation (quaternion)
             y_ref[0][6], y_ref[0][7], y_ref[0][8]  # velocity
         ])
 
         pbar.update(dt)
         t += dt
-        logger.save(t, x, reference_setpoint, u)
+        logger.save(t, x, reference_setpoint, u, p)
     print(f'MPC solve time mean: {np.mean(mpc_solve_times)}')
 
+def get_parameters(solver_definition: dict) -> Parameters:
+    """
+    Get the parameters object.
+
+    :return: Parameters object
+    :rtype: Parameters
+    """
+    pv = solver_definition
+
+    parameters: Parameters = Parameters(
+        mass=pv.p_mass,
+        desired_orientation=pv.p_desired_orientation,
+        inertia=pv.p_inertia,
+        motors_dx=pv.p_motors_dx,
+        motors_dy=pv.p_motors_dy,
+        motors_cf=pv.p_motors_cf,
+        motors_ct=pv.p_motors_ct,
+        motors_tau=pv.p_motors_tau,
+        motors_direction=pv.p_motors_direction,
+        motors_min_angular_velocity=pv.p_motors_min_angular_velocity,
+        motors_max_angular_velocity=pv.p_motors_max_angular_velocity,
+    )
+
+    # Check p_spline_knots consistency
+    if hasattr(pv, 'p_spline_knots'):
+        num_knots = int(pv.p_spline_knots)
+        if len(parameters.spline_points) != num_knots * 3:
+            raise ValueError(
+                f"Length of p_spline_points ({len(parameters.spline_points)}) does not match "
+                f"num_knots * 3 ({num_knots * 3})"
+            )
+    return parameters
+
+
+def get_parameters_vector(solver_definition: dict) -> np.ndarray:
+    """
+    Get the parameters vector.
+
+    :return: Parameters vector
+    :rtype: np.ndarray
+    """
+    parameters = get_parameters(solver_definition)
+    return parameters.vector
 
 if __name__ == '__main__':
     import argparse
@@ -187,7 +257,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '-c', '--config_path',
         type=str,
-        default='examples/simulation_config.yaml',
+        default='/home/rafa/a2rl/thirdparty_libs/mpc/mpc_trajectory/examples/simulation_config.yaml',
         help='Path to the simulation configuration YAML file (default: examples/simulation_config.yaml)'
     )
     parser.add_argument(
@@ -208,11 +278,11 @@ if __name__ == '__main__':
         Q=mpc_params.Q,
         Qe=mpc_params.Qe,
         R=mpc_params.R,
-        p=mpc_params.p,
+        p=get_parameters_vector(
+            mpc_params
+        ),
         lbu=mpc_params.lbu,
-        ubu=mpc_params.ubu,
-        lbx=mpc_params.lbx,
-        ubx=mpc_params.ubx
+        ubu=mpc_params.ubu
     )
 
     mpc = MPC(
@@ -220,7 +290,7 @@ if __name__ == '__main__':
     )
     print(mpc_params)
     mpc.set_mpc_parameters(mpc_params)
-    mpc.set_u_ref(np.array([9.81, 0.0, 0.0, 0.0]))  # Hovering thrust
+    # mpc.set_u_ref(np.array([9.81, 0.0, 0.0, 0.0]))  # Hovering thrust
 
     # Integrator
     integrator = get_acados_sim_solver(

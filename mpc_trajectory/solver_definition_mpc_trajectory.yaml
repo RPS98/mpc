@@ -1,24 +1,31 @@
 mpc:
   N_horizon: 30 # Prediction steps
   tf: 0.6 # Prediction horizon in seconds
-  Q: [5.0, 5.0, 10.0, 0.1, 0.1, 20.0, 0.1, 0.1, 0.1] # Weight for internal states: [x, y, z, roll, pitch, yaw, vx, vy, vz]
-  Qe: [10.0, 10.0, 20.0, 0.1, 0.1, 20.0, 0.1, 0.1, 0.1] # Weight for end states: [x, y, z, roll, pitch, yaw, vx, vy, vz]
+  # Weight for internal states: [x, y, z, roll, pitch, yaw, vx, vy, vz, wx, wy, wz, w0, w1, w2, w3, w0r, w1r, w2r, w3r]
+  Q: [5.0, 5.0, 10.0, 0.1, 0.1, 20.0, 0.1, 0.1, 0.1, 0.01, 0.01, 0.01, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  Qe: [10.0, 10.0, 20.0, 0.1, 0.1, 20.0, 0.1, 0.1, 0.1, 0.01, 0.01, 0.01, 0.0, 0.0, 0.0, 0.0] # Weight for end states: [x, y, z, roll, pitch, yaw, vx, vy, vz, wx, wy, wz, w0, w1, w2, w3]
   R: [0.8, 1.0, 1.0, 0.5] # Weight for control inputs: [thrust, wx, wy, wz]
   idxbu: [0, 1, 2, 3] # Indices of bounded control inputs: [thrust, wx, wy, wz]
   lbu: [0.01, -5.0, -5.0, -5.0] # Lower bounds for control inputs: [thrust, wx, wy, wz]
   ubu: [40.0, 5.0, 5.0, 5.0] # Upper bounds for control inputs: [thrust, wx, wy, wz]
-  idxbx: [] # Indices of bounded states: [x, y, z, roll, pitch, yaw, vx, vy, vz]
-  idxbx_e: [] # Indices of bounded states at terminal shooting node (N): [x, y, z, roll, pitch, yaw, vx, vy, vz]
-  lbx: [] # Lower bounds for states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
-  ubx: [] # Upper bounds for states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
-  p: [1.0, 1.0, 0.0, 0.0, 0.0] # Online parameter: [mass, qref_orientation (qw, qx, qy, qz)]
+  p_mass: [1.0] # Mass of the MAV (kg)
+  p_desired_orientation: [1.0, 0.0, 0.0, 0.0] # Desired orientation as a quaternion [qw, qx, qy, qz]
+  p_inertia: [0.0049, 0.0049, 0.0069] # Inertia matrix diagonal elements [Ixx, Iyy, Izz] (kg*m^2)
+  p_motors_dx: [-0.08, 0.08, -0.08, 0.08] # Distance from the center of mass to the motors in x direction (m)
+  p_motors_dy: [-0.08, -0.08, 0.08, 0.08] # Distance from the center of mass to the motors in y direction (m)
+  p_motors_cf: [1.91e-6, 1.91e-6, 1.91e-6, 1.91e-6] # Thrust coefficient for each motor (N/(rad/s)^2)
+  p_motors_ct: [2.6e-7, 2.6e-7, 2.6e-7, 2.6e-7] # Torque coefficient for each motor (N*m/(rad/s)^2)
+  p_motors_tau: [0.02, 0.02, 0.02, 0.02] # Time constant for each motor (s)
+  p_motors_direction: [-1, 1, 1, -1] # Direction of each motor (1 for clockwise, -1 for counter-clockwise)
+  p_motors_min_angular_velocity: [0.0, 0.0, 0.0, 0.0] # Minimum angular velocity for each motor (rad/s)
+  p_motors_max_angular_velocity: [2200.0, 2200.0, 2200.0, 2200.0] # Maximum angular velocity for each motor (rad/s)
 solver:
   export_dir: 'acados_trajectory_mpc/'
   generate_c_code: true
   verbose: true
   cost_type: NONLINEAR_LS
   qp_solver: PARTIAL_CONDENSING_HPIPM
-  nlp_solver_type: SQP_RTI
+  nlp_solver_type: SQP
   hessian_approx: GAUSS_NEWTON
   integrator_type: ERK
 integrator:

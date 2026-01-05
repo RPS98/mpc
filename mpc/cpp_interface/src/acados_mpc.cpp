@@ -123,7 +123,7 @@ int MPC::solve() {
 }
 
 void MPC::update_time_step(const double time_step) {
-  for (int i = 0; i <= MPC_N; i++) {
+  for (int i = 0; i < MPC_N; i++) {
     prediction_time_steps_[i] = time_step;
   }
   mpc_acados_update_time_steps(acados_pointers_.capsule, get_prediction_steps(),

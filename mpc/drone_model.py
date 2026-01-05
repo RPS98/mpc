@@ -41,6 +41,7 @@ from mpc.model_definition.state import CaState
 from mpc.model_definition.actuation import CaActuation
 from mpc.model_definition.parameters import CaParameters
 from mpc.model_definition.dynamics import CaDynamics
+from mpc.dynamics import CaModelActuation, CaModelDynamics, CaModelKinematics
 
 
 class DroneModel(CaDynamics):
@@ -62,39 +63,79 @@ class DroneModel(CaDynamics):
         self._x = x
         self._u = u
         self._p = p
+        gravity = ca.SX(9.81)
+
+        # self.actuation.motor_angular_velocity between [0, 1] (normalized)
+        # Max and min angular velocities: self.parameters.motors_max_angular_velocity and
+        # self.parameters.motors_min_angular_velocity
+        # Get linear mapping
+        motor_angular_velocity_ref = self.actuation.motor_angular_velocity * (
+            self.parameters.motors_max_angular_velocity - self.parameters.motors_min_angular_velocity) + self.parameters.motors_min_angular_velocity
+
+        # Actuation
+        actuation_motor_angular_velocity_dot = CaModelActuation.get_motor_angular_velocity_derivate(
+            motor_angular_velocity_ref,
+            self.state.motor_angular_velocity,
+            self.parameters.motors_tau)
+        
+        # Dynamics
+        thrust_force = CaModelDynamics.get_thrust_force(
+                self.state.motor_angular_velocity,
+                self.parameters.motors_cf,
+                self.state.orientation)
+        
+        force = CaModelDynamics.get_force(
+            thrust_force,
+            CaModelDynamics.get_gravity_force(
+                self.parameters.mass,
+                gravity),
+            ca.SX([0.0, 0.0, 0.0]))
+            # self.parameters.external_force)
+
+        torque = CaModelDynamics.get_thrust_torque(
+                self.state.motor_angular_velocity,
+                self.parameters.motors_cf,
+                self.parameters.motors_ct,
+                self.parameters.motors_dx,
+                self.parameters.motors_dy,
+                self.parameters.motors_direction)
 
         # Model equations
-        position_dot = x.linear_velocity
+        angular_velocity_dot = CaModelKinematics.get_angular_velocity_derivate(
+            torque, self.state.angular_velocity, ca.diag(self.parameters.inertia))
+        linear_velocity_dot = CaModelKinematics.get_lineal_velocity_derivate(
+            force, self.parameters.mass)
         orientation_dot = q_utils.quaternion_derivate(
-            x.orientation, u.angular_velocity
+            self.state.orientation, self.state.angular_velocity
         )
-        gravity = ca.DM(9.81)
-        linear_velocity_dot = self.velocity_derivate(
-            x.orientation,
-            u.thrust,
-            gravity,
-            p.mass)
+        position_dot = self.state.linear_velocity
 
         self._f_expl = ca.vertcat(
             position_dot,
             orientation_dot,
-            linear_velocity_dot)
+            linear_velocity_dot,
+            angular_velocity_dot,
+            actuation_motor_angular_velocity_dot)
 
         self._q_att = q_utils.quaternion_error(
-            self._x.orientation,
-            p.desired_orientation
+            self.state.orientation,
+            self.parameters.desired_orientation
         )
 
         self._cost_y_expr = ca.vertcat(
-            self._x.position,
+            self.state.position,
             self._q_att,
-            self._x.linear_velocity,
-            self._u.vector)
+            self.state.linear_velocity,
+            self.state.angular_velocity,
+            self.state.motor_angular_velocity,
+            self.actuation.vector)
 
         self._cost_y_expr_e = ca.vertcat(
-            self._x.position,
+            self.state.position,
             self._q_att,
-            self._x.linear_velocity)
+            self.state.linear_velocity,
+            self.state.angular_velocity,
+            self.state.motor_angular_velocity)
 
     @staticmethod
     def velocity_derivate(
@@ -173,7 +214,7 @@ class DroneModel(CaDynamics):
         return self._x.vector
 
     @property
-    def state(self) -> ca.SX:
+    def state(self) -> CaState:
         """
         Get the state.
 
@@ -191,7 +232,7 @@ class DroneModel(CaDynamics):
         return self._u.vector
 
     @property
-    def actuation(self) -> ca.SX:
+    def actuation(self) -> CaActuation:
         """
         Get the actuation.
 
@@ -209,7 +250,7 @@ class DroneModel(CaDynamics):
         return self._p.vector
 
     @property
-    def parameters(self) -> ca.SX:
+    def parameters(self) -> CaParameters:
         """
         Get the parameters.
 

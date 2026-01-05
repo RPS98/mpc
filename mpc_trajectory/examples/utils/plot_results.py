@@ -45,7 +45,7 @@ parser.add_argument('--auto_update', action='store_true',
 parser.add_argument('file', type=str, nargs='?', help='CSV file name',
                     default='mpc_log.csv')
 FILE_PATH = ""
-PRINT_ERROR = True
+PRINT_ERROR = False 
 
 
 def press(event):
@@ -233,6 +233,27 @@ def update_plot_figure1(frame, axs):
     plot_values(data, ['roll', 'pitch', 'yaw'], 'Orientation', axs[1, :])
     plot_values(data, ['vx', 'vy', 'vz'], 'Velocity', axs[2, :])
 
+def update_plot_figure2(frame, axs):
+    data = read_csv()
+    if data is None:
+        print("No data to plot")
+        return
+    if len(data['time']) == 0:
+        print("No data to plot")
+        return
+
+    for ax_row in axs:
+        # Check if there are more than one row
+        if isinstance(ax_row, np.ndarray):
+            for ax in ax_row:
+                ax.clear()
+        else:
+            ax_row.clear()
+
+    # Figure 2
+    print("Plotting figure 2")
+    plot_values(data, ['fz', 'wx', 'wy', 'wz'], 'State W', axs[0, :])
+    plot_values(data, ['w0', 'w1', 'w2', 'w3'], 'U-Motor Speeds', axs[1, :])
 
 def main():
     """Run main function."""
@@ -249,8 +270,13 @@ def main():
     fig1, axs1 = plt.subplots(3, 3)
     fig1.suptitle("Plots - Figure 1")
 
+    fig2, axs2 = plt.subplots(2, 4)
+    fig2.suptitle("Plots - Figure 2")
+
     update_plot_figure0(0, axs0, plot_drone=True)
     update_plot_figure1(0, axs1)
+    update_plot_figure2(0, axs2)
+
     plt.axis('equal')
     plt.show(block=False)
     print("Press [Enter] to close the figures and end the program.")

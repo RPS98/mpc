@@ -40,6 +40,11 @@ import sys
 import math
 import numpy as np
 import importlib.util
+import casadi as ca
+
+from mpc.model_definition.parameters import Parameters
+from mpc.model_definition.actuation import Actuation
+from mpc.model_definition.state import State
 
 
 def euler_to_quaternion(roll: float, pitch: float, yaw: float) -> np.ndarray:
@@ -184,9 +189,9 @@ class CsvLogger:
         self.file = open(self.file_name, 'w')
         self.file.write(
             'time,'
-            'x,y,z,qw,qx,qy,qz,roll,pitch,yaw,vx,vy,vz,'
+            'x,y,z,qw,qx,qy,qz,roll,pitch,yaw,vx,vy,vz,wx,wy,wz,w0,w1,w2,w3,fz,'
             'x_ref,y_ref,z_ref,qw_ref,qx_ref,qy_ref,qz_ref,roll_ref,pitch_ref,yaw_ref,vx_ref,vy_ref,vz_ref,'
-            'thrust_ref,wx_ref,wy_ref,wz_ref\n')
+            'fz_ref,w0_ref,w1_ref,w2_ref,w3_ref\n')
 
     def add_double(self, data: float) -> None:
         """
@@ -225,7 +230,8 @@ class CsvLogger:
             elif add_final_comma:
                 self.file.write(',')
 
-    def save(self, time: float, x: np.ndarray, y: np.ndarray, u: np.ndarray) -> None:
+    def save(self, time: float, x: State, y: np.ndarray, u: Actuation, 
+            p: Parameters,) -> None:
         """
         Save the simulation data to the csv file.
 
@@ -234,15 +240,20 @@ class CsvLogger:
         """
         self.add_double(time)
 
+        # Aux
+        thrust_force_b_state = ca.vertcat(0, 0, ca.sum1(p.motors_cf * x.motor_angular_velocity**2))
+        motor_angular_velocity_ref = u.motor_angular_velocity * (p.motors_max_angular_velocity - p.motors_min_angular_velocity) + p.motors_min_angular_velocity
+        thrust_force_b_ref = ca.vertcat(0, 0, ca.sum1(p.motors_cf * motor_angular_velocity_ref**2))
+        euler_q = quaternion_to_euler(x.orientation)
+
         # State
-        x_pos = x[0:3]
-        q = x[3:7]
-        euler_q = quaternion_to_euler(q)
-        v = x[7:10]
-        self.add_vector_row(x_pos)
-        self.add_vector_row(q)
+        self.add_vector_row(x.position)
+        self.add_vector_row(x.orientation)
         self.add_vector_row(euler_q)
-        self.add_vector_row(v)
+        self.add_vector_row(x.linear_velocity)
+        self.add_vector_row(x.angular_velocity)
+        self.add_vector_row(x.motor_angular_velocity)
+        self.add_double(thrust_force_b_state[2])  # Thrust force in z
 
         # Reference position
         y_pos = y[0:3]
@@ -253,9 +264,10 @@ class CsvLogger:
         self.add_vector_row(q_ref)
         self.add_vector_row(euler_q_ref)
         self.add_vector_row(v_ref)
+        self.add_double(thrust_force_b_ref[2])  # Thrust force in z
 
         # Control
-        self.add_vector_row(u, False)
+        self.add_vector_row(motor_angular_velocity_ref, False)
 
         # End line
         self.file.write('\n')

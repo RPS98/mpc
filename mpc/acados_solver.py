@@ -41,6 +41,7 @@ import numpy as np
 from acados_template import AcadosOcp, AcadosOcpSolver, AcadosSim, AcadosSimSolver
 from mpc.model_definition.state import State
 from mpc.model_definition.actuation import Actuation
+from mpc.model_definition.parameters import Parameters
 from mpc.drone_model import get_acados_model
 from mpc.utils.yaml_to_dict import yaml_to_dict
 
@@ -99,13 +100,15 @@ class AcadosMPCSolver:
         # Acados solver
         ocp = AcadosOcp()
         ocp.model = self.acados_model
-        state = State()
+        state = State(
+            motor_angular_velocity=np.ones(4) * 1100.0
+        )
         actuation = Actuation(
-            thrust=solver_definition.mpc.p[0] * 9.81
+            motor_angular_velocity=np.ones(4) * 0.5
         )
 
         # Parameters
-        ocp.parameter_values = solver_definition.mpc.p
+        ocp.parameter_values = AcadosMPCSolver.get_parameters_vector(solver_definition.mpc)
 
         # Cost
         cost = ocp.cost
@@ -124,6 +127,8 @@ class AcadosMPCSolver:
             state.position,  # Position reference
             np.zeros(3),  # Attitude reference
             state.linear_velocity,  # Linear velocity reference
+            state.angular_velocity,  # Angular velocity reference
+            state.motor_angular_velocity,  # Motor angular velocity reference
             actuation.vector  # Control reference
         ])
         # Reference at terminal shooting node (N)
@@ -131,6 +136,8 @@ class AcadosMPCSolver:
             state.position,  # Position reference
             np.zeros(3),  # Attitude reference
             state.linear_velocity,  # Linear velocity reference
+            state.angular_velocity,  # Angular velocity reference
+            state.motor_angular_velocity,  # Motor angular velocity reference
         ])
 
         # # For linear least squares cost
@@ -250,6 +257,32 @@ class AcadosMPCSolver:
 
         return self.solver
 
+
+    @staticmethod
+    def get_parameters_vector(solver_definition: dict) -> np.ndarray:
+        """
+        Get the parameters vector.
+
+        :return: Parameters vector
+        :rtype: np.ndarray
+        """
+        pv = solver_definition
+
+        parameters: Parameters = Parameters(
+            mass=pv.p_mass,
+            desired_orientation=pv.p_desired_orientation,
+            inertia=pv.p_inertia,
+            motors_dx=pv.p_motors_dx,
+            motors_dy=pv.p_motors_dy,
+            motors_cf=pv.p_motors_cf,
+            motors_ct=pv.p_motors_ct,
+            motors_tau=pv.p_motors_tau,
+            motors_direction=pv.p_motors_direction,
+            motors_min_angular_velocity=pv.p_motors_min_angular_velocity,
+            motors_max_angular_velocity=pv.p_motors_max_angular_velocity,
+        )
+        return parameters.vector
+
     def get_acados_sim_solver(self, solver_definition: dict, generate_code: bool = True) -> AcadosSimSolver:
         """
         Get the Acados Integrator Solver.
@@ -264,7 +297,7 @@ class AcadosMPCSolver:
         # Create Integrator
         acados_sim = AcadosSim()
         acados_sim.model = self.acados_model
-        acados_sim.parameter_values = solver_definition.mpc.p
+        acados_sim.parameter_values = AcadosMPCSolver.get_parameters_vector(solver_definition.mpc)
 
         # Solver options
         # integrator type. String in (‘ERK’, ‘IRK’, ‘GNSF’, ‘DISCRETE’, ‘LIFTED_IRK’).

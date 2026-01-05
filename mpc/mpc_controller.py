@@ -144,22 +144,36 @@ class MPC():
         # Get time parameters from JSON file (acados_ocp is None when loaded from JSON)
         with open(ocp_json_file, 'r') as f:
             ocp_json = json.load(f)
-        self._tf = ocp_json['solver_options']['tf']
-        self._dt = self._tf / self._N
-        # Alternative: use time_steps directly if non-uniform
-        # self._time_steps = np.array(ocp_json['solver_options']['time_steps'])
 
-        self._w_size = self.acados_ocp_solver.cost_get(0, 'W').shape[0]
-        self._we_size = self.acados_ocp_solver.cost_get(self._N, 'W').shape[0]
+        solver_options = ocp_json.get('solver_options', {})
+        self._tf = solver_options.get('tf', 0.0)
+        self._dt = self._tf / self._N if self._N != 0 else 0.0
+        # Alternative: use time_steps directly if non-uniform
+        time_steps = solver_options.get('time_steps')
+        if time_steps is None:
+            self._time_steps = np.ones(self._N) * self._dt
+        else:
+            self._time_steps = np.array(time_steps)
+
+        cost_cfg = ocp_json.get("cost", {})
+        constraints_cfg = ocp_json.get("constraints", {})
+
+        def _len_from_cfg(cfg, key):
+            arr = cfg.get(key, [])
+            return len(arr) if arr is not None else 0
+
         self._x_size = self.acados_ocp_solver.get(0, 'x').shape[0]
         self._u_size = self.acados_ocp_solver.get(0, 'u').shape[0]
         self._p_size = self.acados_ocp_solver.get(0, 'p').shape[0]
-        self._lbu_size = self.acados_ocp_solver.constraints_get(0, 'lbu').shape[0]
-        self._ubu_size = self.acados_ocp_solver.constraints_get(0, 'ubu').shape[0]
-        self._lbx_size = self.acados_ocp_solver.constraints_get(1, 'lbx').shape[0]
-        self._ubx_size = self.acados_ocp_solver.constraints_get(1, 'ubx').shape[0]
-        self._lsbx_size = self.acados_ocp_solver.constraints_get(1, 'lsbx').shape[0]
-        self._usbx_size = self.acados_ocp_solver.constraints_get(1, 'usbx').shape[0]
+
+        self._w_size = _len_from_cfg(cost_cfg, "W")
+        self._we_size = _len_from_cfg(cost_cfg, "W_e")
+        self._lbu_size = _len_from_cfg(constraints_cfg, "lbu")
+        self._ubu_size = _len_from_cfg(constraints_cfg, "ubu")
+        self._lbx_size = _len_from_cfg(constraints_cfg, "lbx")
+        self._ubx_size = _len_from_cfg(constraints_cfg, "ubx")
+        self._lsbx_size = _len_from_cfg(constraints_cfg, "lsbx")
+        self._usbx_size = _len_from_cfg(constraints_cfg, "usbx")
 
         print('MPC parameters:')
         print(f'Horizon N={self.N}, tf={self.tf}, dt={self.dt}')
@@ -304,7 +318,13 @@ class MPC():
         self.set_gain_terminal_state(parameters.Qe)
         self.set_parameters(parameters.p)
         self.set_u_bounds(parameters.lbu, parameters.ubu)
-        self.set_x_bounds(parameters.lbx, parameters.ubx)
+        if (
+            parameters.lbx is not None
+            and parameters.ubx is not None
+            and self.lbx_size > 0
+            and self.ubx_size > 0
+        ):
+            self.set_x_bounds(parameters.lbx, parameters.ubx)
 
     def set_gains(self, Q: np.ndarray, R: np.ndarray, stage: int = -1) -> None:
         """
