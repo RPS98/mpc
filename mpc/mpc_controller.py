@@ -469,109 +469,6 @@ class MPC():
         self.acados_ocp_solver.set(0, 'lbx', x)
         self.acados_ocp_solver.set(0, 'ubx', x)
 
-    def set_u_ref(self, u_ref: np.ndarray) -> None:
-        """
-        Set the reference control input for yref.
-
-        :param u_ref: Reference control input array
-        :type u_ref: np.ndarray
-        :return: None
-        :rtype: None
-        """
-        # Check size of u_ref
-        if u_ref.shape[0] != self.u_size:
-            raise ValueError(
-                f"Size mismatch: u_ref has shape {u_ref.shape}, "
-                f"but expected size is ({self.u_size},).")
-        self._u_ref = u_ref
-        
-    def get_u_ref(self) -> np.ndarray:
-        """
-        Get the reference control input for yref.
-
-        :return: Reference control input array
-        :rtype: np.ndarray
-        """
-        return self._u_ref
-
-    def _expand_y_ref_with_u_ref(self, y_ref: np.ndarray) -> np.ndarray:
-        """
-        Expand y_ref by appending the reference control input u_ref.
-
-        :param y_ref: Reference state array
-        :type y_ref: np.ndarray
-        :return: Expanded reference state array
-        :rtype: np.ndarray
-        """
-        expanded_y_ref = np.zeros(self.w_size)
-        expanded_y_ref[:self.we_size] = y_ref
-        expanded_y_ref[self.we_size:] = self._u_ref
-        return expanded_y_ref
-
-    def set_y_ref_per_stage(self, y_ref: np.ndarray, stage: int) -> None:
-        """
-        Set the reference state of the MPC problem.
-
-        :param y_ref: Reference state array
-        :type y_ref: np.ndarray
-        :param stage: Stage index
-        :type stage: int
-        :return: None
-        :rtype: None
-        """
-        # Check size of y_ref
-        if y_ref.shape[0] == self.we_size:
-            y_ref = self._expand_y_ref_with_u_ref(y_ref)
-        if y_ref.shape[0] != self.w_size:
-            raise ValueError(
-                f"Size mismatch: y_ref has shape {y_ref.shape}, "
-                f"but expected size is ({self.w_size},).")
-        if stage < 0 or stage >= self.N:
-            raise ValueError(
-                f"Stage index {stage} out of bounds for N={self.N}.")
-        self.acados_ocp_solver.cost_set(stage, 'yref', y_ref)
-
-    def set_y_ref(self, y_ref: np.ndarray) -> None:
-        """
-        Set the reference state of the MPC problem.
-
-        :param y_ref: Reference state array
-        :type y_ref: np.ndarray
-        :return: None
-        :rtype: None
-        """
-        if y_ref.shape[0] != self.N:
-            raise ValueError(
-                f"Size mismatch: y_ref has shape {y_ref.shape}, "
-                f"but expected size is ({self.N},).")
-
-        for stage_i in range(self.N):
-            single_y_ref = y_ref[stage_i]
-            if single_y_ref.shape[0] == self.we_size:
-                single_y_ref = self._expand_y_ref_with_u_ref(single_y_ref)
-            if single_y_ref.shape[0] != self.w_size:
-                raise ValueError(
-                    f"Size mismatch: y_ref at stage {stage_i} has shape {single_y_ref.shape}, "
-                    f"but expected size is ({self.w_size},).")
-            self.acados_ocp_solver.cost_set(stage_i, 'yref', single_y_ref)
-
-    def set_y_ref_e(self, y_ref_e: np.ndarray) -> None:
-        """
-        Set the terminal state output of the MPC problem.
-
-        :param y_ref_e: Terminal reference state array
-        :type y_ref_e: np.ndarray
-        :return: None
-        :rtype: None
-        """
-        # Check size of y_ref_e
-        if y_ref_e.shape[0] != self.we_size:
-            raise ValueError(
-                f"Size mismatch: y_ref_e has shape {y_ref_e.shape}, "
-                f"but expected size is ({self.we_size},).")
-
-        self.acados_ocp_solver.cost_set(self.N, 'yref', y_ref_e)
-
     def set_new_time_steps(self, dt: float) -> None:
         """
         Set new uniform time steps for the MPC problem.
@@ -593,8 +490,8 @@ class MPC():
     def compute_control_action(
             self,
             state: np.ndarray,
-            reference_trajectory_intermediate: np.ndarray,
-            reference_trajectory_final: np.ndarray) -> np.ndarray:
+            ) -> np.ndarray:
+
         """
         Simulate the system using MPC with a given state and reference trajectory.
 
@@ -608,17 +505,8 @@ class MPC():
             ACADOS_UNBOUNDED = 6
 
         :param state: The current state of the system.
-        :param reference_trajectory_intermediate: The intermediate reference trajectory
-        for the system (matrix of size [N, state_dim]).
-        :param reference_trajectory_final: The final reference trajectory for the system
-        (matrix of size [state_dim]).
-
         :return: The control action u0.
         """
-        # Set the reference trajectory
-        self.set_y_ref(reference_trajectory_intermediate)
-        self.set_y_ref_e(reference_trajectory_final)
-
         # Set current state
         self.set_state(state)
 
@@ -654,8 +542,6 @@ class MPC():
     def solve(
             self,
             state: np.ndarray = None,
-            y_ref: np.ndarray = None,
-            y_ref_e: np.ndarray = None,
             p: np.ndarray = None) -> np.ndarray:
         """
         Simulate the system using MPC with a given state and reference trajectory.
@@ -669,19 +555,9 @@ class MPC():
             ACADOS_READY = 5
             ACADOS_UNBOUNDED = 6
 
-        :param state: The current state of the system.
-        :param reference_trajectory_intermediate: The intermediate reference trajectory
-        for the system (matrix of size [N, state_dim]).
-        :param reference_trajectory_final: The final reference trajectory for the system
-        (matrix of size [state_dim]).
-
+        :param state: The current state of the system
         :return: The control action u0.
         """
-        # Set the reference trajectory
-        if y_ref is not None:
-            self.set_y_ref(y_ref)
-        if y_ref_e is not None:
-            self.set_y_ref_e(y_ref_e)
 
         # Set current state
         if state is not None:

@@ -75,23 +75,18 @@ def test_controller(
     """Test trajectory controller."""
     # MPC parameters
     mass = mpc.parameters[0][0]
-    u_ref = mpc.get_u_ref()
     prediction_steps = mpc.N
     dt = mpc.dt
     
     x = State().vector
     u = Actuation().vector
-    y_ref = np.zeros((prediction_steps, mpc.w_size))
-    y_ref_e = np.zeros((1, mpc.we_size))
-    
     p = mpc.parameters
     y_ref_0 = np.array([
         0.0, 0.0, 0.0,  # position
         0.0, 0.0, 0.0,  # orientation (Euler angles)
         0.0, 0.0, 0.0,   # linear velocity
-        u_ref[0], u_ref[1], u_ref[2], u_ref[3]   # control inputs
+        9.8,0.0, 0.0, 0.0   # actuation (thrust + torques)
     ])
-    y_ref[0, :] = y_ref_0
 
     t = 0.0
     max_time = yaml_data.sim_config.sim_time
@@ -108,7 +103,6 @@ def test_controller(
         for i in range(prediction_steps + 1):
             ref_position = position_references[pos_index]
             ref_velocity = np.zeros(3)
-            
             ref_yaw = 0.0
             if simulation_data.sim_config.path_facing:
                 # Compute yaw to face the next waypoint from x position
@@ -118,46 +112,14 @@ def test_controller(
                     ref_yaw = np.arctan2(y_diff, x_diff)
             
             p[i, :] = Parameters(
-                mass=mass,
-                desired_orientation=euler_to_quaternion(0.0, 0.0, ref_yaw)
+                mass=mass,desired_position =ref_position[0:3],
+                desired_orientation=euler_to_quaternion(0.0, 0.0, ref_yaw), desired_velocity=ref_velocity
             ).vector
-            
-            if i < prediction_steps:
-                y_ref[i, :] = np.array([
-                    ref_position[0],
-                    ref_position[1],
-                    ref_position[2],
-                    0.0,
-                    0.0,
-                    0.0,
-                    ref_velocity[0],
-                    ref_velocity[1],
-                    ref_velocity[2],
-                    u_ref[0],
-                    u_ref[1],
-                    u_ref[2],
-                    u_ref[3]
-                ])
-            else:
-                y_ref_e = np.array([
-                    ref_position[0],
-                    ref_position[1],
-                    ref_position[2],
-                    0.0,
-                    0.0,
-                    0.0,
-                    ref_velocity[0],
-                    ref_velocity[1],
-                    ref_velocity[2]
-                ])
-            
             t_eval += dt
 
         current_time = time.time()
         u = mpc.solve(
             state=x,
-            y_ref=y_ref,
-            y_ref_e=y_ref_e,
             p=p
         )
         mpc_solve_times = np.append(mpc_solve_times, time.time() - current_time)
@@ -172,15 +134,15 @@ def test_controller(
 
         # Update logger
         reference_setpoint = np.array([
-            y_ref[0][0], y_ref[0][1], y_ref[0][2], # position
-            p[0][1], p[0][2], p[0][3], p[0][4],    # orientation (quaternion)
-            y_ref[0][6], y_ref[0][7], y_ref[0][8]  # velocity
+            p[0][1], p[0][2], p[0][3], # position
+            p[0][4], p[0][5], p[0][6], p[0][7],    # orientation (quaternion)
+            p[0][8], p[0][9], p[0][10]  # velocity
         ])
         logger.save(t, x, reference_setpoint, u)
 
         # Compute error between current state x and reference state reference[0][0:3]
         error = np.linalg.norm(x[:3] - reference_setpoint[:3])
-        if error < 0.1 and pos_index < len(position_references) - 1:
+        if error < 0.01 and pos_index < len(position_references) - 1:
             pos_index += 1
             print(f'Position reference updated to {position_references[pos_index][:3]} at time {t:.2f}s')
 
@@ -208,7 +170,7 @@ if __name__ == '__main__':
         help='CSV file name where logs will be saved (default: mpc_log.csv)'
     )
     args = parser.parse_args()
-
+    print(f'Using simulation config from: {args.config_path}')
     # Params
     yaml_data = yaml_to_dict(args.config_path)
 
@@ -235,13 +197,13 @@ if __name__ == '__main__':
         zl_e=mpc_params.zl_e,
         zu_e=mpc_params.zu_e,
     )
-
+    print('MPC Parameters loaded from YAML:')
     mpc = MPC(
         ocp_json_file=yaml_data.controller.ocp_json_file_path
     )
     print(mpc_params)
     mpc.set_mpc_parameters(mpc_params)
-    mpc.set_u_ref(np.array([9.81, 0.0, 0.0, 0.0]))  # Hovering thrust
+    # mpc.set_u_ref(np.array([9.81, 0.0, 0.0, 0.0]))  # Hovering thrust
 
     # Integrator
     integrator = get_acados_sim_solver(

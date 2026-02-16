@@ -47,19 +47,27 @@ class _ParametersDef:
 
     _names: ClassVar[List[str]] = [
         'mass',
-        'desired_orientation'
+        'desired_position',
+        'desired_orientation',
+        'desired_velocity'
     ]
     _names_sx: ClassVar[List[str]] = [
         'sx_mass',
-        'sx_desired_orientation'
+        'sx_desired_position',
+        'sx_desired_orientation',
+        'sx_desired_velocity'
     ]
     _sizes: ClassVar[List[int]] = [
         1,
-        4
+        3,
+        4,
+        3
     ]
 
     mass: Union[ca.SX, ca.DM]
+    desired_position: Union[ca.SX, ca.DM]
     desired_orientation: Union[ca.SX, ca.DM]
+    desired_velocity: Union[ca.SX, ca.DM]
 
 
 class CaParameters(_ParametersDef, VectorBase):
@@ -68,8 +76,12 @@ class CaParameters(_ParametersDef, VectorBase):
 
     :param mass: Mass of the MAV (kg)
     :type mass: ca.SX
+    :param desired_position: Desired position in world frame [x, y, z] (m)
+    :type desired_position: ca.SX
     :param desired_orientation: Desired orientation as a quaternion [qw, qx, qy, qz]
     :type desired_orientation: ca.SX
+    :param desired_velocity: Desired linear velocity in world frame [vx, vy, vz] (m/s)
+    :type desired_velocity: ca.SX
     """
 
     _type = 'ca.SX'
@@ -83,18 +95,26 @@ class Parameters(_ParametersDef, VectorBase):
     def __init__(
             self,
             mass: np.array = np.array(1.0),
-            desired_orientation: np.array = np.array([1.0, 0.0, 0.0, 0.0])):
+            desired_position: np.array = np.array([0.0, 0.0, 0.0]),
+            desired_orientation: np.array = np.array([1.0, 0.0, 0.0, 0.0]),
+            desired_velocity: np.array = np.array([0.0, 0.0, 0.0])):
         """
         Parameters for the UAV Model.
 
         :param mass: Mass of the MAV (kg)
         :type mass: np.array
+        :param desired_position: Desired position in world frame [x, y, z] (m)
+        :type desired_position: np.array
         :param desired_orientation: Desired orientation as a quaternion [qw, qx, qy, qz]
         :type desired_orientation: np.array
+        :param desired_velocity: Desired linear velocity in world frame [vx, vy, vz] (m/s)
+        :type desired_velocity: np.array
         """
         super().__init__()
         self.mass = mass
+        self.desired_position = desired_position
         self.desired_orientation = desired_orientation
+        self.desired_velocity = desired_velocity
 
 
 if __name__ == '__main__':
@@ -104,5 +124,7 @@ if __name__ == '__main__':
     print('CasADi SX Sizes:', parameters._sizes)
     print('Vector:', parameters.vector)
     print('mass:', parameters.mass)
+    print('desired_position:', parameters.desired_position)
     print('desired_orientation:', parameters.desired_orientation)
+    print('desired_velocity:', parameters.desired_velocity)
     print(parameters)

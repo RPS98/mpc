@@ -85,16 +85,26 @@ class DroneModel(CaDynamics):
             p.desired_orientation
         )
 
+        self._pos_error = ca.vertcat(
+            self._x.position - p.desired_position)
+        
+        self._vel_error = ca.vertcat(
+            self._x.linear_velocity - p.desired_velocity)
+        
+        self._u_error = ca.vertcat(
+            self._u.vector - ca.vertcat(p.mass * gravity, 0.0, 0.0, 0.0))
+    
+
         self._cost_y_expr = ca.vertcat(
-            self._x.position,
+            self._pos_error,
             self._q_att,
-            self._x.linear_velocity,
-            self._u.vector)
+            self._vel_error,
+            self._u_error)
 
         self._cost_y_expr_e = ca.vertcat(
-            self._x.position,
+            self._pos_error,
             self._q_att,
-            self._x.linear_velocity)
+            self._vel_error)
 
     @staticmethod
     def velocity_derivate(

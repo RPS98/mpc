@@ -11,4 +11,6 @@ dynamics:
   linear_velocity_dot: [0.0, 0.0, 0.0] # Time derivative of linear velocity in world frame [ax, ay, az] (m/s^2)
 parameters:
   mass: 1.0 # Mass of the MAV (kg)
+  desired_position: [0.0, 0.0, 0.0] # Desired position in world frame [x, y, z] (m)
   desired_orientation: [1.0, 0.0, 0.0, 0.0] # Desired orientation as a quaternion [qw, qx, qy, qz]
+  desired_velocity: [0.0, 0.0, 0.0] # Desired linear velocity in world frame [vx, vy, vz] (m/s)

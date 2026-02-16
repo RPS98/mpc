@@ -121,16 +121,16 @@ class AcadosMPCSolver:
 
         # Reference at intermediate shooting nodes (1 to N-1)
         cost.yref = np.concatenate([
-            state.position,  # Position reference
+            np.zeros(3),  # Position reference
             np.zeros(3),  # Attitude reference
-            state.linear_velocity,  # Linear velocity reference
-            actuation.vector  # Control reference
+            np.zeros(3),  # Linear velocity reference
+            np.zeros(4)  # Control reference
         ])
         # Reference at terminal shooting node (N)
         cost.yref_e = np.concatenate([
-            state.position,  # Position reference
+            np.zeros(3),  # Position reference
             np.zeros(3),  # Attitude reference
-            state.linear_velocity,  # Linear velocity reference
+            np.zeros(3),  # Linear velocity reference
         ])
 
         # # For linear least squares cost
