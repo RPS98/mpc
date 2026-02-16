@@ -224,6 +224,8 @@ void test_mpc_controller(CsvLogger& logger,
 
 int main(int argc, char** argv) {
   // Params
+  std::string config_path = "examples/simulation_config.yaml";
+  std::string log_file = "mpc_log.csv";
   acados_mpc::acados_mpc_examples::YamlData yaml_data;
   acados_mpc::acados_mpc_examples::read_yaml_params(config_path, yaml_data);
 
