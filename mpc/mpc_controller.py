@@ -158,8 +158,8 @@ class MPC():
         self._ubu_size = self.acados_ocp_solver.constraints_get(0, 'ubu').shape[0]
         self._lbx_size = self.acados_ocp_solver.constraints_get(1, 'lbx').shape[0]
         self._ubx_size = self.acados_ocp_solver.constraints_get(1, 'ubx').shape[0]
-        self._lsbx_size = self.acados_ocp_solver.constraints_get(1, 'lsbx').shape[0]
-        self._usbx_size = self.acados_ocp_solver.constraints_get(1, 'usbx').shape[0]
+        self._lsbx_size = len(ocp_json["constraints"]["lsbx"])
+        self._usbx_size = len(ocp_json["constraints"]["usbx"])
 
         print('MPC parameters:')
         print(f'Horizon N={self.N}, tf={self.tf}, dt={self.dt}')
