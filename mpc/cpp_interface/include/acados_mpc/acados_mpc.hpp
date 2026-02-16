@@ -78,15 +78,11 @@ struct AcadosSolverPointers {
  * Data structure to hold the MPC data.
  *
  * @param state state.
- * @param reference reference.
- * @param reference_end reference_end.
  * @param p_params online parameters.
  * @param actuation actuation.
  */
 struct MPCData {
   State state;
-  Reference reference;
-  ReferenceEnd reference_end;
   OnlineParams p_params;
   Actuation actuation;
 };
@@ -131,76 +127,105 @@ public:
   /**
    * @brief Get the number of prediction steps.
    */
-  inline int get_prediction_steps() const { return MPC_N; }
+  inline int get_prediction_steps() const {return MPC_N;}
 
   /**
    * @brief Get the prediction time horizon in seconds.
    *
    * It is the prediction steps multiplied by the prediction time step.
    */
-  inline double get_prediction_time_horizon() const { return MPC_N * *acados_pointers_.nlp_in->Ts; }
+  inline double get_prediction_time_horizon() const {return MPC_N * *acados_pointers_.nlp_in->Ts;}
 
   /**
    * @brief Get the prediction time step in seconds.
    */
-  inline double get_prediction_time_step() const { return *acados_pointers_.nlp_in->Ts; }
+  inline double get_prediction_time_step() const {return *acados_pointers_.nlp_in->Ts;}
 
   /**
    * @brief Get the MPCData pointer to modify the data.
    */
-  MPCData* get_data() { return &mpc_data_; }
+  MPCData * get_data() {return &mpc_data_;}
 
   /**
    * @brief Get the Gains pointer to modify the gains.
    *
    * update_gains() must be called to update the gains.
    */
-  Gains* get_gains() { return &gains_; }
+  Gains * get_gains() {return &gains_;}
 
   /**
    * @brief Get the ActuationBounds pointer to modify the actuation_bounds.
    *
    * update_actuation_bounds() must be called to update the actuation_bounds.
    */
-  ActuationBounds* get_actuation_bounds() { return &actuation_bounds_; }
+  ActuationBounds * get_actuation_bounds() {return &actuation_bounds_;}
 
   /**
    * @brief Get the StateBounds pointer to modify the state_bounds.
    *
    * update_state_bounds() must be called to update the state_bounds.
    */
-  StateBounds* get_state_bounds() { return &state_bounds_; }
+  StateBounds * get_state_bounds() {return &state_bounds_;}
 
   /**
    * @brief Get the SoftStateBounds pointer to modify the soft_state_bounds.
    *
    * update_soft_state_bounds() must be called to update the soft_state_bounds.
    */
-  SoftStateBounds* get_soft_state_bounds() { return &soft_state_bounds_; }
+  SoftStateBounds * get_soft_state_bounds() {return &soft_state_bounds_;}
 
   /**
    * @brief Get the SlackWeights pointer to modify the slack_weights.
    *
    * update_slack_weights() must be called to update the slack_weights.
    */
-  SlackWeights* get_slack_weights() { return &slack_weights_; }
+  SlackWeights * get_slack_weights() {return &slack_weights_;}
 
   /**
    * @brief Get the SlackWeightsEnd pointer to modify the slack_weights_end.
    *
    * update_slack_weights_end() must be called to update the slack_weights_end.
    */
-  SlackWeightsEnd* get_slack_weights_end() { return &slack_weights_end_; }
+  SlackWeightsEnd * get_slack_weights_end() {return &slack_weights_end_;}
 
   /**
    * @brief Get the AcadosSolverPointers to access internal acados structures.
    *
    * Allows direct access to acados solver internals for advanced operations.
    */
-  const AcadosSolverPointers* get_acados_solver_pointers() const { return &acados_pointers_; }
+  const AcadosSolverPointers * get_acados_solver_pointers() const {return &acados_pointers_;}
 
   // Setters
+  /**
+   * @brief Set the solver online mass parameter of p
+   */
+  void setSolverOnlineMassParams(const double value);
 
+  /**
+   * @brief Set the solver online desired position parameters of p
+   */
+  void setSolverOnlineDesiredPositionParams(const std::array<double, 3> & value);
+
+  /**
+ * @brief Set the solver online desired orientation parameters of p
+ */
+  void setSolverOnlineDesiredOrientationParams(const std::array<double, 4> & value);
+
+  /**
+   * @brief Set the solver online desired velocity parameters of p
+   */
+  void setSolverOnlineDesiredVelocityParams(const std::array<double, 3> & value);
+
+
+  /**
+   * @brief Set the solver online desired actuation parameters of p
+   */
+  void setSolverOnlineDesiredActuationParams(const std::array<double, 4> & value);
+
+  /**
+   * @brief Set the solver online parameters of p
+   */
+  void setSolverOnlineParams(const OnlineParams & params);
   /**
    * @brief Update the time step used in the prediction model.
    *
@@ -273,17 +298,6 @@ private:
    * @brief Set the solver state x0
    */
   void setSolverState();
-
-  /**
-   * @brief Set the solver reference yref
-   */
-  void setSolverRefence();
-
-  /**
-   * @brief Set the solver reference yref_N
-   */
-  void setSolverRefenceEnd();
-
   /**
    * @brief Set the solver online parameters p
    */
@@ -294,11 +308,29 @@ private:
    *
    * @param status status.
    */
-  inline void validateStatus(const int status) {
+  inline void validateStatus(const int status)
+  {
     if (status) {
       std::cerr << "acados_create() returned status " << status << std::endl;
     }
   }
+  /**
+ * @brief Helper function to set a single parameter value across all stages
+ *
+ * @param param_idx Parameter index.
+ * @param value Parameter value.
+ */
+  void setParameterAllStages(int param_idx, double value);
+
+  /**
+   * @brief Helper function to set an array of parameter values across all stages
+   *
+   * @tparam N Size of the array.
+   * @param start_idx Starting parameter index.
+   * @param values Array of parameter values.
+   */
+  template<std::size_t N>
+  void setParameterArrayAllStages(int start_idx, const std::array<double, N> & values);
 
 private:
   // acados

@@ -313,10 +313,10 @@ public:
     add_double(mpc_data->state.data[8]);
     add_double(mpc_data->state.data[9]);
 
-    // Reference position
-    add_double(mpc_data->reference.data[0]);
-    add_double(mpc_data->reference.data[1]);
-    add_double(mpc_data->reference.data[2]);
+    // // Reference position
+    // add_double(mpc_data->reference.data[0]);
+    // add_double(mpc_data->reference.data[1]);
+    // add_double(mpc_data->reference.data[2]);
 
     // Reference orientation q
     Eigen::Quaterniond q_ref(mpc_data->p_params.data[1], mpc_data->p_params.data[2],
@@ -333,10 +333,10 @@ public:
     add_double(pitch_ref);
     add_double(yaw_ref);
 
-    // Reference velocity
-    add_double(mpc_data->reference.data[6]);
-    add_double(mpc_data->reference.data[7]);
-    add_double(mpc_data->reference.data[8]);
+    // // Reference velocity
+    // add_double(mpc_data->reference.data[6]);
+    // add_double(mpc_data->reference.data[7]);
+    // add_double(mpc_data->reference.data[8]);
 
     // Actuation
     for (int i = 0; i < MPC_NU; i++) {

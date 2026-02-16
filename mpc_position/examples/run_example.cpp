@@ -79,9 +79,9 @@ void position_ref_to_mpc_ref(Eigen::Vector3d waypoint,
   Eigen::Quaterniond desired_orientation = current_orientation;
   if (index == MPC_N) {
     // Position
-    mpc_data->reference_end.set_data(0, waypoint[0]);
-    mpc_data->reference_end.set_data(1, waypoint[1]);
-    mpc_data->reference_end.set_data(2, waypoint[2]);
+    // mpc_data->reference_end.set_data(0, waypoint[0]);
+    // mpc_data->reference_end.set_data(1, waypoint[1]);
+    // mpc_data->reference_end.set_data(2, waypoint[2]);
 
     // Orientation
     if (path_facing) {
@@ -98,13 +98,13 @@ void position_ref_to_mpc_ref(Eigen::Vector3d waypoint,
   } else if (index > MPC_N) {
     throw std::out_of_range("Index out of range.");
   }
-  // Position
-  mpc_data->reference.set_data(index, 0, waypoint[0]);
-  mpc_data->reference.set_data(index, 1, waypoint[1]);
-  mpc_data->reference.set_data(index, 2, waypoint[2]);
+  // // Position
+  // mpc_data->reference.set_data(index, 0, waypoint[0]);
+  // mpc_data->reference.set_data(index, 1, waypoint[1]);
+  // mpc_data->reference.set_data(index, 2, waypoint[2]);
 
-  // Control
-  mpc_data->reference.set_data(index, 9, mpc_data->p_params.data[0] * 9.81);  // Thrust
+  // // Control
+  // mpc_data->reference.set_data(index, 9, mpc_data->p_params.data[0] * 9.81);  // Thrust
 
   // Orientation
   if (path_facing) {

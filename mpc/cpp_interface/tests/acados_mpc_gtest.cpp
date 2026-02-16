@@ -69,17 +69,7 @@ TEST(acados_mpc, test_acados_datatypes) {
   auto actuation = Actuation();
   EXPECT_NO_THROW(actuation.set_data(0, 0.0));
 
-  EXPECT_NO_THROW(Reference());
-  auto reference = Reference();
-  EXPECT_NO_THROW(reference.get_data(0));
-  EXPECT_NO_THROW(reference.get_state(0));
-  EXPECT_NO_THROW(reference.set_data(0, 0.0));
-  EXPECT_NO_THROW(reference.set_state(0, State(), Actuation()));
 
-  EXPECT_NO_THROW(ReferenceEnd());
-  auto reference_end = ReferenceEnd();
-  EXPECT_NO_THROW(reference_end.get_data());
-  EXPECT_NO_THROW(reference_end.set_data(0, 0.0));
 
   EXPECT_NO_THROW(Gains());
   auto gains = Gains();
