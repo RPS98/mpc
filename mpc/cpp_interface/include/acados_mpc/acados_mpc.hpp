@@ -217,15 +217,16 @@ public:
   void setSolverOnlineDesiredVelocityParams(const std::array<double, 3> & value);
 
 
-  /**
-   * @brief Set the solver online desired actuation parameters of p
+   /**
+   * @brief Set the solver online external force parameter of p
    */
-  void setSolverOnlineDesiredActuationParams(const std::array<double, 4> & value);
-
+  void setSolverOnlineExternalForceParams(const std::array<double, 3> & value);
+ 
   /**
    * @brief Set the solver online parameters of p
    */
   void setSolverOnlineParams(const OnlineParams & params);
+
   /**
    * @brief Update the time step used in the prediction model.
    *

@@ -281,7 +281,7 @@ class AcadosMPCSolver:
         # Create Integrator
         acados_sim = AcadosSim()
         acados_sim.model = self.acados_model
-        acados_sim.model.name = self.acados_model.name + '_sim'
+        acados_sim.model.name = self.acados_model.name 
         acados_sim.parameter_values = self.get_parameters_vector(solver_definition.mpc)
 
         # Solver options

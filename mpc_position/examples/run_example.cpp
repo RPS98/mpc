@@ -98,7 +98,7 @@ void set_mpc_reference_parameters(const Eigen::Vector3d& waypoint,
   
   // Set desired actuation (hovering thrust)
   double mass = mpc.get_data()->p_params.data[0];
-  mpc.setSolverOnlineDesiredActuationParams({mass * 9.81, 0.0, 0.0, 0.0});
+  // mpc.setSolverOnlineDesiredActuationParams({mass * 9.81, 0.0, 0.0, 0.0});
 }
 
 void print_progress_bar(float progress) {

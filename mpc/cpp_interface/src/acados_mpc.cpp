@@ -112,10 +112,10 @@ void MPC::setSolverOnlineDesiredVelocityParams(const std::array<double, 3> & val
   setParameterArrayAllStages(8, values);
 }
 
-void MPC::setSolverOnlineDesiredActuationParams(const std::array<double, 4> & values)
-{
-  setParameterArrayAllStages(11, values);
+void MPC::setSolverOnlineExternalForceParams(const std::array<double, 3> & value) {
+  setParameterArrayAllStages(11, value);
 }
+
 template<std::size_t N>
 void MPC::setParameterArrayAllStages(int start_idx, const std::array<double, N> & values)
 {
