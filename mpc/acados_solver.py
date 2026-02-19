@@ -41,6 +41,7 @@ import numpy as np
 from acados_template import AcadosOcp, AcadosOcpSolver, AcadosSim, AcadosSimSolver
 from mpc.model_definition.state import State
 from mpc.model_definition.actuation import Actuation
+from mpc.model_definition.parameters import Parameters
 from mpc.drone_model import get_acados_model
 from mpc.utils.yaml_to_dict import yaml_to_dict
 
@@ -100,12 +101,9 @@ class AcadosMPCSolver:
         ocp = AcadosOcp()
         ocp.model = self.acados_model
         state = State()
-        actuation = Actuation(
-            thrust=solver_definition.mpc.p[0] * 9.81
-        )
 
         # Parameters
-        ocp.parameter_values = solver_definition.mpc.p
+        ocp.parameter_values = self.get_parameters_vector(solver_definition.mpc)
 
         # Cost
         cost = ocp.cost
@@ -249,6 +247,25 @@ class AcadosMPCSolver:
         )
 
         return self.solver
+    
+    @staticmethod
+    def get_parameters_vector(solver_definition: dict) -> np.ndarray:
+        """
+        Get the parameters vector.
+
+        :return: Parameters vector
+        :rtype: np.ndarray
+        """
+        pv = solver_definition
+
+        parameters: Parameters = Parameters(
+            mass=pv.p[0],
+            desired_position=pv.p[1:4],
+            desired_orientation=pv.p[4:8],
+            desired_velocity=pv.p[8:11],
+            external_force=pv.p[11:14],
+        )
+        return parameters.vector
 
     def get_acados_sim_solver(self, solver_definition: dict, generate_code: bool = True) -> AcadosSimSolver:
         """
@@ -264,7 +281,8 @@ class AcadosMPCSolver:
         # Create Integrator
         acados_sim = AcadosSim()
         acados_sim.model = self.acados_model
-        acados_sim.parameter_values = solver_definition.mpc.p
+        acados_sim.model.name = self.acados_model.name + '_sim'
+        acados_sim.parameter_values = self.get_parameters_vector(solver_definition.mpc)
 
         # Solver options
         # integrator type. String in (‘ERK’, ‘IRK’, ‘GNSF’, ‘DISCRETE’, ‘LIFTED_IRK’).

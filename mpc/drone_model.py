@@ -73,7 +73,8 @@ class DroneModel(CaDynamics):
             x.orientation,
             u.thrust,
             gravity,
-            p.mass)
+            p.mass,
+            p.external_force)
 
         self._f_expl = ca.vertcat(
             position_dot,
@@ -111,7 +112,8 @@ class DroneModel(CaDynamics):
             quaternion: ca.SX,
             thrust: ca.SX,
             gravity: ca.SX,
-            mass: ca.SX) -> ca.SX:
+            mass: ca.SX,
+            external_force: ca.SX = ca.vertcat(0, 0, 0)) -> ca.SX:
         """
         Compute the linear velocity derivative.
 
@@ -122,12 +124,12 @@ class DroneModel(CaDynamics):
         :param thrust (ca.SX): The thrust (N) in body frame.
         :param gravity (ca.SX): The gravity (m/s^2) in world frame.
         :param mass (ca.SX): The mass (kg).
-
+        :param external_force (ca.SX): The external force acting on the MAV in body frame [fx, fy, fz] (N).
         :return (ca.SX): The linear velocity derivative [vx_dot, vy_dot, vz_dot]
         in world frame.
         """
         # Compute inverse rotation
-        acceleration_body_frame = ca.vertcat(0, 0, thrust / mass)
+        acceleration_body_frame = ca.vertcat(0, 0, thrust / mass) + external_force / mass
         acceleration_world = q_utils.apply_rotation(
             q_utils.normalize_quaternion(quaternion),
             acceleration_body_frame

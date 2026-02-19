@@ -23,7 +23,7 @@ mpc:
   Zu_e: [100.0, 100.0, 100.0] # Diagonal Hessian weights for upper slack variables at terminal shooting node (N) (dimension = nsbx_e)
   zl_e: [10.0, 10.0, 10.0] # Linear weights for lower slack variables at terminal shooting node (N) (dimension = nsbx_e)
   zu_e: [10.0, 10.0, 10.0] # Linear weights for upper slack variables at terminal shooting node (N) (dimension = nsbx_e)
-  p: [1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # Online parameter: [mass, ref_orientation (qw, qx, qy, qz)]
+  p: [1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,0.0,0.0,0.0] # Online parameter: [mass, ref_orientation (qw, qx, qy, qz)]
 solver:
   export_dir: 'acados_position_mpc/'
   generate_c_code: true
