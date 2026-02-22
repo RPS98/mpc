@@ -40,10 +40,10 @@ import shutil
 import numpy as np
 from acados_template import AcadosOcp, AcadosOcpSolver, AcadosSim, AcadosSimSolver
 from mpc.model_definition.state import State
-from mpc.model_definition.actuation import Actuation
 from mpc.model_definition.parameters import Parameters
 from mpc.drone_model import get_acados_model
-from mpc.utils.yaml_to_dict import yaml_to_dict
+
+from mpc.utils.solver_config import SolverDefinition
 
 
 class AcadosMPCSolver:
@@ -70,7 +70,7 @@ class AcadosMPCSolver:
         :rtype: None
         """
         # Load the solver definition from the YAML file
-        solver_definition = yaml_to_dict(solver_definition_path)
+        solver_definition: SolverDefinition = SolverDefinition.from_yaml(solver_definition_path)
 
         # Acados model
         self.acados_model = get_acados_model()
@@ -86,12 +86,12 @@ class AcadosMPCSolver:
             if solver_definition.cpp_module.generate:
                 self.generate_cpp_project(solver_definition)
 
-    def get_acados_solver(self, solver_definition: dict, generate_code: bool = True) -> AcadosOcpSolver:
+    def get_acados_solver(self, solver_definition: SolverDefinition, generate_code: bool = True) -> AcadosOcpSolver:
         """
         Get the Acados MPC Solver.
 
-        :param solver_definition: Solver definition dictionary
-        :type solver_definition: dict
+        :param solver_definition: Solver definition
+        :type solver_definition: SolverDefinition
         :param generate_code: Whether to generate C code
         :type generate_code: bool
         :return: Acados MPC Solver
@@ -103,50 +103,22 @@ class AcadosMPCSolver:
         state = State()
 
         # Parameters
-        ocp.parameter_values = self.get_parameters_vector(solver_definition.mpc)
+        ocp.parameter_values = Parameters().vector
 
         # Cost
         cost = ocp.cost
 
         # Weight matrix at intermediate shooting nodes (1 to N-1)
-        cost.W = np.diag(np.zeros(
-            self.acados_model.cost_y_expr.shape[0]
-        ))
+        cost.W = np.diag(np.zeros(self.acados_model.cost_y_expr.shape[0]))
         # Weight matrix at terminal shooting node (N)
-        cost.W_e = np.diag(np.zeros(
-            self.acados_model.cost_y_expr_e.shape[0]
-        ))
+        cost.W_e = np.diag(np.zeros(self.acados_model.cost_y_expr_e.shape[0]))
 
         # Reference at intermediate shooting nodes (1 to N-1)
-        cost.yref = np.concatenate([
-            np.zeros(3),  # Position reference
-            np.zeros(3),  # Attitude reference
-            np.zeros(3),  # Linear velocity reference
-            np.zeros(4)  # Control reference
-        ])
+        cost.yref = np.zeros(self.acados_model.cost_y_expr.shape[0])
         # Reference at terminal shooting node (N)
-        cost.yref_e = np.concatenate([
-            np.zeros(3),  # Position reference
-            np.zeros(3),  # Attitude reference
-            np.zeros(3),  # Linear velocity reference
-        ])
+        cost.yref_e = np.zeros(self.acados_model.cost_y_expr_e.shape[0])
 
-        # # For linear least squares cost
-        # # Set up the cost type
-        # cost.cost_type = 'LINEAR_LS'
-        # cost.cost_type_e = 'LINEAR_LS'
-        # # dimensions
-        # nx = ocp.model.x.size()[0]
-        # nu = ocp.model.u.size()[0]
-        # ny = nx + nu
-        # # x matrix coefficient at intermediate shooting nodes (1 to N-1)
-        # cost.Vx = np.eye(ny, nx)
-        # # u matrix coefficient at intermediate shooting nodes (1 to N-1)
-        # cost.Vu = np.vstack((np.zeros((nx, nu)), np.eye(nu)))
-        # # x matrix coefficient for cost at terminal shooting node (N)
-        # cost.Vx_e = np.eye(nx, nx)
-
-        # For nonlinear least squares cost
+        # Nonlinear least squares cost
         # Set up the cost type
         cost.cost_type = solver_definition.solver.cost_type
         cost.cost_type_e = solver_definition.solver.cost_type
@@ -156,65 +128,67 @@ class AcadosMPCSolver:
 
         # Constraints
         constraints = ocp.constraints
+        constraints_def = solver_definition.mpc.constraints
+
         # Initial state
         constraints.x0 = state.vector
 
         # Hard constraints on inputs
-        if hasattr(solver_definition.mpc, 'idxbu') and solver_definition.mpc.idxbu is not None:
-            if solver_definition.mpc.idxbu.shape[0] > 0:
-                # Indices of bounds on u at shooting nodes (0 to N-1)
-                constraints.idxbu = solver_definition.mpc.idxbu
-                # Lower bounds on u at shooting nodes (0 to N-1)
-                constraints.lbu = solver_definition.mpc.lbu
-                # Upper bounds on u at shooting nodes (0 to N-1)
-                constraints.ubu = solver_definition.mpc.ubu
+        if constraints_def.idxbu.shape[0] > 0:
+            constraints.idxbu = constraints_def.idxbu
+            constraints.lbu = np.zeros(constraints_def.idxbu.shape[0])
+            constraints.ubu = np.zeros(constraints_def.idxbu.shape[0])
 
         # Hard constraints on states
-        if hasattr(solver_definition.mpc, 'idxbx') and solver_definition.mpc.idxbx is not None:
-            if solver_definition.mpc.idxbx.shape[0] > 0:
-                # Indices of bounds on x at shooting nodes (1 to N)
-                constraints.idxbx = solver_definition.mpc.idxbx
-                # Lower bounds on x at shooting nodes (1 to N)
-                constraints.lbx = solver_definition.mpc.lbx[constraints.idxbx]
-                # Upper bounds on x at shooting nodes (1 to N)
-                constraints.ubx = solver_definition.mpc.ubx[constraints.idxbx]
-            if solver_definition.mpc.idxbx_e.shape[0] > 0:
-                # Indices of bounds on x at terminal shooting node (N)
-                constraints.idxbx_e = solver_definition.mpc.idxbx
-                # Lower bounds on x at terminal shooting node (N)
-                constraints.lbx_e = solver_definition.mpc.lbx[constraints.idxbx_e]
-                # Upper bounds on x at terminal shooting node (N)
-                constraints.ubx_e = solver_definition.mpc.ubx[constraints.idxbx_e]
-        
+        if constraints_def.idxbx.shape[0] > 0:
+            # At intermediate shooting nodes (1 to N-1)
+            constraints.idxbx = constraints_def.idxbx
+            constraints.lbx = np.zeros(constraints_def.idxbx.shape[0])
+            constraints.ubx = np.zeros(constraints_def.idxbx.shape[0])
+            
+            # At terminal shooting node (N)
+            constraints.idxbx_e = constraints_def.idxbx
+            constraints.lbx_e = np.zeros(constraints_def.idxbx.shape[0])
+            constraints.ubx_e = np.zeros(constraints_def.idxbx.shape[0])
+
         # Soft constraints on states
-        if hasattr(solver_definition.mpc, 'idxsbx') and solver_definition.mpc.idxsbx is not None:
-            if solver_definition.mpc.idxsbx.shape[0] > 0:
-                # Indices of soft bounds on x within the indices of bounds on x at stages (1 to N-1)
-                constraints.idxsbx = solver_definition.mpc.idxsbx
-                # Lower bounds on slacks corresponding to soft lower bounds on x at stages (1 to N-1)
-                constraints.lsbx = solver_definition.mpc.lsbx[constraints.idxsbx]
-                # Upper bounds on slacks corresponding to soft upper bounds on x at stages (1 to N-1)
-                constraints.usbx = solver_definition.mpc.usbx[constraints.idxsbx]
-                
-                # Cost for state bounds violation
-                cost.Zl = solver_definition.mpc.Zl
-                cost.Zu = solver_definition.mpc.Zu
-                cost.zl = solver_definition.mpc.zl
-                cost.zu = solver_definition.mpc.zu
-        if hasattr(solver_definition.mpc, 'idxsbx_e') and solver_definition.mpc.idxsbx_e is not None:
-            if solver_definition.mpc.idxsbx_e.shape[0] > 0:
-                # Indices of soft bounds on x within the indices of bounds on x at terminal stage (N)
-                constraints.idxsbx_e = solver_definition.mpc.idxsbx_e
-                # Lower bounds on slacks corresponding to soft lower bounds on x at terminal stage (N)
-                constraints.lsbx_e = solver_definition.mpc.lsbx[constraints.idxsbx_e]
-                # Upper bounds on slacks corresponding to soft upper bounds on x at terminal stage (N)
-                constraints.usbx_e = solver_definition.mpc.usbx[constraints.idxsbx_e]
-                
-                # Cost for state bounds violation at terminal stage
-                cost.Zl_e = solver_definition.mpc.Zl_e
-                cost.Zu_e = solver_definition.mpc.Zu_e
-                cost.zl_e = solver_definition.mpc.zl_e
-                cost.zu_e = solver_definition.mpc.zu_e
+        if constraints_def.idxsbx.shape[0] > 0:
+            # At intermediate shooting nodes (1 to N-1)
+            constraints.idxsbx = constraints_def.idxsbx
+            constraints.lsbx = constraints_def.lsbx
+            constraints.usbx = constraints_def.usbx
+            
+            # At terminal shooting node (N)
+            constraints.idxsbx_e = constraints_def.idxsbx
+            constraints.lsbx_e = constraints_def.lsbx
+            constraints.usbx_e = constraints_def.usbx
+            constraints.usbx_e = np.zeros(constraints_def.idxsbx.shape[0])
+
+        # Nonlinear constraints within the nonlinear inequalities
+        # TODO(RPS): Get shape from model
+        # if constraints_def.lh.shape[0] > 0 and constraints_def.uh.shape[0] > 0:
+        #     constraints.lh = constraints_def.lh
+        #     constraints.uh = constraints_def.uh
+            
+        #     # Soft nonlinear constraints within the indices of nonlinear constraints
+        #     if constraints_def.idxsh.shape[0] > 0:
+        #         constraints.idxsh = constraints_def.idxsh
+        #         constraints.lsh = np.zeros(constraints_def.idxsh.shape[0])
+        #         constraints.ush = np.zeros(constraints_def.idxsh.shape[0])
+
+        # Cost for slack constraints. Slack order: [sbx , sbu , sg , sh , sphi]
+        if constraints_def.idxsbx.shape[0] > 0 or constraints_def.idxsh.shape[0] > 0:
+            # At intermediate shooting nodes (1 to N-1)
+            cost.Zl = np.zeros(constraints_def.idxsbx.shape[0] + constraints_def.idxsh.shape[0])
+            cost.Zu = np.zeros(constraints_def.idxsbx.shape[0] + constraints_def.idxsh.shape[0])
+            cost.zl = np.zeros(constraints_def.idxsbx.shape[0] + constraints_def.idxsh.shape[0])
+            cost.zu = np.zeros(constraints_def.idxsbx.shape[0] + constraints_def.idxsh.shape[0])
+            
+            # At terminal shooting node (N) - use same values as intermediate
+            cost.Zl_e = np.zeros(constraints_def.idxsbx.shape[0] + constraints_def.idxsh.shape[0])
+            cost.Zu_e = np.zeros(constraints_def.idxsbx.shape[0] + constraints_def.idxsh.shape[0])
+            cost.zl_e = np.zeros(constraints_def.idxsbx.shape[0] + constraints_def.idxsh.shape[0])
+            cost.zu_e = np.zeros(constraints_def.idxsbx.shape[0] + constraints_def.idxsh.shape[0])
 
         # Solver options
         solver_options = ocp.solver_options
@@ -247,32 +221,13 @@ class AcadosMPCSolver:
         )
 
         return self.solver
-    
-    @staticmethod
-    def get_parameters_vector(solver_definition: dict) -> np.ndarray:
-        """
-        Get the parameters vector.
 
-        :return: Parameters vector
-        :rtype: np.ndarray
-        """
-        pv = solver_definition
-
-        parameters: Parameters = Parameters(
-            mass=pv.p[0],
-            desired_position=pv.p[1:4],
-            desired_orientation=pv.p[4:8],
-            desired_velocity=pv.p[8:11],
-            external_force=pv.p[11:14],
-        )
-        return parameters.vector
-
-    def get_acados_sim_solver(self, solver_definition: dict, generate_code: bool = True) -> AcadosSimSolver:
+    def get_acados_sim_solver(self, solver_definition: SolverDefinition, generate_code: bool = True) -> AcadosSimSolver:
         """
         Get the Acados Integrator Solver.
 
-        :param solver_definition: Solver definition dictionary
-        :type solver_definition: dict
+        :param solver_definition: Solver definition
+        :type solver_definition: SolverDefinition
         :param generate_code: Whether to generate C code
         :type generate_code: bool
         :return: Acados Integrator Solver
@@ -282,7 +237,7 @@ class AcadosMPCSolver:
         acados_sim = AcadosSim()
         acados_sim.model = self.acados_model
         acados_sim.model.name = self.acados_model.name 
-        acados_sim.parameter_values = self.get_parameters_vector(solver_definition.mpc)
+        acados_sim.parameter_values = Parameters().vector
 
         # Solver options
         # integrator type. String in (‘ERK’, ‘IRK’, ‘GNSF’, ‘DISCRETE’, ‘LIFTED_IRK’).
@@ -305,13 +260,13 @@ class AcadosMPCSolver:
         )
         return self.acados_integrator
 
-    def generate_cpp_project(self, solver_definition: dict) -> None:
+    def generate_cpp_project(self, solver_definition: SolverDefinition) -> None:
         """
         Generate C++ interface for the Acados MPC Solver.
         Copies the contents of cpp_interface directory into base_export_dir and updates the project name.
 
-        :param solver_definition: Solver definition dictionary
-        :type solver_definition: dict
+        :param solver_definition: Solver definition
+        :type solver_definition: SolverDefinition
         :return: None
         :rtype: None
         :raises FileNotFoundError: If base_export_dir does not exist

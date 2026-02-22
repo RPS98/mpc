@@ -25,23 +25,29 @@ controller:
   solver_definition_path: 'solver_definition_mpc_position.yaml'
   ocp_json_file_path: 'acados_position_mpc/mpc_generated_code/acados_ocp.json'
   mpc:
-    dt: 0.2 # Delta time between control steps in seconds
-    Q: [2.5, 2.5, 5.0, 0.1, 0.1, 10.0, 0.1, 0.1, 0.1] # Weight for internal states: [x, y, z, roll, pitch, yaw, vx, vy, vz]
-    Qe: [10.0, 10.0, 20.0, 0.1, 0.1, 20.0, 0.1, 0.1, 0.1] # Weight for end states: [x, y, z, roll, pitch, yaw, vx, vy, vz]
-    R: [0.5, 1.0, 1.0, 0.5]  # Weight for control inputs: [thrust, wx, wy, wz]
-    idxbx: [7, 8, 9] # Indexes for state bounds: [vx, vy, vz]
-    lbx: [-0.5,-0.5,-0.5] # Lower bounds for internal states: [vx, vy, vz]
-    ubx: [0.5,0.5,0.5] # Uper bounds for internal states: [vx, vy, vz]
-    lbu: [0.01, -3.0, -3.0, -2.0] # Lower bounds for control inputs: [thrust, wx, wy, wz]
-    ubu: [35.0, 3.0, 3.0, 2.0] # Upper bounds for control inputs: [thrust, wx, wy, wz]
-    lsbx: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.2, -0.2, -0.2] # Lower soft bounds for states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
-    usbx: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.2, 0.2, 0.2] # Upper soft bounds for states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
-    Zl: [100.0, 100.0, 100.0] # Diagonal Hessian weights for lower slack variables (dimension = nsbx)
-    Zu: [100.0, 100.0, 100.0] # Diagonal Hessian weights for upper slack variables (dimension = nsbx)
-    zl: [1.0, 1.0, 1.0] # Linear weights for lower slack variables (dimension = nsbx)
-    zu: [1.0, 1.0, 1.0] # Linear weights for upper slack variables (dimension = nsbx)
-    Zl_e: [100.0, 100.0, 100.0] # Diagonal Hessian weights for lower slack variables at terminal shooting node (N) (dimension = nsbx_e)
-    Zu_e: [100.0, 100.0, 100.0] # Diagonal Hessian weights for upper slack variables at terminal shooting node (N) (dimension = nsbx_e)
-    zl_e: [1.0, 1.0, 1.0] # Linear weights for lower slack variables at terminal shooting node (N) (dimension = nsbx_e)
-    zu_e: [1.0, 1.0, 1.0] # Linear weights for upper slack variables at terminal shooting node (N) (dimension = nsbx_e)
-    p: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,0.0,0.0,0.0] # Online parameter: [mass, ref_orientation (qw, qx, qy, qz)]
+    parameters:
+      mass: 1.0 # Mass of the MAV (kg)
+    cost:
+      # Weight for internal states: [x, y, z, roll, pitch, yaw, vx, vy, vz]
+      Q: [2.5, 2.5, 5.0, 0.1, 0.1, 10.0, 0.1, 0.1, 0.1]
+      # Weight for end states: [x, y, z, roll, pitch, yaw, vx, vy, vz]
+      Qe: [10.0, 10.0, 20.0, 0.1, 0.1, 20.0, 0.1, 0.1, 0.1]
+      # Weight for control inputs: [thrust, wx, wy, wz]
+      R: [0.5, 1.0, 1.0, 0.5]
+    constraints:
+      # Lower bounds for control inputs: [thrust, wx, wy, wz]
+      lbu: [0.01, -3.0, -3.0, -2.0]
+      # Upper bounds for control inputs: [thrust, wx, wy, wz]
+      ubu: [35.0, 3.0, 3.0, 2.0]
+      # Lower bounds for states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
+      lbx: [-0.5, -0.5, -0.5]
+      # Upper bounds for states: [x, y, z, qw, qx, qy, qz, vx, vy, vz]
+      ubx: [0.5, 0.5, 0.5]
+      # Diagonal Hessian weights for lower slack variables
+      Zl: [100.0, 100.0, 100.0]
+      # Diagonal Hessian weights for upper slack variables
+      Zu: [100.0, 100.0, 100.0]
+      # Linear weights for lower slack variables
+      zl: [1.0, 1.0, 1.0]
+      # Linear weights for upper slack variables
+      zu: [1.0, 1.0, 1.0]

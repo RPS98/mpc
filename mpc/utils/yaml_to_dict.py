@@ -61,6 +61,10 @@ class DictWithAttributeAccess:
             else:
                 lines.append(f"{prefix}{key}: {value}")
         return "\n".join(lines)
+    
+    def get(self, key, default=None):
+        """Get attribute with default."""
+        return getattr(self, key, default)
 
 
 def yaml_to_dict(yaml_path: str) -> DictWithAttributeAccess:

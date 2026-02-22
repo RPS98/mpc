@@ -1,4 +1,4 @@
-# MPC
+# MPC for Quadrotor using Acados
 
 This repo implements a Model Predictive Controller (MPC) for a quadrotor, using [Acados](https://docs.acados.org/index.html#) library. The MPC is implemented in Python and C++.
 
@@ -8,7 +8,7 @@ This repo implements a Model Predictive Controller (MPC) for a quadrotor, using 
 Clone this repository:
 
 ```bash
-git clone hhttps://github.com/RPS98/mpc.git
+git clone https://github.com/RPS98/mpc.git
 cd mpc
 ```
 
@@ -19,7 +19,7 @@ Follow the instructions in the [Acados documentation](https://docs.acados.org/in
 #### 1. Clone the repository
 
 ```bash
-git clone https://github.com/acados/acados.git -b v0.5.1
+git clone https://github.com/acados/acados.git -b v0.5.3
 cd acados
 git submodule update --recursive --init
 ```
@@ -77,7 +77,7 @@ Configure a solver_definition yaml file in the project you want to use the MPC c
 Then, run the following command in the terminal:
 
 ```bash
-mpc-acados-solver -c <path_to_solver_definition_yaml>
+python3 -m mpc.acados_solver -c <path_to_solver_definition_yaml>
 ```
 
 This will generate the c code in solver.export_dir. If cpp module is enabled, it will also generate a c++ project, to be able to compile it using add_submodule in cmake.

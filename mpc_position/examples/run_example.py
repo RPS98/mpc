@@ -37,7 +37,7 @@ __license__ = 'BSD-3-Clause'
 from functools import wraps
 
 from acados_template import AcadosSimSolver
-from mpc.mpc_controller import MPC, MPCParameters
+from mpc.mpc_controller import MPC, MPCCost, MPCConstraints
 from mpc.acados_solver import get_acados_sim_solver
 from mpc.utils.yaml_to_dict import yaml_to_dict
 from utils.utils import euler_to_quaternion, CsvLogger
@@ -74,7 +74,7 @@ def test_controller(
         pbar):
     """Test trajectory controller."""
     # MPC parameters
-    mass = mpc.parameters[0][0]
+    mass = simulation_data.controller.mpc.parameters.mass
     prediction_steps = mpc.N
     dt = mpc.dt
     
@@ -85,7 +85,7 @@ def test_controller(
         0.0, 0.0, 0.0,  # position
         0.0, 0.0, 0.0,  # orientation (Euler angles)
         0.0, 0.0, 0.0,   # linear velocity
-        9.8,0.0, 0.0, 0.0   # actuation (thrust + torques)
+        9.8, 0.0, 0.0, 0.0   # actuation (thrust + torques)
     ])
 
     t = 0.0
@@ -171,39 +171,33 @@ if __name__ == '__main__':
     )
     args = parser.parse_args()
     print(f'Using simulation config from: {args.config_path}')
+    
     # Params
     yaml_data = yaml_to_dict(args.config_path)
 
     # MPC
-    mpc_params = yaml_data.controller.mpc
-    mpc_params = MPCParameters(
-        dt=mpc_params.dt,
-        Q=mpc_params.Q,
-        Qe=mpc_params.Qe,
-        R=mpc_params.R,
-        p=mpc_params.p,
-        lbu=mpc_params.lbu,
-        ubu=mpc_params.ubu,
-        lbx=mpc_params.lbx,
-        ubx=mpc_params.ubx,
-        lsbx=mpc_params.lsbx,
-        usbx=mpc_params.usbx,
-        Zl=mpc_params.Zl,
-        Zu=mpc_params.Zu,
-        zl=mpc_params.zl,
-        zu=mpc_params.zu,
-        Zl_e=mpc_params.Zl_e,
-        Zu_e=mpc_params.Zu_e,
-        zl_e=mpc_params.zl_e,
-        zu_e=mpc_params.zu_e,
-    )
-    print('MPC Parameters loaded from YAML:')
     mpc = MPC(
         ocp_json_file=yaml_data.controller.ocp_json_file_path
     )
-    print(mpc_params)
-    mpc.set_mpc_parameters(mpc_params)
-    # mpc.set_u_ref(np.array([9.81, 0.0, 0.0, 0.0]))  # Hovering thrust
+    
+    # MPC cost
+    mpc_cost = MPCCost.from_dict(yaml_data.controller.mpc.cost)
+    mpc.set_gains(mpc_cost.Q, mpc_cost.R)
+    mpc.set_gain_terminal_state(mpc_cost.Qe)
+
+    # MPC constraints
+    mpc_constraints = MPCConstraints.from_dict(yaml_data.controller.mpc.constraints)
+    mpc.set_u_bounds(mpc_constraints.lbu, mpc_constraints.ubu)
+    mpc.set_x_bounds(mpc_constraints.lbx, mpc_constraints.ubx)
+    mpc.set_x_bounds_soft_gains(
+        mpc_constraints.zl, mpc_constraints.zu,
+        mpc_constraints.Zl, mpc_constraints.Zu
+    )
+    
+    # MPC parameters
+    mass = yaml_data.controller.mpc.parameters.mass
+    parameters = Parameters(mass=mass)
+    mpc.set_parameters(parameters.vector)
 
     # Integrator
     integrator = get_acados_sim_solver(

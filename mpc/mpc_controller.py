@@ -36,85 +36,10 @@ __license__ = 'BSD-3-Clause'
 
 import argparse
 
-from dataclasses import dataclass
 import json
-
-from mpc.utils.yaml_to_dict import yaml_to_dict
 from acados_template import AcadosOcpSolver
 import numpy as np
-import scipy.linalg
-
-
-@dataclass
-class MPCParameters():
-    """
-    MPC parameters.
-
-    :param dt: Time step.
-    :type dt: float
-    :param Q: State weight matrix.
-    :type Q: np.ndarray
-    :param Qe: Terminal state weight matrix.
-    :type Qe: np.ndarray
-    :param R: Control weight matrix.
-    :type R: np.ndarray
-    :param p: Parameter vector.
-    :type p: np.ndarray
-    :param lbu: Lower bounds on control input.
-    :type lbu: np.ndarray
-    :param ubu: Upper bounds on control input.
-    :type ubu: np.ndarray
-    :param lbx: Lower bounds on state.
-    :type lbx: np.ndarray
-    :param ubx: Upper bounds on state.
-    :type ubx: np.ndarray
-    :param lsbx: Lower soft bounds on state.
-    :type lsbx: np.ndarray
-    :param usbx: Upper soft bounds on state.
-    :type usbx: np.ndarray
-    """
-    dt: float
-    Q: np.ndarray
-    Qe: np.ndarray
-    R: np.ndarray
-    p: np.ndarray
-    lbu: np.ndarray
-    ubu: np.ndarray
-    lbx: np.ndarray = None
-    ubx: np.ndarray = None
-    lsbx: np.ndarray = None
-    usbx: np.ndarray = None
-    Zl: np.ndarray = None
-    Zu: np.ndarray = None
-    zl: np.ndarray = None
-    zu: np.ndarray = None
-    Zl_e: np.ndarray = None
-    Zu_e: np.ndarray = None
-    zl_e: np.ndarray = None
-    zu_e: np.ndarray = None
-
-    def __str__(self):
-        return (
-            f'dt: {self.dt}\n'
-            f'Q: \n{self.Q}\n'
-            f'Qe: \n{self.Qe}\n'
-            f'R: \n{self.R}\n'
-            f'p: {self.p}\n'
-            f'lbu: {self.lbu}\n'
-            f'ubu: {self.ubu}\n'
-            f'lbx: {self.lbx}\n'
-            f'ubx: {self.ubx}\n'
-            f'lsbx: {self.lsbx}\n'
-            f'usbx: {self.usbx}\n'
-            f'Zl: {self.Zl}\n'
-            f'Zu: {self.Zu}\n'
-            f'zl: {self.zl}\n'
-            f'zu: {self.zu}\n'
-            f'Zl_e: {self.Zl_e}\n'
-            f'Zu_e: {self.Zu_e}\n'
-            f'zl_e: {self.zl_e}\n'
-            f'zu_e: {self.zu_e}\n'
-        )
+from mpc.utils.mpc_config import MPCCost, MPCConstraints
 
 
 class MPC():
@@ -147,39 +72,38 @@ class MPC():
         self._tf = ocp_json['solver_options']['tf']
         self._dt = self._tf / self._N
         # Alternative: use time_steps directly if non-uniform
-        # self._time_steps = np.array(ocp_json['solver_options']['time_steps'])
+        self._time_steps = np.array(ocp_json['solver_options']['time_steps'])
 
-        self._w_size = self.acados_ocp_solver.cost_get(0, 'W').shape[0]
-        self._we_size = self.acados_ocp_solver.cost_get(self._N, 'W').shape[0]
-        self._x_size = self.acados_ocp_solver.get(0, 'x').shape[0]
-        self._u_size = self.acados_ocp_solver.get(0, 'u').shape[0]
-        self._p_size = self.acados_ocp_solver.get(0, 'p').shape[0]
-        self._lbu_size = self.acados_ocp_solver.constraints_get(0, 'lbu').shape[0]
-        self._ubu_size = self.acados_ocp_solver.constraints_get(0, 'ubu').shape[0]
-        self._lbx_size = self.acados_ocp_solver.constraints_get(1, 'lbx').shape[0]
-        self._ubx_size = self.acados_ocp_solver.constraints_get(1, 'ubx').shape[0]
-        self._lsbx_size = len(ocp_json["constraints"]["lsbx"])
-        self._usbx_size = len(ocp_json["constraints"]["usbx"])
+        self.x_size = self.acados_ocp_solver.get(0, 'x').shape[0]
+        self.u_size = self.acados_ocp_solver.get(0, 'u').shape[0]
+        self.p_size = self.acados_ocp_solver.get(0, 'p').shape[0]
+
+        self.idxbu_size = len(ocp_json["constraints"]["idxbu"])
+        self.idxbx_size = len(ocp_json["constraints"]["idxbx"])
+        self.idxsbx_size = len(ocp_json["constraints"]["idxsbx"])
+        self.lh_size = len(ocp_json["constraints"]["lh"])
+        self.idxsh_size = len(ocp_json["constraints"]["idxsh"])
+
+        self.w_size = self.acados_ocp_solver.cost_get(0, 'W').shape[0]
+        self.we_size = self.acados_ocp_solver.cost_get(self._N, 'W').shape[0]
 
         print('MPC parameters:')
         print(f'Horizon N={self.N}, tf={self.tf}, dt={self.dt}')
         print('Sizes:')
-        print(f'  w_size: {self.w_size}')
-        print(f'  we_size: {self.we_size}')
         print(f'  x_size: {self.x_size}')
         print(f'  u_size: {self.u_size}')
         print(f'  p_size: {self.p_size}')
-        print(f'  lbu_size: {self.lbu_size}')
-        print(f'  ubu_size: {self.ubu_size}')
-        print(f'  lbx_size: {self.lbx_size}')
-        print(f'  ubx_size: {self.ubx_size}')
-        print(f'  lsbx_size: {self.lsbx_size}')
-        print(f'  usbx_size: {self.usbx_size}')
-
+        print(f'  w_size: {self.w_size}')
+        print(f'  we_size: {self.we_size}')
+        print(f'  idxbu_size: {self.idxbu_size}')
+        print(f'  idxbx_size: {self.idxbx_size}')
+        print(f'  idxsbx_size: {self.idxsbx_size}')
+        print(f'  lh_size: {self.lh_size}')
+        print(f'  idxsh_size: {self.idxsh_size}')  
+        
         # Internal variables
         self.thrust = 0.0  # Thrust (N)
         self.vehicle_angular_velocity = np.zeros(3)  # Angular velocity (rad/s)
-        self._u_ref = np.zeros(self.u_size)  # Reference control input
 
     # Read-only properties
     @property
@@ -196,61 +120,6 @@ class MPC():
     def dt(self) -> float:
         """Get the time step between prediction stages."""
         return self._dt
-
-    @property
-    def w_size(self) -> int:
-        """Get the size of the cost weighting matrix W."""
-        return self._w_size
-
-    @property
-    def we_size(self) -> int:
-        """Get the size of the terminal cost weighting matrix W_e."""
-        return self._we_size
-
-    @property
-    def x_size(self) -> int:
-        """Get the state vector size."""
-        return self._x_size
-
-    @property
-    def u_size(self) -> int:
-        """Get the control input vector size."""
-        return self._u_size
-
-    @property
-    def p_size(self) -> int:
-        """Get the parameter vector size."""
-        return self._p_size
-
-    @property
-    def lbu_size(self) -> int:
-        """Get the size of lower control bounds."""
-        return self._lbu_size
-
-    @property
-    def ubu_size(self) -> int:
-        """Get the size of upper control bounds."""
-        return self._ubu_size
-
-    @property
-    def lbx_size(self) -> int:
-        """Get the size of lower state bounds."""
-        return self._lbx_size
-
-    @property
-    def ubx_size(self) -> int:
-        """Get the size of upper state bounds."""
-        return self._ubx_size
-
-    @property
-    def lsbx_size(self) -> int:
-        """Get the size of lower soft state bounds."""
-        return self._lsbx_size
-
-    @property
-    def usbx_size(self) -> int:
-        """Get the size of upper soft state bounds."""
-        return self._usbx_size
 
     @property
     def states(self):
@@ -291,21 +160,6 @@ class MPC():
             parameters[i, :] = self.acados_ocp_solver.get(i, 'p')
         return parameters
 
-    def set_mpc_parameters(self, parameters: MPCParameters) -> None:
-        """
-        Set the MPC parameters.
-
-        :param parameters: MPC parameters
-        :type parameters: MPCParameters
-        :return: None
-        :rtype: None
-        """
-        self.set_gains(parameters.Q, parameters.R)
-        self.set_gain_terminal_state(parameters.Qe)
-        self.set_parameters(parameters.p)
-        self.set_u_bounds(parameters.lbu, parameters.ubu)
-        self.set_x_bounds(parameters.lbx, parameters.ubx)
-
     def set_gains(self, Q: np.ndarray, R: np.ndarray, stage: int = -1) -> None:
         """
         Set the state weighting matrix Q.
@@ -325,9 +179,10 @@ class MPC():
         if R.ndim == 1:
             R = np.diag(R)
         # Build W as a block-diagonal matrix so Q and R can have different sizes
-        # Use scipy.linalg.block_diag which correctly handles matrices of
-        # different dimensions (e.g., state and input weight sizes).
-        w = scipy.linalg.block_diag(Q, R)
+        # Create block-diagonal matrix W = [[Q, 0], [0, R]]
+        w = np.zeros((Q.shape[0] + R.shape[0], Q.shape[1] + R.shape[1]))
+        w[:Q.shape[0], :Q.shape[1]] = Q
+        w[Q.shape[0]:, Q.shape[1]:] = R
 
         # Check size of Q and R
         if w.shape != (self.w_size, self.w_size):
@@ -406,10 +261,10 @@ class MPC():
         :rtype: None
         """
         # Check size of u_min and u_max
-        if u_min.shape[0] != self.lbu_size or u_max.shape[0] != self.ubu_size:
+        if u_min.shape[0] != self.idxbu_size or u_max.shape[0] != self.idxbu_size:
             raise ValueError(
                 f"Size mismatch: u_min has shape {u_min.shape} and u_max has shape {u_max.shape}, "
-                f"but expected sizes are ({self.lbu_size},) and ({self.ubu_size},).")
+                f"but expected size is ({self.idxbu_size},).")
 
         # Set bounds
         if stage == -1:
@@ -434,10 +289,10 @@ class MPC():
         :rtype: None
         """
         # Check size of x_min and x_max
-        if x_min.shape[0] != self.lbx_size or x_max.shape[0] != self.ubx_size:
+        if x_min.shape[0] != self.idxbx_size or x_max.shape[0] != self.idxbx_size:
             raise ValueError(
                 f"Size mismatch: x_min has shape {x_min.shape} and x_max has shape {x_max.shape}, "
-                f"but expected sizes are ({self.lbx_size},) and ({self.ubx_size},).")
+                f"but expected size is ({self.idxbx_size},).")
 
         # Set bounds
         if stage == -1:
@@ -451,6 +306,53 @@ class MPC():
                 return  # Skip initial state
             self.acados_ocp_solver.constraints_set(stage, 'lbx', x_min)
             self.acados_ocp_solver.constraints_set(stage, 'ubx', x_max)
+
+    def set_x_bounds_soft_gains(
+            self,
+            zl: np.ndarray,
+            zu: np.ndarray,
+            Zl: np.ndarray,
+            Zu: np.ndarray,
+            stage: int = -1) -> None:
+        """
+        Set the soft state bounds.
+    
+        :param zl: Gradient wrt lower slack
+        :type zl: np.ndarray
+        :param zu: Gradient wrt upper slack
+        :type zu: np.ndarray
+        :param Zl: Diagonal of Hessian wrt lower slack
+        :type Zl: np.ndarray
+        :param Zu: Diagonal of Hessian wrt upper slack
+        :type Zu: np.ndarray
+        :param stage: Stage index (default: -1 for all stages)
+        :type stage: int
+        :return: None
+        :rtype: None
+        """        
+        # Check size of zl, zu, Zl, Zu
+        if zl.shape[0] != self.idxsbx_size or zu.shape[0] != self.idxsbx_size or Zl.shape[0] != self.idxsbx_size or Zu.shape[0] != self.idxsbx_size:
+            raise ValueError(
+                f"Size mismatch: zl, zu, Zl, Zu should have shape ({self.idxsbx_size},), "
+                f"but got zl shape {zl.shape}, zu shape {zu.shape}, Zl shape {Zl.shape}, Zu shape {Zu.shape}.")
+        
+        # Set soft bounds cost on x
+        if stage == -1:
+            for stage_i in range(self.N + 1):
+                if stage_i == 0:
+                    continue  # Skip initial state
+                self.acados_ocp_solver.cost_set(stage_i, 'zl', zl)
+                self.acados_ocp_solver.cost_set(stage_i, 'zu', zu)
+                self.acados_ocp_solver.cost_set(stage_i, 'Zl', Zl)
+                self.acados_ocp_solver.cost_set(stage_i, 'Zu', Zu)
+        else:
+            if stage == 0:
+                return  # Skip initial state
+            self.acados_ocp_solver.cost_set(stage, 'zl', zl)
+            self.acados_ocp_solver.cost_set(stage, 'zu', zu)
+            self.acados_ocp_solver.cost_set(stage, 'Zl', Zl)
+            self.acados_ocp_solver.cost_set(stage, 'Zu', Zu)
+            
 
     def set_state(self, x: np.ndarray) -> None:
         """
