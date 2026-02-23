@@ -69,7 +69,8 @@ Eigen::Quaterniond compute_path_facing(const Eigen::Vector3d& current_position,
 
 void set_mpc_reference_parameters(const Eigen::Vector3d& waypoint,
                                   acados_mpc::MPC& mpc,
-                                  const acados_mpc::MPCData* mpc_data,
+                                  acados_mpc::MPCData* mpc_data,
+                                  int index,
                                   bool path_facing = false) {
   // Get current orientation
   Eigen::Quaterniond current_orientation;
@@ -77,15 +78,48 @@ void set_mpc_reference_parameters(const Eigen::Vector3d& waypoint,
   current_orientation.x() = mpc_data->state.data[4];
   current_orientation.y() = mpc_data->state.data[5];
   current_orientation.z() = mpc_data->state.data[6];
-
-  // Compute desired orientation
   Eigen::Quaterniond desired_orientation = current_orientation;
+  if (index == MPC_N) {
+    // Position
+    mpc_data->reference_end.set_data(0, 0);
+    mpc_data->reference_end.set_data(1, 0);
+    mpc_data->reference_end.set_data(2, 0);
+    mpc_data->reference_end.set_data(3, 0);
+    mpc_data->reference_end.set_data(4, 0);
+    mpc_data->reference_end.set_data(5, 0);
+    mpc_data->reference_end.set_data(6, 0);
+    mpc_data->reference_end.set_data(7, 0);
+    mpc_data->reference_end.set_data(8, 0);
+
+    // Orientation
+    if (path_facing) {
+      Eigen::Vector3d current_position;
+      current_position << mpc_data->state.data[0], mpc_data->state.data[1], mpc_data->state.data[2];
+      desired_orientation = compute_path_facing(current_position, waypoint, current_orientation);
+    }
+    return;
+  } else if (index > MPC_N) {
+    throw std::out_of_range("Index out of range.");
+  }
+  // Position
+  mpc_data->reference.set_data(index, 0, 0);
+  mpc_data->reference.set_data(index, 1, 0);
+  mpc_data->reference.set_data(index, 2, 0);
+  mpc_data->reference.set_data(index, 3, 0);
+  mpc_data->reference.set_data(index, 4, 0);
+  mpc_data->reference.set_data(index, 5, 0);
+  mpc_data->reference.set_data(index, 6, 0);
+  mpc_data->reference.set_data(index, 7, 0);
+  mpc_data->reference.set_data(index, 8, 0);
+  // // Control
+  mpc_data->reference.set_data(index, 9, mpc_data->p_params.data[0] * 9.81);  // Thrust
+  // Compute desired orientation
+  // Eigen::Quaterniond desired_orientation = current_orientation;
   if (path_facing) {
     Eigen::Vector3d current_position;
     current_position << mpc_data->state.data[0], mpc_data->state.data[1], mpc_data->state.data[2];
     desired_orientation = compute_path_facing(current_position, waypoint, current_orientation);
   }
-
   // Set online parameters using the new interface methods
   mpc.setSolverOnlineDesiredPositionParams({waypoint[0], waypoint[1], waypoint[2]});
   mpc.setSolverOnlineDesiredOrientationParams({
@@ -94,11 +128,6 @@ void set_mpc_reference_parameters(const Eigen::Vector3d& waypoint,
     desired_orientation.y(),
     desired_orientation.z()
   });
-  mpc.setSolverOnlineDesiredVelocityParams({0.0, 0.0, 0.0});  // Zero velocity reference
-  
-  // Set desired actuation (hovering thrust)
-  double mass = mpc.get_data()->p_params.data[0];
-  // mpc.setSolverOnlineDesiredActuationParams({mass * 9.81, 0.0, 0.0, 0.0});
 }
 
 void print_progress_bar(float progress) {
@@ -155,13 +184,15 @@ void test_mpc_controller(CsvLogger& logger,
     auto iter_start = std::chrono::high_resolution_clock::now();
 
     // Set reference parameters for all prediction stages
+    for (int i = 0; i < prediction_steps + 1; i++) {
     set_mpc_reference_parameters(
-      yaml_data.waypoints[pos_index], 
-      mpc, 
-      mpc_data, 
+      yaml_data.waypoints[pos_index],
+      mpc,
+      mpc_data,
+      i,
       yaml_data.path_facing
     );
-
+    }
     // Solve MPC
     auto mpc_start = std::chrono::high_resolution_clock::now();
     int status = mpc.solve();
