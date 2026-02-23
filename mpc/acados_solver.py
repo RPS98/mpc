@@ -40,6 +40,7 @@ import shutil
 import numpy as np
 from acados_template import AcadosOcp, AcadosOcpSolver, AcadosSim, AcadosSimSolver
 from mpc.model_definition.state import State
+from mpc.model_definition.actuation import Actuation
 from mpc.model_definition.parameters import Parameters
 from mpc.drone_model import get_acados_model
 
@@ -101,6 +102,7 @@ class AcadosMPCSolver:
         ocp = AcadosOcp()
         ocp.model = self.acados_model
         state = State()
+        actuation = Actuation()  # Hovering thrust reference
 
         # Parameters
         ocp.parameter_values = Parameters().vector
@@ -112,11 +114,20 @@ class AcadosMPCSolver:
         cost.W = np.diag(np.zeros(self.acados_model.cost_y_expr.shape[0]))
         # Weight matrix at terminal shooting node (N)
         cost.W_e = np.diag(np.zeros(self.acados_model.cost_y_expr_e.shape[0]))
-
+        
         # Reference at intermediate shooting nodes (1 to N-1)
-        cost.yref = np.zeros(self.acados_model.cost_y_expr.shape[0])
+        cost.yref = np.concatenate([
+            np.zeros(3),  # Position reference
+            np.zeros(3),  # Attitude reference
+            state.linear_velocity,  # Linear velocity reference
+            actuation.vector # Control reference
+        ])
         # Reference at terminal shooting node (N)
-        cost.yref_e = np.zeros(self.acados_model.cost_y_expr_e.shape[0])
+        cost.yref_e = np.concatenate([
+            np.zeros(3),  # Position reference
+            np.zeros(3),  # Attitude reference
+            state.linear_velocity,  # Linear velocity reference
+        ])
 
         # Nonlinear least squares cost
         # Set up the cost type

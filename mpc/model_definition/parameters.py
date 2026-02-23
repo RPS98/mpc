@@ -49,28 +49,24 @@ class _ParametersDef:
         'mass',
         'desired_position',
         'desired_orientation',
-        'desired_velocity',
         'external_force'
     ]
     _names_sx: ClassVar[List[str]] = [
         'sx_mass',
         'sx_desired_position',
         'sx_desired_orientation',
-        'sx_desired_velocity',
         'sx_external_force'
     ]
     _sizes: ClassVar[List[int]] = [
         1,
         3,
         4,
-        3,
         3
     ]
 
     mass: Union[ca.SX, ca.DM]
     desired_position: Union[ca.SX, ca.DM]
     desired_orientation: Union[ca.SX, ca.DM]
-    desired_velocity: Union[ca.SX, ca.DM]
     external_force: Union[ca.SX, ca.DM]
 
 
@@ -84,8 +80,6 @@ class CaParameters(_ParametersDef, VectorBase):
     :type desired_position: ca.SX
     :param desired_orientation: Desired orientation as a quaternion [qw, qx, qy, qz]
     :type desired_orientation: ca.SX
-    :param desired_velocity: Desired linear velocity in world frame [vx, vy, vz] (m/s)
-    :type desired_velocity: ca.SX
     :param external_force: External force acting on the MAV in base frame [fx, fy, fz] (N)
     :type external_force: ca.SX
     """
@@ -103,7 +97,6 @@ class Parameters(_ParametersDef, VectorBase):
             mass: np.array = np.array(1.0),
             desired_position: np.array = np.array([0.0, 0.0, 0.0]),
             desired_orientation: np.array = np.array([1.0, 0.0, 0.0, 0.0]),
-            desired_velocity: np.array = np.array([0.0, 0.0, 0.0]),
             external_force: np.array = np.array([0.0, 0.0, 0.0])):
         """
         Parameters for the UAV Model.
@@ -114,8 +107,6 @@ class Parameters(_ParametersDef, VectorBase):
         :type desired_position: np.array
         :param desired_orientation: Desired orientation as a quaternion [qw, qx, qy, qz]
         :type desired_orientation: np.array
-        :param desired_velocity: Desired linear velocity in world frame [vx, vy, vz] (m/s)
-        :type desired_velocity: np.array
         :param external_force: External force acting on the MAV in base frame [fx, fy, fz] (N)
         :type external_force: np.array
         """
@@ -123,7 +114,6 @@ class Parameters(_ParametersDef, VectorBase):
         self.mass = mass
         self.desired_position = desired_position
         self.desired_orientation = desired_orientation
-        self.desired_velocity = desired_velocity
         self.external_force = external_force
 
 
@@ -136,6 +126,5 @@ if __name__ == '__main__':
     print('mass:', parameters.mass)
     print('desired_position:', parameters.desired_position)
     print('desired_orientation:', parameters.desired_orientation)
-    print('desired_velocity:', parameters.desired_velocity)
     print('external_force:', parameters.external_force)
     print(parameters)
