@@ -72,6 +72,69 @@ void Actuation::set_data(const int index, const double value)
   data[index] = value;
 }
 
+Reference::Reference() {data.fill(0.0);}
+
+double * Reference::get_data(const int index)
+{
+  CHECK_MPC_INDEX(index, MPC_N);
+  return &data[index * MPC_NY];
+}
+
+const double * Reference::get_data(const int index) const
+{
+  CHECK_MPC_INDEX(index, MPC_N);
+  return &data[index * MPC_NY];
+}
+
+State Reference::get_state(const int index) const
+{
+  CHECK_MPC_INDEX(index, MPC_N);
+  State state;
+  for (int i = 0; i < MPC_NX; i++) {
+    state.data[i] = get_data(index)[i];
+  }
+  return state;
+}
+
+void Reference::set_data(const int index, const double value)
+{
+  CHECK_MPC_INDEX(index, size);
+  data[index] = value;
+}
+
+void Reference::set_data(const int ref_index, const int value_index, const double value)
+{
+  CHECK_MPC_INDEX(ref_index, MPC_N);
+  CHECK_MPC_INDEX(value_index, MPC_NY);
+  data[ref_index * MPC_NY + value_index] = value;
+}
+
+void Reference::set_state(const int index, const State & state, const Actuation & actuation)
+{
+  CHECK_MPC_INDEX(index, MPC_N);
+
+  int row_index = index * MPC_NY;
+  for (int i = 0; i < MPC_NX; i++) {
+    set_data(row_index + i, state.data[i]);
+  }
+  for (int i = 0; i < MPC_NU; i++) {
+    set_data(row_index + MPC_NX + i, actuation.data[i]);
+  }
+}
+
+ReferenceEnd::ReferenceEnd() {data.fill(0.0);}
+
+double * ReferenceEnd::get_data() {return data.data();}
+
+const double * ReferenceEnd::get_data() const {return data.data();}
+
+void ReferenceEnd::set_data(const int index, const double value)
+{
+  CHECK_MPC_INDEX(index, size);
+  data[index] = value;
+}
+
+
 Gains::Gains()
 {
   W.fill(0.0);

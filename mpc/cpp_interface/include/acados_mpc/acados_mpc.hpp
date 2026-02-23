@@ -78,11 +78,15 @@ struct AcadosSolverPointers {
  * Data structure to hold the MPC data.
  *
  * @param state state.
+ * @param reference reference.
+ * @param reference_end reference_end.
  * @param p_params online parameters.
  * @param actuation actuation.
  */
 struct MPCData {
   State state;
+  Reference reference;
+  ReferenceEnd reference_end;
   OnlineParams p_params;
   Actuation actuation;
 };
@@ -211,12 +215,6 @@ public:
  */
   void setSolverOnlineDesiredOrientationParams(const std::array<double, 4> & value);
 
-  /**
-   * @brief Set the solver online desired velocity parameters of p
-   */
-  void setSolverOnlineDesiredVelocityParams(const std::array<double, 3> & value);
-
-
    /**
    * @brief Set the solver online external force parameter of p
    */
@@ -299,6 +297,17 @@ private:
    * @brief Set the solver state x0
    */
   void setSolverState();
+
+  /**
+   * @brief Set the solver reference yref
+   */
+  void setSolverRefence();
+
+  /**
+   * @brief Set the solver reference yref_N
+   */
+  void setSolverRefenceEnd();
+
   /**
    * @brief Set the solver online parameters p
    */

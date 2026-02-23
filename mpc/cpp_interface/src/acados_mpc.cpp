@@ -76,6 +76,22 @@ void MPC::setSolverState() {
   validateStatus(status_);
 }
 
+void MPC::setSolverRefence() {
+  for (int i = 0; i < MPC_N; i++) {
+    status_ =
+        ocp_nlp_cost_model_set(acados_pointers_.nlp_config, acados_pointers_.nlp_dims,
+                               acados_pointers_.nlp_in, i, "yref", mpc_data_.reference.get_data(i));
+    validateStatus(status_);
+  }
+}
+
+void MPC::setSolverRefenceEnd() {
+  status_ = ocp_nlp_cost_model_set(acados_pointers_.nlp_config, acados_pointers_.nlp_dims,
+                                   acados_pointers_.nlp_in, MPC_N, "yref",
+                                   mpc_data_.reference_end.data.data());
+  validateStatus(status_);
+}
+
 void MPC::setSolverOnlineParams()
 {
   // initial values for parameter vector - can be updated stagewise
@@ -107,13 +123,8 @@ void MPC::setSolverOnlineDesiredOrientationParams(const std::array<double, 4> & 
   setParameterArrayAllStages(4, values);
 }
 
-void MPC::setSolverOnlineDesiredVelocityParams(const std::array<double, 3> & values)
-{
-  setParameterArrayAllStages(8, values);
-}
-
 void MPC::setSolverOnlineExternalForceParams(const std::array<double, 3> & value) {
-  setParameterArrayAllStages(11, value);
+  setParameterArrayAllStages(8, value);
 }
 
 template<std::size_t N>
@@ -130,6 +141,8 @@ int MPC::solve()
 {
   // Set solver state and reference
   setSolverState();
+  setSolverRefence();
+  setSolverRefenceEnd();
   setSolverOnlineParams();
 
   // Solve OCP

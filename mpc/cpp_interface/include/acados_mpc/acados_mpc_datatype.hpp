@@ -95,6 +95,104 @@ struct Actuation
 };
 
 /**
+ * @brief Reference yref
+ */
+struct Reference
+{
+  static constexpr size_t Nyref = MPC_NY;
+  std::array<double, MPC_N * MPC_NY> data;
+  static const std::size_t size = MPC_N * MPC_NY;
+
+  /**
+   * @brief Constructor
+   */
+  Reference();
+
+  /**
+   * @brief Get the data at index
+   *
+   * @param index index of the stage.
+   * @return double* data.
+   */
+  double * get_data(const int index);
+
+  /**
+   * @brief Get the data at index
+   *
+   * @param index index of the stage.
+   * @return const double* data.
+   */
+  const double * get_data(const int index) const;
+
+  /**
+   * @brief Get the data at index
+   *
+   * @param index index of the stage.
+   * @return State state.
+   */
+  State get_state(const int index) const;
+
+  /**
+   * @brief Set the data at index
+   *
+   * @param index index of the stage.
+   * @param state state.
+   */
+  void set_data(const int index, const double value);
+
+  /**
+   * @brief Set the data at index of the stage and value
+   *
+   * @param ref_index index of the stage.
+   * @param value_index index of the value.
+   * @param state state.
+   */
+  void set_data(const int ref_index, const int value_index, const double value);
+
+  /**
+   * @brief Set the state at index
+   *
+   * @param index index of the stage.
+   * @param state state.
+   * @param actuation actuation.
+   */
+  void set_state(const int index, const State & state, const Actuation & actuation = Actuation());
+};
+
+struct ReferenceEnd
+{
+  std::array<double, MPC_NYN> data;
+  static const std::size_t size = MPC_NYN;
+
+  /**
+   * @brief Constructor
+   */
+  ReferenceEnd();
+
+  /**
+   * @brief Get the data
+   *
+   * @return double* data.
+   */
+  double * get_data();
+
+  /**
+   * @brief Get the data
+   *
+   * @return const double* data.
+   */
+  const double * get_data() const;
+
+  /**
+   * @brief Set the data at index
+   *
+   * @param index index.
+   * @param value value.
+   */
+  void set_data(const int index, const double value);
+};
+
+/**
  * @brief Gains
  *
  * Gains Q, R and Qe for the MPC.
