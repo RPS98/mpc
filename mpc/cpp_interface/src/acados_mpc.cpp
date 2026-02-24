@@ -80,7 +80,7 @@ void MPC::setSolverRefence() {
   for (int i = 0; i < MPC_N; i++) {
     status_ =
         ocp_nlp_cost_model_set(acados_pointers_.nlp_config, acados_pointers_.nlp_dims,
-                               acados_pointers_.nlp_in, i, "yref", mpc_data_.reference.get_data(i));
+                               acados_pointers_.nlp_in, i, "yref", mpc_data_.reference.getData(i));
     validateStatus(status_);
   }
 }
@@ -92,53 +92,16 @@ void MPC::setSolverRefenceEnd() {
   validateStatus(status_);
 }
 
-void MPC::setSolverOnlineParams()
-{
-  // initial values for parameter vector - can be updated stagewise
+void MPC::setSolverOnlineParams() {
+  // Apply the same online parameter vector to all stages.
   for (int i = 0; i <= MPC_N; i++) {
-    ocp_nlp_in_set(
-      acados_pointers_.nlp_config, acados_pointers_.nlp_dims, acados_pointers_.nlp_in,
-      i, "parameter_values", mpc_data_.p_params.get_data(i));
-  }
-}
-void MPC::setParameterAllStages(int param_idx, double value)
-{
-  for (int j = 0; j <= MPC_N; j++) {
-    mpc_data_.p_params.set_data(j, param_idx, value);
+    status_ = mpc_acados_update_params(acados_pointers_.capsule, i, mpc_data_.p_params.getData(),
+                                       OnlineParams::Np);
+    validateStatus(status_);
   }
 }
 
-void MPC::setSolverOnlineMassParams(const double value)
-{
-  setParameterAllStages(0, value);
-}
-
-void MPC::setSolverOnlineDesiredPositionParams(const std::array<double, 3> & values)
-{
-  setParameterArrayAllStages(1, values);
-}
-
-void MPC::setSolverOnlineDesiredOrientationParams(const std::array<double, 4> & values)
-{
-  setParameterArrayAllStages(4, values);
-}
-
-void MPC::setSolverOnlineExternalForceParams(const std::array<double, 3> & value) {
-  setParameterArrayAllStages(8, value);
-}
-
-template<std::size_t N>
-void MPC::setParameterArrayAllStages(int start_idx, const std::array<double, N> & values)
-{
-  for (int j = 0; j <= MPC_N; j++) {
-    for (std::size_t i = 0; i < values.size(); i++) {
-      mpc_data_.p_params.set_data(j, start_idx + i, values[i]);
-    }
-  }
-}
-
-int MPC::solve()
-{
+int MPC::solve() {
   // Set solver state and reference
   setSolverState();
   setSolverRefence();
@@ -160,34 +123,35 @@ int MPC::solve()
   return status_;
 }
 
-void MPC::update_time_step(const double time_step) {
+void MPC::updateTimeStep(const double time_step) {
   for (int i = 0; i <= MPC_N; i++) {
     prediction_time_steps_[i] = time_step;
   }
-  mpc_acados_update_time_steps(acados_pointers_.capsule, get_prediction_steps(),
+  mpc_acados_update_time_steps(acados_pointers_.capsule, getPredictionSteps(),
                                prediction_time_steps_.data());
 }
 
-void MPC::update_time_step(const std::array<double, MPC_N> time_steps) {
+void MPC::updateTimeStep(const std::array<double, MPC_N> time_steps) {
   prediction_time_steps_ = time_steps;
-  mpc_acados_update_time_steps(acados_pointers_.capsule, get_prediction_steps(),
+  mpc_acados_update_time_steps(acados_pointers_.capsule, getPredictionSteps(),
                                prediction_time_steps_.data());
 }
 
-void MPC::update_gains() {
+void MPC::updateGains() {
   // weight matrix at intermediate shooting nodes (1 to N-1)
   for (int i = 0; i < MPC_N; i++) {
     status_ = ocp_nlp_cost_model_set(acados_pointers_.nlp_config, acados_pointers_.nlp_dims,
-                                     acados_pointers_.nlp_in, i, "W", gains_.get_W());
+                                     acados_pointers_.nlp_in, i, "W", gains_.getW());
     validateStatus(status_);
   }
 
   // weight matrix at terminal shooting node (N)
   status_ = ocp_nlp_cost_model_set(acados_pointers_.nlp_config, acados_pointers_.nlp_dims,
-                                   acados_pointers_.nlp_in, MPC_N, "W", gains_.get_We());
+                                   acados_pointers_.nlp_in, MPC_N, "W", gains_.getWe());
+  validateStatus(status_);
 }
 
-void MPC::update_actuation_bounds() {
+void MPC::updateActuationBounds() {
   // lower actuation_bounds on u at shooting nodes (0 to N-1)
   // upper actuation_bounds on u at shooting nodes (0 to N-1)
   for (int i = 0; i < MPC_N; i++) {
@@ -202,7 +166,7 @@ void MPC::update_actuation_bounds() {
   }
 }
 
-void MPC::update_state_bounds() {
+void MPC::updateStateBounds() {
   // lower state_bounds on u at shooting nodes (0 to N-1)
   // upper state_bounds on u at shooting nodes (0 to N-1)
   for (int i = 1; i < MPC_N; i++) {
@@ -217,7 +181,7 @@ void MPC::update_state_bounds() {
   }
 }
 
-void MPC::update_soft_state_bounds() {
+void MPC::updateSoftStateBounds() {
   // lower soft state bounds at shooting nodes (1 to N-1)
   // upper soft state bounds at shooting nodes (1 to N-1)
   for (int i = 1; i < MPC_N; i++) {
@@ -243,7 +207,7 @@ void MPC::update_soft_state_bounds() {
   validateStatus(status_);
 }
 
-void MPC::update_slack_weights() {
+void MPC::updateSlackWeights() {
   // slack weights at shooting nodes (1 to N-1)
   for (int i = 1; i < MPC_N; i++) {
     status_ = ocp_nlp_cost_model_set(acados_pointers_.nlp_config, acados_pointers_.nlp_dims,
@@ -261,7 +225,7 @@ void MPC::update_slack_weights() {
   }
 }
 
-void MPC::update_slack_weights_end() {
+void MPC::updateSlackWeightsEnd() {
   // slack weights at terminal shooting node (N)
   status_ =
       ocp_nlp_cost_model_set(acados_pointers_.nlp_config, acados_pointers_.nlp_dims,

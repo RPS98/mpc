@@ -53,7 +53,7 @@
 namespace acados_mpc {
 namespace acados_mpc_examples {
 
-Eigen::Quaterniond euler_to_quaternion(double roll, double pitch, double yaw) {
+Eigen::Quaterniond eulerToQuaternion(double roll, double pitch, double yaw) {
   // Calculate half angles
   double roll_half  = roll * 0.5;
   double pitch_half = pitch * 0.5;
@@ -77,7 +77,7 @@ Eigen::Quaterniond euler_to_quaternion(double roll, double pitch, double yaw) {
   return Eigen::Quaterniond(w, x, y, z).normalized();
 }
 
-void quaternion_to_euler(const Eigen::Quaterniond& q, double& roll, double& pitch, double& yaw) {
+void quaternionToEuler(const Eigen::Quaterniond& q, double& roll, double& pitch, double& yaw) {
   // Extract the quaternion components
   double w = q.w();
   double x = q.x();
@@ -102,11 +102,11 @@ void quaternion_to_euler(const Eigen::Quaterniond& q, double& roll, double& pitc
   yaw              = std::atan2(siny_cosp, cosy_cosp);
 }
 
-std::array<double, 4> compute_path_facing(const Eigen::Vector3d velocity) {
+std::array<double, 4> computePathFacing(const Eigen::Vector3d velocity) {
   double yaw = atan2(velocity.y(), velocity.x());
   double pitch, roll = 0.0;
 
-  Eigen::Quaterniond q = euler_to_quaternion(roll, pitch, yaw);
+  Eigen::Quaterniond q = eulerToQuaternion(roll, pitch, yaw);
   return {q.w(), q.x(), q.y(), q.z()};
 }
 
@@ -140,7 +140,7 @@ struct YamlData {
   YamlMPCData mpc_data;
 };
 
-void read_yaml_params(const std::string& file_path, YamlData& data) {
+void readYamlParams(const std::string& file_path, YamlData& data) {
   // Check if file exists
   std::ifstream f(file_path.c_str());
   if (!f.good()) {
@@ -164,18 +164,27 @@ void read_yaml_params(const std::string& file_path, YamlData& data) {
   data.path_facing = config["sim_config"]["path_facing"].as<bool>();
 
   // Read MPC params
-  std::vector<double> Q    = config["controller"]["mpc"]["cost"]["Q"].as<std::vector<double>>();
-  std::vector<double> Qe   = config["controller"]["mpc"]["cost"]["Qe"].as<std::vector<double>>();
-  std::vector<double> R    = config["controller"]["mpc"]["cost"]["R"].as<std::vector<double>>();
-  std::vector<double> lbu  = config["controller"]["mpc"]["constraints"]["lbu"].as<std::vector<double>>();
-  std::vector<double> ubu  = config["controller"]["mpc"]["constraints"]["ubu"].as<std::vector<double>>();
-  std::vector<double> lbx  = config["controller"]["mpc"]["constraints"]["lbx"].as<std::vector<double>>();
-  std::vector<double> ubx  = config["controller"]["mpc"]["constraints"]["ubx"].as<std::vector<double>>();
-  std::vector<double> Zl   = config["controller"]["mpc"]["constraints"]["Zl"].as<std::vector<double>>();
-  std::vector<double> Zu   = config["controller"]["mpc"]["constraints"]["Zu"].as<std::vector<double>>();
-  std::vector<double> zl   = config["controller"]["mpc"]["constraints"]["zl"].as<std::vector<double>>();
-  std::vector<double> zu   = config["controller"]["mpc"]["constraints"]["zu"].as<std::vector<double>>();
-  std::vector<double> p    = config["controller"]["mpc"]["parameters"]["mass"].as<std::vector<double>>();
+  std::vector<double> Q  = config["controller"]["mpc"]["cost"]["Q"].as<std::vector<double>>();
+  std::vector<double> Qe = config["controller"]["mpc"]["cost"]["Qe"].as<std::vector<double>>();
+  std::vector<double> R  = config["controller"]["mpc"]["cost"]["R"].as<std::vector<double>>();
+  std::vector<double> lbu =
+      config["controller"]["mpc"]["constraints"]["lbu"].as<std::vector<double>>();
+  std::vector<double> ubu =
+      config["controller"]["mpc"]["constraints"]["ubu"].as<std::vector<double>>();
+  std::vector<double> lbx =
+      config["controller"]["mpc"]["constraints"]["lbx"].as<std::vector<double>>();
+  std::vector<double> ubx =
+      config["controller"]["mpc"]["constraints"]["ubx"].as<std::vector<double>>();
+  std::vector<double> Zl =
+      config["controller"]["mpc"]["constraints"]["Zl"].as<std::vector<double>>();
+  std::vector<double> Zu =
+      config["controller"]["mpc"]["constraints"]["Zu"].as<std::vector<double>>();
+  std::vector<double> zl =
+      config["controller"]["mpc"]["constraints"]["zl"].as<std::vector<double>>();
+  std::vector<double> zu =
+      config["controller"]["mpc"]["constraints"]["zu"].as<std::vector<double>>();
+  std::vector<double> p =
+      config["controller"]["mpc"]["parameters"]["mass"].as<std::vector<double>>();
 
   for (int i = 0; i < acados_mpc::Gains::Nq; i++) {
     data.mpc_data.Q[i] = Q[i];
@@ -232,7 +241,7 @@ public:
 
   ~CsvLogger() { file_.close(); }
 
-  void add_double(const double data, const bool add_final_comma = true) {
+  void addDouble(const double data, const bool add_final_comma = true) {
     // Check if data is nan
     if (std::isnan(data)) {
       // Throw exception
@@ -245,7 +254,7 @@ public:
     }
   }
 
-  void add_string(const std::string& data, const bool add_final_comma = true) {
+  void addString(const std::string& data, const bool add_final_comma = true) {
     file_ << data;
     if (add_final_comma) {
       file_ << ",";
@@ -254,57 +263,57 @@ public:
 
   void save(const double time, const MPCData* mpc_data) {
     // Time
-    add_double(time);
+    addDouble(time);
 
     // State position
-    add_double(mpc_data->state.data[0]);
-    add_double(mpc_data->state.data[1]);
-    add_double(mpc_data->state.data[2]);
+    addDouble(mpc_data->state.data[0]);
+    addDouble(mpc_data->state.data[1]);
+    addDouble(mpc_data->state.data[2]);
 
     // State orientation q
     Eigen::Quaterniond q(mpc_data->state.data[3], mpc_data->state.data[4], mpc_data->state.data[5],
                          mpc_data->state.data[6]);
-    add_double(q.w());
-    add_double(q.x());
-    add_double(q.y());
-    add_double(q.z());
+    addDouble(q.w());
+    addDouble(q.x());
+    addDouble(q.y());
+    addDouble(q.z());
 
     // State orientation euler
     double roll, pitch, yaw;
-    quaternion_to_euler(q, roll, pitch, yaw);
-    add_double(roll);
-    add_double(pitch);
-    add_double(yaw);
+    quaternionToEuler(q, roll, pitch, yaw);
+    addDouble(roll);
+    addDouble(pitch);
+    addDouble(yaw);
 
     // State velocity
-    add_double(mpc_data->state.data[7]);
-    add_double(mpc_data->state.data[8]);
-    add_double(mpc_data->state.data[9]);
+    addDouble(mpc_data->state.data[7]);
+    addDouble(mpc_data->state.data[8]);
+    addDouble(mpc_data->state.data[9]);
 
     // // Reference position
-    // add_double(mpc_data->reference.data[0]);
-    // add_double(mpc_data->reference.data[1]);
-    // add_double(mpc_data->reference.data[2]);
+    // addDouble(mpc_data->reference.data[0]);
+    // addDouble(mpc_data->reference.data[1]);
+    // addDouble(mpc_data->reference.data[2]);
 
     // Reference orientation q
     Eigen::Quaterniond q_ref(mpc_data->p_params.data[1], mpc_data->p_params.data[2],
                              mpc_data->p_params.data[3], mpc_data->p_params.data[4]);
-    add_double(q_ref.w());
-    add_double(q_ref.x());
-    add_double(q_ref.y());
-    add_double(q_ref.z());
+    addDouble(q_ref.w());
+    addDouble(q_ref.x());
+    addDouble(q_ref.y());
+    addDouble(q_ref.z());
 
     // Reference orientation euler
     double roll_ref, pitch_ref, yaw_ref;
-    quaternion_to_euler(q_ref, roll_ref, pitch_ref, yaw_ref);
-    add_double(roll_ref);
-    add_double(pitch_ref);
-    add_double(yaw_ref);
+    quaternionToEuler(q_ref, roll_ref, pitch_ref, yaw_ref);
+    addDouble(roll_ref);
+    addDouble(pitch_ref);
+    addDouble(yaw_ref);
 
     // // Reference velocity
-    // add_double(mpc_data->reference.data[6]);
-    // add_double(mpc_data->reference.data[7]);
-    // add_double(mpc_data->reference.data[8]);
+    // addDouble(mpc_data->reference.data[6]);
+    // addDouble(mpc_data->reference.data[7]);
+    // addDouble(mpc_data->reference.data[8]);
 
     // Actuation
     for (int i = 0; i < MPC_NU; i++) {
@@ -312,7 +321,7 @@ public:
       if (i == MPC_NU - 1) {
         add_final_comma = false;
       }
-      add_double(mpc_data->actuation.data[i], add_final_comma);
+      addDouble(mpc_data->actuation.data[i], add_final_comma);
     }
 
     // End line

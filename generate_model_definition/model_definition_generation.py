@@ -29,26 +29,31 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Script for MAV Model definition generation."""
 
-import os
 import argparse
+import os
+import shutil
+import subprocess
 
 from generate_model_definition.utils.read_config import YamlConfig, generate_file
 
 # ====================
 # CONFIGURATION
 # ====================
-# Directory containing Jinja2 template
-TEMPLATE_DIR = 'generate_model_definition/templates/templ_model_definition.py.j2'
+PY_TEMPLATE_PATH = 'generate_model_definition/templates/templ_model_definition.py.j2'
+CPP_HPP_TEMPLATE_PATH = 'generate_model_definition/templates/templ_acados_mpc_datatype.hpp.j2'
+CPP_CPP_TEMPLATE_PATH = 'generate_model_definition/templates/templ_acados_mpc_datatype.cpp.j2'
 
 
-def generate_datatypes(config_path: str, output_dir: str, template_path: str = TEMPLATE_DIR):
-    # Ensure output directory exists
+def _sanitize_cpp_comment(comment: str) -> str:
+    """Sanitize YAML comments for safe inclusion in Doxygen comments."""
+    return ' '.join(str(comment).replace('*/', '* /').split())
+
+
+def generate_python_datatypes(config_data: YamlConfig, output_dir: str,
+                              template_path: str = PY_TEMPLATE_PATH):
+    """Generate Python datatypes from model definition sections."""
     os.makedirs(output_dir, exist_ok=True)
 
-    # Config loading
-    config_data = YamlConfig(config_path)
-
-    # Template for generating classes
     for section_name, section in config_data.sections.items():
         context = dict(
             section_name=section_name,
@@ -65,24 +70,116 @@ def generate_datatypes(config_path: str, output_dir: str, template_path: str = T
         )
 
 
+def _get_cpp_parameters(config_data: YamlConfig, section_name: str):
+    """Get parameters for a required YAML section used by C++ generation."""
+    if section_name not in config_data.sections:
+        raise ValueError(
+            f'Missing required section {section_name!r} in {config_data.filepath!r}.')
+
+    section = config_data.sections[section_name]
+    parameters = []
+    for param in section.as_list():
+        param['cpp_description'] = _sanitize_cpp_comment(param['description'])
+        parameters.append(param)
+    return parameters
+
+
+def _collect_cpp_like_files(root_dir: str):
+    """Collect C/C++ sources and headers recursively from root_dir."""
+    extensions = ('.cpp', '.hpp', '.c', '.h')
+    files = []
+    for dirpath, _, filenames in os.walk(root_dir):
+        for filename in filenames:
+            if filename.endswith(extensions):
+                files.append(os.path.join(dirpath, filename))
+    return files
+
+
+def _clang_format_files(file_paths):
+    """Run clang-format over file_paths when clang-format is available."""
+    clang_format = shutil.which('clang-format')
+    if clang_format is None:
+        print('Warning: clang-format not found. Skipping C/C++ auto-format.')
+        return
+
+    if not file_paths:
+        return
+
+    chunk_size = 200
+    for idx in range(0, len(file_paths), chunk_size):
+        chunk = file_paths[idx:idx + chunk_size]
+        subprocess.run([clang_format, '-i', '-style=file', *chunk], check=True)
+
+
+def generate_cpp_datatypes(
+        config_data: YamlConfig,
+        output_root_dir: str,
+        hpp_template_path: str = CPP_HPP_TEMPLATE_PATH,
+        cpp_template_path: str = CPP_CPP_TEMPLATE_PATH):
+    """Generate C++ acados datatype header/source from model definition YAML."""
+    state_parameters = _get_cpp_parameters(config_data, 'state')
+    actuation_parameters = _get_cpp_parameters(config_data, 'actuation')
+    online_parameters = _get_cpp_parameters(config_data, 'parameters')
+    context = dict(
+        state_parameters=state_parameters,
+        actuation_parameters=actuation_parameters,
+        online_parameters=online_parameters,
+    )
+
+    output_hpp = os.path.join(
+        output_root_dir, 'cpp_interface/include/acados_mpc/acados_mpc_datatype.hpp')
+    output_cpp = os.path.join(
+        output_root_dir, 'cpp_interface/src/acados_mpc_datatype.cpp')
+
+    generate_file(
+        template_path=hpp_template_path,
+        output_path=output_hpp,
+        context=context,
+        trailing_blank_line=True
+    )
+    generate_file(
+        template_path=cpp_template_path,
+        output_path=output_cpp,
+        context=context,
+        trailing_blank_line=True
+    )
+
+
 def _parse_args():
     parser = argparse.ArgumentParser(
-        description='Generate Python datatypes from a YAML model definition.')
+        description='Generate Python and C++ datatypes from a YAML model definition.')
     parser.add_argument('-c', '--config-file',
                         default='generate_model_definition/model_definition.yaml',
                         help='Path to the model_definition YAML file (default: %(default)s)')
     parser.add_argument('-o', '--output-dir',
                         default='mpc',
-                        help='Directory for generated Python files in model_definition folder (default: %(default)s)')
-    parser.add_argument('-t', '--template-path', default=TEMPLATE_DIR,
-                        help='Path to jinja2 template used to generate files (default: %(default)s)')
+                        help='Root directory for generated Python and C++ files (default: %(default)s)')
+    parser.add_argument('-t', '--python-template-path', default=PY_TEMPLATE_PATH,
+                        help='Path to jinja2 template used to generate Python files (default: %(default)s)')
+    parser.add_argument('--cpp-hpp-template-path', default=CPP_HPP_TEMPLATE_PATH,
+                        help='Path to jinja2 template used to generate C++ header file (default: %(default)s)')
+    parser.add_argument('--cpp-cpp-template-path', default=CPP_CPP_TEMPLATE_PATH,
+                        help='Path to jinja2 template used to generate C++ source file (default: %(default)s)')
     return parser.parse_args()
 
 
 if __name__ == '__main__':
     args = _parse_args()
     config_file = args.config_file
-    output_dir = args.output_dir + '/model_definition/'
-    generate_datatypes(config_file, output_dir, args.template_path)
+    output_root_dir = args.output_dir
+    config_data = YamlConfig(config_file)
+
+    output_py_dir = os.path.join(output_root_dir, 'model_definition')
+    generate_python_datatypes(config_data, output_py_dir, args.python_template_path)
+    generate_cpp_datatypes(
+        config_data,
+        output_root_dir,
+        args.cpp_hpp_template_path,
+        args.cpp_cpp_template_path)
+    _clang_format_files(_collect_cpp_like_files(output_root_dir))
+
+    print(f'Python datatypes generated successfully into {output_py_dir!r}.')
     print(
-        f'Python datatypes generated successfully into {output_dir!r} from {config_file!r}.')
+        f"C++ datatypes generated successfully into "
+        f"{os.path.join(output_root_dir, 'cpp_interface')!r}."
+    )

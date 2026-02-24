@@ -40,20 +40,20 @@
 
 namespace acados_mpc {
 
-void test_acados_mpc() {
+void testAcadosMpc() {
   MPC mpc = MPC();
   MPCSimSolver mpc_sim_solver;
-  double prediction_steps = mpc.get_prediction_steps();
+  double prediction_steps = mpc.getPredictionSteps();
   std::cout << "Prediction steps: " << prediction_steps << std::endl;
-  double prediction_time_horizon = mpc.get_prediction_time_horizon();
+  double prediction_time_horizon = mpc.getPredictionTimeHorizon();
   std::cout << "Prediction time horizon: " << prediction_time_horizon << std::endl;
-  double prediction_time_step = mpc.get_prediction_time_step();
+  double prediction_time_step = mpc.getPredictionTimeStep();
   std::cout << "Prediction time steps: " << prediction_time_step << std::endl;
 }
 
 }  // namespace acados_mpc
 
 int main(int argc, char* argv[]) {
-  acados_mpc::test_acados_mpc();
+  acados_mpc::testAcadosMpc();
   return 0;
 }
