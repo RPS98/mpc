@@ -96,9 +96,10 @@ void MPC::setSolverOnlineParams()
 {
   // initial values for parameter vector - can be updated stagewise
   for (int i = 0; i <= MPC_N; i++) {
-    ocp_nlp_in_set(
-      acados_pointers_.nlp_config, acados_pointers_.nlp_dims, acados_pointers_.nlp_in,
-      i, "parameter_values", mpc_data_.p_params.get_data(i));
+    status_ = mpc_acados_update_params(
+      acados_pointers_.capsule, i,
+      mpc_data_.p_params.get_data(i), MPC_NP);
+    validateStatus(status_);
   }
 }
 void MPC::setParameterAllStages(int param_idx, double value)
