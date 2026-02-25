@@ -129,7 +129,7 @@ struct YamlMPCData {
   std::array<double, acados_mpc::SlackWeightsEnd::Nsbx_e> Zu_e;
   std::array<double, acados_mpc::SlackWeightsEnd::Nsbx_e> zl_e;
   std::array<double, acados_mpc::SlackWeightsEnd::Nsbx_e> zu_e;
-  std::array<double, acados_mpc::OnlineParams::Np> p;
+  std::array<double, acados_mpc::Parameters::Np> p;
 };
 
 struct YamlData {
@@ -222,7 +222,7 @@ void readYamlParams(const std::string& file_path, YamlData& data) {
     std::cout << "Warning: Slack weights size mismatch. Skipping slack weights update."
               << std::endl;
   }
-  for (int i = 0; i < acados_mpc::OnlineParams::Np; i++) {
+  for (int i = 0; i < acados_mpc::Parameters::Np; i++) {
     data.mpc_data.p[i] = p[i];
   }
 }
@@ -235,7 +235,7 @@ public:
     file_ << "time,"
              "x,y,z,qw,qx,qy,qz,roll,pitch,yaw,vx,vy,vz,"
              "x_ref,y_ref,z_ref,qw_ref,qx_ref,qy_ref,qz_ref,roll_ref,pitch_ref,yaw_ref,"
-             "vx_ref,vy_ref,vz_ref,thrust_ref,wx_ref,wy_ref,wz_ref"
+             "vx_ref,vy_ref,vz_ref,thrust,wx,wy,wz"
           << std::endl;
   }
 
@@ -266,13 +266,13 @@ public:
     addDouble(time);
 
     // State position
-    addDouble(mpc_data->state.data[0]);
-    addDouble(mpc_data->state.data[1]);
-    addDouble(mpc_data->state.data[2]);
+    addDouble(mpc_data->state.getPosition()[0]);
+    addDouble(mpc_data->state.getPosition()[1]);
+    addDouble(mpc_data->state.getPosition()[2]);
 
     // State orientation q
-    Eigen::Quaterniond q(mpc_data->state.data[3], mpc_data->state.data[4], mpc_data->state.data[5],
-                         mpc_data->state.data[6]);
+    Eigen::Quaterniond q(mpc_data->state.getOrientation()[0], mpc_data->state.getOrientation()[1],
+                         mpc_data->state.getOrientation()[2], mpc_data->state.getOrientation()[3]);
     addDouble(q.w());
     addDouble(q.x());
     addDouble(q.y());
@@ -286,18 +286,20 @@ public:
     addDouble(yaw);
 
     // State velocity
-    addDouble(mpc_data->state.data[7]);
-    addDouble(mpc_data->state.data[8]);
-    addDouble(mpc_data->state.data[9]);
+    addDouble(mpc_data->state.getLinearVelocity()[0]);
+    addDouble(mpc_data->state.getLinearVelocity()[1]);
+    addDouble(mpc_data->state.getLinearVelocity()[2]);
 
-    // // Reference position
-    // addDouble(mpc_data->reference.data[0]);
-    // addDouble(mpc_data->reference.data[1]);
-    // addDouble(mpc_data->reference.data[2]);
+    // Reference position
+    addDouble(mpc_data->p_params.getDesiredPosition()[0]);
+    addDouble(mpc_data->p_params.getDesiredPosition()[1]);
+    addDouble(mpc_data->p_params.getDesiredPosition()[2]);
 
     // Reference orientation q
-    Eigen::Quaterniond q_ref(mpc_data->p_params.data[1], mpc_data->p_params.data[2],
-                             mpc_data->p_params.data[3], mpc_data->p_params.data[4]);
+    Eigen::Quaterniond q_ref(mpc_data->p_params.getDesiredOrientation()[0],
+                             mpc_data->p_params.getDesiredOrientation()[1],
+                             mpc_data->p_params.getDesiredOrientation()[2],
+                             mpc_data->p_params.getDesiredOrientation()[3]);
     addDouble(q_ref.w());
     addDouble(q_ref.x());
     addDouble(q_ref.y());
@@ -310,10 +312,10 @@ public:
     addDouble(pitch_ref);
     addDouble(yaw_ref);
 
-    // // Reference velocity
-    // addDouble(mpc_data->reference.data[6]);
-    // addDouble(mpc_data->reference.data[7]);
-    // addDouble(mpc_data->reference.data[8]);
+    // Reference velocity
+    addDouble(0.0);
+    addDouble(0.0);
+    addDouble(0.0);
 
     // Actuation
     for (int i = 0; i < MPC_NU; i++) {

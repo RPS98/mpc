@@ -152,7 +152,7 @@ def _parse_args():
                         default='generate_model_definition/model_definition.yaml',
                         help='Path to the model_definition YAML file (default: %(default)s)')
     parser.add_argument('-o', '--output-dir',
-                        default='mpc',
+                        default='mpc_position',
                         help='Root directory for generated Python and C++ files (default: %(default)s)')
     parser.add_argument('-t', '--python-template-path', default=PY_TEMPLATE_PATH,
                         help='Path to jinja2 template used to generate Python files (default: %(default)s)')

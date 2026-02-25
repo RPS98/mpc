@@ -77,7 +77,7 @@ Configure a solver_definition yaml file in the project you want to use the MPC c
 Then, run the following command in the terminal:
 
 ```bash
-python3 -m mpc.acados_solver -c <path_to_solver_definition_yaml>
+python3 -m mpc_position.acados_solver -c <path_to_solver_definition_yaml>
 ```
 
 This will generate the c code in solver.export_dir. If cpp module is enabled, it will also generate a c++ project, to be able to compile it using add_submodule in cmake.

@@ -52,11 +52,11 @@ TEST(acadosMpc, testAcadosMpc) {
   EXPECT_NO_THROW(mpc.getPredictionTimeHorizon());
   EXPECT_NO_THROW(mpc.getPredictionTimeStep());
   EXPECT_NO_THROW(mpc.getData());
-  EXPECT_NO_THROW(mpc.getOnlineParams());
-  auto online_params = OnlineParams();
+  EXPECT_NO_THROW(mpc.getParameters());
+  auto online_params = Parameters();
   online_params.setMass(1.5);
-  EXPECT_NO_THROW(mpc.setOnlineParams(online_params));
-  EXPECT_DOUBLE_EQ(mpc.getOnlineParams()->getMass(), 1.5);
+  EXPECT_NO_THROW(mpc.setParameters(online_params));
+  EXPECT_DOUBLE_EQ(mpc.getParameters()->getMass(), 1.5);
   EXPECT_NO_THROW(mpc.getGains());
   EXPECT_NO_THROW(mpc.getActuationBounds());
   EXPECT_NO_THROW(mpc.getStateBounds());
@@ -151,14 +151,14 @@ TEST(acadosMpc, testAcadosDatatypes) {
   EXPECT_NO_THROW(state_bounds.setLbx(0, 0.0));
   EXPECT_NO_THROW(state_bounds.setUbx(0, 0.0));
 
-  EXPECT_NO_THROW(OnlineParams());
-  EXPECT_EQ(OnlineParams::mass_offset, 0u);
-  EXPECT_EQ(OnlineParams::mass_length, 1u);
-  EXPECT_EQ(OnlineParams::desired_position_offset, 1u);
-  EXPECT_EQ(OnlineParams::desired_position_length, 3u);
-  auto p_params = OnlineParams();
+  EXPECT_NO_THROW(Parameters());
+  EXPECT_EQ(Parameters::mass_offset, 0u);
+  EXPECT_EQ(Parameters::mass_length, 1u);
+  EXPECT_EQ(Parameters::desired_position_offset, 1u);
+  EXPECT_EQ(Parameters::desired_position_length, 3u);
+  auto p_params = Parameters();
   EXPECT_NO_THROW(p_params.getData());
-  EXPECT_NO_THROW(p_params.getOnlineParams());
+  EXPECT_NO_THROW(p_params.getParameters());
   EXPECT_NO_THROW(p_params.setMass(2.0));
   EXPECT_NO_THROW(p_params.setDesiredPosition(std::array<double, 3>{1.0, 2.0, 3.0}));
   EXPECT_NO_THROW(p_params.setDesiredOrientation(std::array<double, 4>{1.0, 0.0, 0.0, 0.0}));

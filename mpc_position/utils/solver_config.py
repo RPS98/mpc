@@ -37,7 +37,6 @@ from dataclasses import dataclass, field
 
 import numpy as np
 import yaml
-from mpc.model_definition.parameters import Parameters
 
 
 @dataclass

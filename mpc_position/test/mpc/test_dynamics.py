@@ -37,10 +37,10 @@ __license__ = 'BSD-3-Clause'
 
 import unittest
 
-from mpc.utils.quaternion_utils import quaternion_derivate, quaternion_multiply, \
+from mpc_position.utils.quaternion_utils import quaternion_derivate, quaternion_multiply, \
     quaternion_inverse, apply_rotation, apply_inverse_rotation
-from mpc.drone_model import CaState, CaActuation
-from mpc.drone_model import DroneModel
+from mpc_position.drone_model import CaState, CaActuation
+from mpc_position.drone_model import DroneModel
 import numpy as np
 from pyquaternion import Quaternion
 import math

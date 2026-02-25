@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "mpc"
+name = "mpc_position"
 version = "0.1.0"
 authors = [{ name = "Rafael Pérez Seguí", email = "r.psegui@upm.es" }]
 description = "MPC Library for MAVs using acados"
@@ -17,10 +17,10 @@ readme = "README.md"
 requires-python = ">=3.8"
 
 [tool.setuptools.packages.find]
-include = ["mpc", "mpc.*"]
+include = ["mpc_position", "mpc_position.*"]
 
 [tool.setuptools.package-data]
 "*" = ["cpp_interface/**/*"]
 
 [project.scripts]
-mpc-acados-solver = "mpc.acados_solver:main"
+mpc-acados-solver = "mpc_position.acados_solver:main"

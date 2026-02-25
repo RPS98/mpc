@@ -78,17 +78,17 @@ struct AcadosSolverPointers {
  * Data structure to hold the MPC data.
  *
  * @param state state.
+ * @param actuation actuation.
+ * @param p_params online parameters.
  * @param reference reference.
  * @param reference_end reference_end.
- * @param p_params online parameters.
- * @param actuation actuation.
  */
 struct MPCData {
   State state;
+  Actuation actuation;
+  Parameters p_params;
   Reference reference;
   ReferenceEnd reference_end;
-  OnlineParams p_params;
-  Actuation actuation;
 };
 
 /**
@@ -151,16 +151,16 @@ public:
   MPCData* getData() { return &mpc_data_; }
 
   /**
-   * @brief Get the OnlineParams pointer to modify online parameters.
+   * @brief Get the Parameters pointer to modify online parameters.
    */
-  OnlineParams* getOnlineParams() { return &mpc_data_.p_params; }
+  Parameters* getParameters() { return &mpc_data_.p_params; }
 
   /**
    * @brief Set all online parameters at once.
    *
    * @param params online parameters to copy.
    */
-  void setOnlineParams(const OnlineParams& params) { mpc_data_.p_params.setOnlineParams(params); }
+  void setParameters(const Parameters& params) { mpc_data_.p_params.setParameters(params); }
 
   /**
    * @brief Get the Gains pointer to modify the gains.
@@ -297,7 +297,7 @@ private:
   /**
    * @brief Set the solver online parameters p
    */
-  void setSolverOnlineParams();
+  void setSolverParameters();
 
   /**
    * @brief Validate the status

@@ -36,11 +36,11 @@ __license__ = 'BSD-3-Clause'
 
 from acados_template import AcadosModel
 import casadi as ca
-from mpc.utils import quaternion_utils as q_utils
-from mpc.model_definition.state import CaState
-from mpc.model_definition.actuation import CaActuation
-from mpc.model_definition.parameters import CaParameters
-from mpc.model_definition.dynamics import CaDynamics
+from mpc_position.utils import quaternion_utils as q_utils
+from mpc_position.model_definition.state import CaState
+from mpc_position.model_definition.actuation import CaActuation
+from mpc_position.model_definition.parameters import CaParameters
+from mpc_position.model_definition.dynamics import CaDynamics
 
 
 class DroneModel(CaDynamics):

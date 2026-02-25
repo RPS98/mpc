@@ -589,11 +589,11 @@ struct StateBounds {
 };
 
 /**
- * @brief OnlineParams
+ * @brief Parameters
  *
  * Online parameters p for the MPC.
  */
-struct OnlineParams {
+struct Parameters {
   static constexpr size_t Np = MPC_NP;
   std::array<double, MPC_NP> data;
   static const std::size_t size                      = MPC_NP;
@@ -609,7 +609,7 @@ struct OnlineParams {
   /**
    * @brief Constructor
    */
-  OnlineParams();
+  Parameters();
 
   /**
    * @brief Get the data
@@ -630,7 +630,7 @@ struct OnlineParams {
    *
    * @return std::array<double, MPC_NP> Copy of online parameters.
    */
-  std::array<double, MPC_NP> getOnlineParams() const;
+  std::array<double, MPC_NP> getParameters() const;
 
   /**
    * @brief Set the data at index
@@ -638,7 +638,7 @@ struct OnlineParams {
    * @param index index.
    * @param value value.
    */
-  void setOnlineParams(const OnlineParams& params);
+  void setParameters(const Parameters& params);
 
   /**
    * @brief Set the data at index

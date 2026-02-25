@@ -42,8 +42,11 @@ parser = argparse.ArgumentParser(
 parser.add_argument('--auto_update', action='store_true',
                     help='Auto update plots')
 
-parser.add_argument('file', type=str, nargs='?', help='CSV file name',
-                    default='mpc_log.csv')
+parser.add_argument(
+        '-f', '--file_name',
+        type=str,
+        default='mpc_log.csv',
+        help='CSV file name where logs will be saved (default: mpc_log.csv)')
 FILE_PATH = ""
 PRINT_ERROR = True
 
@@ -186,8 +189,8 @@ def read_csv():
                     data[key].append(float(value))
 
     # Check there are 31 keys in the dictionary
-    if len(data.keys()) != 31:
-        print("Warn: number of keys is not 31, it is ", len(data.keys()))
+    if len(data.keys()) != 25:
+        print("Warn: number of keys is not 25, it is ", len(data.keys()))
 
     # Check all keys in the dictionary have the same length
     for key in data.keys():
@@ -233,14 +236,34 @@ def update_plot_figure1(frame, axs):
     plot_values(data, ['roll', 'pitch', 'yaw'], 'Orientation', axs[1, :])
     plot_values(data, ['vx', 'vy', 'vz'], 'Velocity', axs[2, :])
 
+def update_plot_figure2(frame, axs):
+    data = read_csv()
+    if data is None:
+        print("No data to plot")
+        return
+    if len(data['time']) == 0:
+        print("No data to plot")
+        return
 
+    for ax_row in axs:
+        # Check if there are more than one row
+        if isinstance(ax_row, np.ndarray):
+            for ax in ax_row:
+                ax.clear()
+        else:
+            ax_row.clear()
+
+    # Figure 2
+    plot_values(data, ['wx', 'wy', 'wz'], 'W', axs[0:3])
+    plot_values(data, ['thrust'], 'Thrust', [axs[3]])
+    
 def main():
     """Run main function."""
     # parse the arguments
     args = parser.parse_args()
     # Redefine the global variable
     global FILE_PATH
-    FILE_PATH = os.path.abspath(args.file)
+    FILE_PATH = os.path.abspath(args.file_name)
     print("Reading results from file: ", os.path.abspath(FILE_PATH))
 
     fig0 = plt.figure()
@@ -249,8 +272,14 @@ def main():
     fig1, axs1 = plt.subplots(3, 3)
     fig1.suptitle("Plots - Figure 1")
 
+    fig2, axs2 = plt.subplots(1, 4)
+    fig2.suptitle("Plots - Figure 2")
+
+
     update_plot_figure0(0, axs0, plot_drone=True)
     update_plot_figure1(0, axs1)
+    update_plot_figure2(0, axs2)
+
     plt.axis('equal')
     plt.show(block=False)
     print("Press [Enter] to close the figures and end the program.")

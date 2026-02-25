@@ -39,12 +39,12 @@ import shutil
 
 import numpy as np
 from acados_template import AcadosOcp, AcadosOcpSolver, AcadosSim, AcadosSimSolver
-from mpc.model_definition.state import State
-from mpc.model_definition.actuation import Actuation
-from mpc.model_definition.parameters import Parameters
-from mpc.drone_model import get_acados_model
+from mpc_position.model_definition.state import State
+from mpc_position.model_definition.actuation import Actuation
+from mpc_position.model_definition.parameters import Parameters
+from mpc_position.drone_model import get_acados_model
 
-from mpc.utils.solver_config import SolverDefinition
+from mpc_position.utils.solver_config import SolverDefinition
 
 
 class AcadosMPCSolver:

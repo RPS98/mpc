@@ -92,11 +92,11 @@ void MPC::setSolverRefenceEnd() {
   validateStatus(status_);
 }
 
-void MPC::setSolverOnlineParams() {
+void MPC::setSolverParameters() {
   // Apply the same online parameter vector to all stages.
   for (int i = 0; i <= MPC_N; i++) {
     status_ = mpc_acados_update_params(acados_pointers_.capsule, i, mpc_data_.p_params.getData(),
-                                       OnlineParams::Np);
+                                       Parameters::Np);
     validateStatus(status_);
   }
 }
@@ -106,7 +106,7 @@ int MPC::solve() {
   setSolverState();
   setSolverRefence();
   setSolverRefenceEnd();
-  setSolverOnlineParams();
+  setSolverParameters();
 
   // Solve OCP
   status_ = mpc_acados_solve(acados_pointers_.capsule);

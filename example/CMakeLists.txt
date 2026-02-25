@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-set(PROJECT_NAME acados_mpc_solver)
+set(PROJECT_NAME mpc_position_example)
 project(${PROJECT_NAME})
 
 # Default to C++17

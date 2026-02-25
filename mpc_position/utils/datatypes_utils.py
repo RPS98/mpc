@@ -141,6 +141,11 @@ class VectorBase:
                 raise TypeError('Expected ca.SX vector')
             if value.size() != expected_size:
                 raise ValueError(f'Expected vector size {expected_size}, got {value.size()}')
+        elif self._type == 'np.array':
+            if not isinstance(value, np.ndarray):
+                raise TypeError('Expected np.array vector')
+            if value.shape != (expected_size,):
+                raise ValueError(f'Expected vector shape {(expected_size,)}, got {value.shape}')
         else:
             if not isinstance(value, ca.DM):
                 raise TypeError(f'Expected ca.DM vector, got {type(value)}')

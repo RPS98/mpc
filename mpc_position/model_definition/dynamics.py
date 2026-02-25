@@ -37,7 +37,7 @@ __license__ = 'BSD-3-Clause'
 
 from typing import ClassVar, List, Union
 
-from mpc.utils.datatypes_utils import VectorBase
+from mpc_position.utils.datatypes_utils import VectorBase
 import casadi as ca
 import numpy as np
 

@@ -382,7 +382,7 @@ void StateBounds::setUbx(const int index, const double value) {
   ubx[index] = value;
 }
 
-OnlineParams::OnlineParams() {
+Parameters::Parameters() {
   data.fill(0.0);
   data[mass_offset]                    = 1.0;
   data[desired_position_offset + 0]    = 0.0;
@@ -397,11 +397,11 @@ OnlineParams::OnlineParams() {
   data[external_force_offset + 2]      = 0.0;
 }
 
-double* OnlineParams::getData() { return data.data(); }
+double* Parameters::getData() { return data.data(); }
 
-const double* OnlineParams::getData() const { return data.data(); }
+const double* Parameters::getData() const { return data.data(); }
 
-std::array<double, MPC_NP> OnlineParams::getOnlineParams() const {
+std::array<double, MPC_NP> Parameters::getParameters() const {
   std::array<double, MPC_NP> params;
   for (size_t i = 0; i < MPC_NP; ++i) {
     params[i] = data[i];
@@ -409,60 +409,60 @@ std::array<double, MPC_NP> OnlineParams::getOnlineParams() const {
   return params;
 }
 
-void OnlineParams::setOnlineParams(const OnlineParams& params) {
+void Parameters::setParameters(const Parameters& params) {
   for (size_t i = 0; i < data.size(); ++i) {
     setData(i, params.data[i]);
   }
 }
 
-void OnlineParams::setData(const int index, const double value) {
+void Parameters::setData(const int index, const double value) {
   CHECK_MPC_INDEX(index, size);
   data[index] = value;
 }
-void OnlineParams::setMass(const double value) { setData(mass_offset, value); }
+void Parameters::setMass(const double value) { setData(mass_offset, value); }
 
-double OnlineParams::getMass() const { return data[mass_offset]; }
+double Parameters::getMass() const { return data[mass_offset]; }
 
-void OnlineParams::setDesiredPosition(
-    const std::array<double, OnlineParams::desired_position_length>& value) {
+void Parameters::setDesiredPosition(
+    const std::array<double, Parameters::desired_position_length>& value) {
   for (size_t i = 0; i < value.size(); ++i) {
     setData(static_cast<int>(desired_position_offset + i), value[i]);
   }
 }
 
-std::array<double, OnlineParams::desired_position_length> OnlineParams::getDesiredPosition() const {
-  std::array<double, OnlineParams::desired_position_length> value = {};
+std::array<double, Parameters::desired_position_length> Parameters::getDesiredPosition() const {
+  std::array<double, Parameters::desired_position_length> value = {};
   for (size_t i = 0; i < value.size(); ++i) {
     value[i] = data[desired_position_offset + i];
   }
   return value;
 }
 
-void OnlineParams::setDesiredOrientation(
-    const std::array<double, OnlineParams::desired_orientation_length>& value) {
+void Parameters::setDesiredOrientation(
+    const std::array<double, Parameters::desired_orientation_length>& value) {
   for (size_t i = 0; i < value.size(); ++i) {
     setData(static_cast<int>(desired_orientation_offset + i), value[i]);
   }
 }
 
-std::array<double, OnlineParams::desired_orientation_length> OnlineParams::getDesiredOrientation()
+std::array<double, Parameters::desired_orientation_length> Parameters::getDesiredOrientation()
     const {
-  std::array<double, OnlineParams::desired_orientation_length> value = {};
+  std::array<double, Parameters::desired_orientation_length> value = {};
   for (size_t i = 0; i < value.size(); ++i) {
     value[i] = data[desired_orientation_offset + i];
   }
   return value;
 }
 
-void OnlineParams::setExternalForce(
-    const std::array<double, OnlineParams::external_force_length>& value) {
+void Parameters::setExternalForce(
+    const std::array<double, Parameters::external_force_length>& value) {
   for (size_t i = 0; i < value.size(); ++i) {
     setData(static_cast<int>(external_force_offset + i), value[i]);
   }
 }
 
-std::array<double, OnlineParams::external_force_length> OnlineParams::getExternalForce() const {
-  std::array<double, OnlineParams::external_force_length> value = {};
+std::array<double, Parameters::external_force_length> Parameters::getExternalForce() const {
+  std::array<double, Parameters::external_force_length> value = {};
   for (size_t i = 0; i < value.size(); ++i) {
     value[i] = data[external_force_offset + i];
   }

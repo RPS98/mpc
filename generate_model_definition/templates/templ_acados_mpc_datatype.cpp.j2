@@ -425,7 +425,7 @@ void StateBounds::setUbx(const int index, const double value)
   ubx[index] = value;
 }
 
-OnlineParams::OnlineParams()
+Parameters::Parameters()
 {
   data.fill(0.0);
 {%- for param in online_parameters %}
@@ -439,11 +439,11 @@ OnlineParams::OnlineParams()
 {%- endfor %}
 }
 
-double * OnlineParams::getData() {return data.data();}
+double * Parameters::getData() {return data.data();}
 
-const double * OnlineParams::getData() const {return data.data();}
+const double * Parameters::getData() const {return data.data();}
 
-std::array<double, MPC_NP> OnlineParams::getOnlineParams() const
+std::array<double, MPC_NP> Parameters::getParameters() const
 {
   std::array<double, MPC_NP> params;
   for (size_t i = 0; i < MPC_NP; ++i) {
@@ -452,21 +452,21 @@ std::array<double, MPC_NP> OnlineParams::getOnlineParams() const
   return params;
 }
 
-void OnlineParams::setOnlineParams(const OnlineParams & params)
+void Parameters::setParameters(const Parameters & params)
 {
   for (size_t i = 0; i < data.size(); ++i) {
     setData(i, params.data[i]);
   }
 }
 
-void OnlineParams::setData(const int index, const double value)
+void Parameters::setData(const int index, const double value)
 {
   CHECK_MPC_INDEX(index, size);
   data[index] = value;
 }
 
 {%- for param in online_parameters %}
-void OnlineParams::set{{ param.name | pascalCase }}({% if param.size == 1 %}const double value{% else %}const std::array<double, OnlineParams::{{ param.name }}_length> & value{% endif %})
+void Parameters::set{{ param.name | pascalCase }}({% if param.size == 1 %}const double value{% else %}const std::array<double, Parameters::{{ param.name }}_length> & value{% endif %})
 {
 {%- if param.size == 1 %}
   setData({{ param.name }}_offset, value);
@@ -478,14 +478,14 @@ void OnlineParams::set{{ param.name | pascalCase }}({% if param.size == 1 %}cons
 }
 
 {% if param.size == 1 %}
-double OnlineParams::get{{ param.name | pascalCase }}() const
+double Parameters::get{{ param.name | pascalCase }}() const
 {
   return data[{{ param.name }}_offset];
 }
 {% else %}
-std::array<double, OnlineParams::{{ param.name }}_length> OnlineParams::get{{ param.name | pascalCase }}() const
+std::array<double, Parameters::{{ param.name }}_length> Parameters::get{{ param.name | pascalCase }}() const
 {
-  std::array<double, OnlineParams::{{ param.name }}_length> value = {};
+  std::array<double, Parameters::{{ param.name }}_length> value = {};
   for (size_t i = 0; i < value.size(); ++i) {
     value[i] = data[{{ param.name }}_offset + i];
   }

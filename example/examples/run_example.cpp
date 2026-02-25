@@ -121,9 +121,9 @@ void setMpcReferenceParameters(const Eigen::Vector3d& waypoint,
     desired_orientation = computePathFacing(current_position, waypoint, current_orientation);
   }
   // Set online parameters through MPC online params API.
-  mpc.getOnlineParams()->setDesiredPosition({waypoint[0], waypoint[1], waypoint[2]});
-  mpc.getOnlineParams()->setDesiredOrientation({desired_orientation.w(), desired_orientation.x(),
-                                                desired_orientation.y(), desired_orientation.z()});
+  mpc.getParameters()->setDesiredPosition({waypoint[0], waypoint[1], waypoint[2]});
+  mpc.getParameters()->setDesiredOrientation({desired_orientation.w(), desired_orientation.x(),
+                                              desired_orientation.y(), desired_orientation.z()});
 }
 
 void printProgressBar(float progress) {
@@ -277,7 +277,7 @@ int main(int argc, char** argv) {
   mpc.updateGains();
 
   // Set mass parameter (first parameter in p_params)
-  mpc.getOnlineParams()->setMass(yaml_data.mpc_data.p[0]);
+  mpc.getParameters()->setMass(yaml_data.mpc_data.p[0]);
 
   // Initialize integrator
   acados_mpc::MPCSimSolver simulator = acados_mpc::MPCSimSolver();

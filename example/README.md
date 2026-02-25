@@ -4,7 +4,7 @@ This repo implements a Model Predictive Controller (MPC) for a quadrotor, using 
 
 1. Generate c_code:
 ```python
-python3 -m mpc.acados_solver -c solver_definition_mpc_position.yaml
+python3 -m mpc_position.acados_solver -c solver_definition_mpc_position.yaml
 ```
 
 
