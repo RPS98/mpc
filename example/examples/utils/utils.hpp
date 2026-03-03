@@ -1,4 +1,4 @@
-// Copyright 2024 Universidad Politécnica de Madrid
+// Copyright 2024 Universidad Politecnica de Madrid
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
@@ -10,7 +10,7 @@
 //      notice, this list of conditions and the following disclaimer in the
 //      documentation and/or other materials provided with the distribution.
 //
-//    * Neither the name of the Universidad Politécnica de Madrid nor the names of its
+//    * Neither the name of the Universidad Politecnica de Madrid nor the names of its
 //      contributors may be used to endorse or promote products derived from
 //      this software without specific prior written permission.
 //
@@ -38,194 +38,78 @@
 #define EXAMPLE_UTILS_HPP_
 
 #include <Eigen/Dense>
-#include <filesystem>
+
+#include <cmath>
 #include <fstream>
 #include <iostream>
-#include <memory>
 #include <stdexcept>
 #include <string>
-#include <utility>
-#include <vector>
-
-#include "acados_mpc/acados_mpc.hpp"
-#include "acados_mpc/acados_sim_solver.hpp"
 
 namespace acados_mpc {
 namespace acados_mpc_examples {
 
-Eigen::Quaterniond eulerToQuaternion(double roll, double pitch, double yaw) {
+inline Eigen::Quaterniond eulerToQuaternion(double roll, double pitch, double yaw) {
   // Calculate half angles
-  double roll_half  = roll * 0.5;
-  double pitch_half = pitch * 0.5;
-  double yaw_half   = yaw * 0.5;
+  const double roll_half  = roll * 0.5;
+  const double pitch_half = pitch * 0.5;
+  const double yaw_half   = yaw * 0.5;
 
-  // Calculate the sine and cosine of the half angles
-  double sr = sin(roll_half);
-  double cr = cos(roll_half);
-  double sp = sin(pitch_half);
-  double cp = cos(pitch_half);
-  double sy = sin(yaw_half);
-  double cy = cos(yaw_half);
+  // Calculate sine and cosine of the half angles
+  const double sr = std::sin(roll_half);
+  const double cr = std::cos(roll_half);
+  const double sp = std::sin(pitch_half);
+  const double cp = std::cos(pitch_half);
+  const double sy = std::sin(yaw_half);
+  const double cy = std::cos(yaw_half);
 
-  // Calculate the quaternion components
-  double w = cr * cp * cy + sr * sp * sy;
-  double x = sr * cp * cy - cr * sp * sy;
-  double y = cr * sp * cy + sr * cp * sy;
-  double z = cr * cp * sy - sr * sp * cy;
+  // Calculate quaternion components
+  const double w = cr * cp * cy + sr * sp * sy;
+  const double x = sr * cp * cy - cr * sp * sy;
+  const double y = cr * sp * cy + sr * cp * sy;
+  const double z = cr * cp * sy - sr * sp * cy;
 
-  // Create the Quaternion object
+  // Return the quaternion
   return Eigen::Quaterniond(w, x, y, z).normalized();
 }
 
-void quaternionToEuler(const Eigen::Quaterniond& q, double& roll, double& pitch, double& yaw) {
-  // Extract the quaternion components
-  double w = q.w();
-  double x = q.x();
-  double y = q.y();
-  double z = q.z();
+inline Eigen::Vector3d quaternionToEuler(const Eigen::Quaterniond& q) {
+  const double w = q.w();
+  const double x = q.x();
+  const double y = q.y();
+  const double z = q.z();
 
-  // Calculate roll (x-axis rotation)
-  double sinr_cosp = 2.0 * (w * x + y * z);
-  double cosr_cosp = 1.0 - 2.0 * (x * x + y * y);
-  roll             = std::atan2(sinr_cosp, cosr_cosp);
+  // Roll (x-axis rotation)
+  const double sinr_cosp = 2.0 * (w * x + y * z);
+  const double cosr_cosp = 1.0 - 2.0 * (x * x + y * y);
+  const double roll      = std::atan2(sinr_cosp, cosr_cosp);
 
-  // Calculate pitch (y-axis rotation)
-  double sinp = 2.0 * (w * y - z * x);
-  if (std::abs(sinp) >= 1)
-    pitch = std::copysign(M_PI / 2, sinp);  // use 90 degrees if out of range
-  else
+  // Pitch (y-axis rotation)
+  const double sinp = 2.0 * (w * y - z * x);
+  double pitch      = 0.0;
+  if (std::abs(sinp) >= 1.0) {
+    pitch = std::copysign(std::acos(-1.0) / 2.0, sinp);
+  } else {
     pitch = std::asin(sinp);
+  }
 
-  // Calculate yaw (z-axis rotation)
-  double siny_cosp = 2.0 * (w * z + x * y);
-  double cosy_cosp = 1.0 - 2.0 * (y * y + z * z);
-  yaw              = std::atan2(siny_cosp, cosy_cosp);
+  // Yaw (z-axis rotation)
+  const double siny_cosp = 2.0 * (w * z + x * y);
+  const double cosy_cosp = 1.0 - 2.0 * (y * y + z * z);
+  const double yaw       = std::atan2(siny_cosp, cosy_cosp);
+
+  return {roll, pitch, yaw};
 }
 
-std::array<double, 4> computePathFacing(const Eigen::Vector3d velocity) {
-  double yaw   = atan2(velocity.y(), velocity.x());
-  double pitch = 0.0;
-  double roll  = 0.0;
-
-  Eigen::Quaterniond q = eulerToQuaternion(roll, pitch, yaw);
+inline Eigen::Vector4d quaternionToVector(const Eigen::Quaterniond& q) {
   return {q.w(), q.x(), q.y(), q.z()};
 }
 
-struct YamlMPCData {
-  double dt;
-  std::array<double, acados_mpc::Gains::Nq> Q;
-  std::array<double, acados_mpc::Gains::Nqe> Qe;
-  std::array<double, acados_mpc::Gains::Nr> R;
-  std::array<double, acados_mpc::ActuationBounds::Nu> lbu;
-  std::array<double, acados_mpc::ActuationBounds::Nu> ubu;
-  std::array<double, acados_mpc::StateBounds::Nx> lbx;
-  std::array<double, acados_mpc::StateBounds::Nx> ubx;
-  std::array<double, acados_mpc::SoftStateBounds::Nsbx> lsbx;
-  std::array<double, acados_mpc::SoftStateBounds::Nsbx> usbx;
-  std::array<double, acados_mpc::SlackWeights::Nsbx> Zl;
-  std::array<double, acados_mpc::SlackWeights::Nsbx> Zu;
-  std::array<double, acados_mpc::SlackWeights::Nsbx> zl;
-  std::array<double, acados_mpc::SlackWeights::Nsbx> zu;
-  std::array<double, acados_mpc::SlackWeightsEnd::Nsbx_e> Zl_e;
-  std::array<double, acados_mpc::SlackWeightsEnd::Nsbx_e> Zu_e;
-  std::array<double, acados_mpc::SlackWeightsEnd::Nsbx_e> zl_e;
-  std::array<double, acados_mpc::SlackWeightsEnd::Nsbx_e> zu_e;
-  std::array<double, acados_mpc::Parameters::Np> p;
-};
+inline Eigen::Quaterniond computePathFacing(const Eigen::Vector3d& velocity) {
+  const double yaw   = std::atan2(velocity.y(), velocity.x());
+  const double pitch = 0.0;
+  const double roll  = 0.0;
 
-struct YamlData {
-  double sim_time;
-  double max_speed;
-  std::vector<Eigen::Vector3d> waypoints;
-  bool path_facing;
-  YamlMPCData mpc_data;
-};
-
-void readYamlParams(const std::string& file_path, YamlData& data) {
-  // Check if file exists
-  std::ifstream f(file_path.c_str());
-  if (!f.good()) {
-    std::string absolute_simulation_config_path = std::filesystem::absolute(file_path).string();
-    std::cout << "File " << absolute_simulation_config_path << " does not exist." << std::endl;
-    f.close();
-    throw std::invalid_argument("File does not exist");
-  }
-  f.close();
-  YAML::Node config = YAML::LoadFile(file_path);
-
-  // Read params
-  data.sim_time  = config["sim_config"]["sim_time"].as<double>();
-  data.max_speed = config["sim_config"]["max_speed"].as<double>();
-
-  for (auto waypoint : config["sim_config"]["waypoints"]) {
-    data.waypoints.push_back(Eigen::Vector3d(waypoint[0].as<double>(), waypoint[1].as<double>(),
-                                             waypoint[2].as<double>()));
-  }
-
-  data.path_facing = config["sim_config"]["path_facing"].as<bool>();
-
-  // Read MPC params
-  std::vector<double> Q  = config["controller"]["mpc"]["cost"]["Q"].as<std::vector<double>>();
-  std::vector<double> Qe = config["controller"]["mpc"]["cost"]["Qe"].as<std::vector<double>>();
-  std::vector<double> R  = config["controller"]["mpc"]["cost"]["R"].as<std::vector<double>>();
-  std::vector<double> lbu =
-      config["controller"]["mpc"]["constraints"]["lbu"].as<std::vector<double>>();
-  std::vector<double> ubu =
-      config["controller"]["mpc"]["constraints"]["ubu"].as<std::vector<double>>();
-  std::vector<double> lbx =
-      config["controller"]["mpc"]["constraints"]["lbx"].as<std::vector<double>>();
-  std::vector<double> ubx =
-      config["controller"]["mpc"]["constraints"]["ubx"].as<std::vector<double>>();
-  std::vector<double> Zl =
-      config["controller"]["mpc"]["constraints"]["Zl"].as<std::vector<double>>();
-  std::vector<double> Zu =
-      config["controller"]["mpc"]["constraints"]["Zu"].as<std::vector<double>>();
-  std::vector<double> zl =
-      config["controller"]["mpc"]["constraints"]["zl"].as<std::vector<double>>();
-  std::vector<double> zu =
-      config["controller"]["mpc"]["constraints"]["zu"].as<std::vector<double>>();
-  std::vector<double> p =
-      config["controller"]["mpc"]["parameters"]["mass"].as<std::vector<double>>();
-
-  for (int i = 0; i < acados_mpc::Gains::Nq; i++) {
-    data.mpc_data.Q[i] = Q[i];
-  }
-  for (int i = 0; i < acados_mpc::Gains::Nqe; i++) {
-    data.mpc_data.Qe[i] = Qe[i];
-  }
-  for (int i = 0; i < acados_mpc::Gains::Nr; i++) {
-    data.mpc_data.R[i] = R[i];
-  }
-  if (lbu.size() == acados_mpc::ActuationBounds::Nu &&
-      ubu.size() == acados_mpc::ActuationBounds::Nu) {
-    for (int i = 0; i < acados_mpc::ActuationBounds::Nu; i++) {
-      data.mpc_data.lbu[i] = lbu[i];
-      data.mpc_data.ubu[i] = ubu[i];
-    }
-  }
-  if (lbx.size() == acados_mpc::StateBounds::Nx && ubx.size() == acados_mpc::StateBounds::Nx) {
-    for (int i = 0; i < acados_mpc::StateBounds::Nx; i++) {
-      data.mpc_data.lbx[i] = lbx[i];
-      data.mpc_data.ubx[i] = ubx[i];
-    }
-  } else {
-    std::cout << "Warning: State bounds size mismatch. Skipping state bounds update." << std::endl;
-  }
-  if (Zl.size() == acados_mpc::SlackWeights::Nsbx && Zu.size() == acados_mpc::SlackWeights::Nsbx &&
-      zl.size() == acados_mpc::SlackWeights::Nsbx && zu.size() == acados_mpc::SlackWeights::Nsbx) {
-    for (int i = 0; i < acados_mpc::SlackWeights::Nsbx; i++) {
-      data.mpc_data.Zl[i] = Zl[i];
-      data.mpc_data.Zu[i] = Zu[i];
-      data.mpc_data.zl[i] = zl[i];
-      data.mpc_data.zu[i] = zu[i];
-    }
-  } else {
-    std::cout << "Warning: Slack weights size mismatch. Skipping slack weights update."
-              << std::endl;
-  }
-  for (int i = 0; i < acados_mpc::Parameters::Np && i < static_cast<int>(p.size()); i++) {
-    data.mpc_data.p[i] = p[i];
-  }
+  return eulerToQuaternion(roll, pitch, yaw);
 }
 
 class CsvLogger {
@@ -240,14 +124,11 @@ public:
           << std::endl;
   }
 
-  ~CsvLogger() { file_.close(); }
+  ~CsvLogger() { close(); }
 
   void addDouble(const double data, const bool add_final_comma = true) {
-    // Check if data is nan
     if (std::isnan(data)) {
-      // Throw exception
-      std::invalid_argument("Data is nan");
-      return;
+      throw std::invalid_argument("Data is nan");
     }
     file_ << data;
     if (add_final_comma) {
@@ -255,83 +136,49 @@ public:
     }
   }
 
-  void addString(const std::string& data, const bool add_final_comma = true) {
-    file_ << data;
-    if (add_final_comma) {
-      file_ << ",";
+  template <typename Derived>
+  void addVectorRow(const Eigen::MatrixBase<Derived>& data, const bool add_final_comma = true) {
+    for (Eigen::Index index = 0; index < data.size(); ++index) {
+      addDouble(data(index), add_final_comma || index < data.size() - 1);
     }
   }
 
   void save(const double time,
-            const MPCData* mpc_data,
-            const Eigen::Vector3d& desired_position,
-            const Eigen::Quaterniond& desired_orientation,
-            const Eigen::Vector3d& desired_velocity = Eigen::Vector3d::Zero()) {
-    // Time
+            const Eigen::Vector3d& state_position,
+            const Eigen::Quaterniond& state_orientation,
+            const Eigen::Vector3d& state_velocity,
+            const Eigen::Vector3d& reference_position,
+            const Eigen::Quaterniond& reference_orientation,
+            const Eigen::Vector3d& reference_velocity,
+            const double control_thrust,
+            const Eigen::Vector3d& control_angular_velocity) {
     addDouble(time);
 
-    // State position
-    addDouble(mpc_data->state.getPosition()[0]);
-    addDouble(mpc_data->state.getPosition()[1]);
-    addDouble(mpc_data->state.getPosition()[2]);
+    // State
+    addVectorRow(state_position);
+    addVectorRow(quaternionToVector(state_orientation));
+    addVectorRow(quaternionToEuler(state_orientation));
+    addVectorRow(state_velocity);
 
-    // State orientation q
-    Eigen::Quaterniond q(mpc_data->state.getOrientation()[0], mpc_data->state.getOrientation()[1],
-                         mpc_data->state.getOrientation()[2], mpc_data->state.getOrientation()[3]);
-    addDouble(q.w());
-    addDouble(q.x());
-    addDouble(q.y());
-    addDouble(q.z());
+    // Reference
+    addVectorRow(reference_position);
+    addVectorRow(quaternionToVector(reference_orientation));
+    addVectorRow(quaternionToEuler(reference_orientation));
+    addVectorRow(reference_velocity);
 
-    // State orientation euler
-    double roll, pitch, yaw;
-    quaternionToEuler(q, roll, pitch, yaw);
-    addDouble(roll);
-    addDouble(pitch);
-    addDouble(yaw);
-
-    // State velocity
-    addDouble(mpc_data->state.getLinearVelocity()[0]);
-    addDouble(mpc_data->state.getLinearVelocity()[1]);
-    addDouble(mpc_data->state.getLinearVelocity()[2]);
-
-    // Reference position
-    addDouble(desired_position.x());
-    addDouble(desired_position.y());
-    addDouble(desired_position.z());
-
-    // Reference orientation q
-    addDouble(desired_orientation.w());
-    addDouble(desired_orientation.x());
-    addDouble(desired_orientation.y());
-    addDouble(desired_orientation.z());
-
-    // Reference orientation euler
-    double roll_ref, pitch_ref, yaw_ref;
-    quaternionToEuler(desired_orientation, roll_ref, pitch_ref, yaw_ref);
-    addDouble(roll_ref);
-    addDouble(pitch_ref);
-    addDouble(yaw_ref);
-
-    // Reference velocity
-    addDouble(desired_velocity.x());
-    addDouble(desired_velocity.y());
-    addDouble(desired_velocity.z());
-
-    // Actuation
-    for (int i = 0; i < MPC_NU; i++) {
-      bool add_final_comma = true;
-      if (i == MPC_NU - 1) {
-        add_final_comma = false;
-      }
-      addDouble(mpc_data->actuation.data[i], add_final_comma);
-    }
+    // Control
+    addDouble(control_thrust);
+    addVectorRow(control_angular_velocity, false);
 
     // End line
     file_ << std::endl;
   }
 
-  void close() { file_.close(); }
+  void close() {
+    if (file_.is_open()) {
+      file_.close();
+    }
+  }
 
 private:
   std::string file_name_;
