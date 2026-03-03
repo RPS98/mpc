@@ -12,3 +12,4 @@ dynamics:
 parameters:
   mass: 1.0 # Mass of the MAV (kg)
   desired_orientation: [1.0, 0.0, 0.0, 0.0] # Desired orientation as a quaternion [qw, qx, qy, qz]
+  external_force: [0.0, 0.0, 0.0] # External force acting on the MAV in base frame [fx, fy, fz] (N)

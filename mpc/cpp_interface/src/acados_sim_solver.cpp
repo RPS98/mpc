@@ -63,6 +63,10 @@ int MPCSimSolver::solve(MPCData *data) {
     sim_in_->u[i] = data->actuation.data[i];
   }
 
+  // Set online parameters
+  status_ = mpc_acados_sim_update_params(capsule_, data->p_params.getData(0), OnlineParameters::Np);
+  validateStatus(status_);
+
   // Solve
   status_ = mpc_acados_sim_solve(capsule_);
   validateStatus(status_);

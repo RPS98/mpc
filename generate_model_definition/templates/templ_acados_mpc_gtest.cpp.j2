@@ -44,6 +44,14 @@
 
 namespace acados_mpc {
 
+{% macro test_value_expr(class_name, param) -%}
+{%- if param.size == 1 -%}
+1.0
+{%- else -%}
+std::array<double, {{ class_name }}::{{ param.name }}_length>{ {% for idx in range(param.size) %}{{ idx + 1 }}.0{% if not loop.last %}, {% endif %}{% endfor %} }
+{%- endif -%}
+{%- endmacro %}
+
 TEST(acadosMpc, testAcadosMpc) {
   EXPECT_NO_THROW(MPC());
   auto mpc = MPC();
@@ -81,63 +89,50 @@ TEST(acadosMpc, testAcadosMpc) {
 
 TEST(acadosMpc, testAcadosDatatypes) {
   EXPECT_NO_THROW(State());
-  EXPECT_EQ(State::position_offset, 0u);
-  EXPECT_EQ(State::position_length, 3u);
-  EXPECT_EQ(State::orientation_offset, 3u);
-  EXPECT_EQ(State::orientation_length, 4u);
-  EXPECT_EQ(State::linear_velocity_offset, 7u);
-  EXPECT_EQ(State::linear_velocity_length, 3u);
+{%- for param in state_parameters %}
+  EXPECT_EQ(State::{{ param.name }}_offset, {{ param.offset }}u);
+  EXPECT_EQ(State::{{ param.name }}_length, {{ param.size }}u);
+{%- endfor %}
   auto state = State();
-  EXPECT_NO_THROW(state.setPosition(std::array<double, State::position_length>{1.0, 2.0, 3.0}));
-  EXPECT_NO_THROW(
-      state.setOrientation(std::array<double, State::orientation_length>{1.0, 2.0, 3.0, 4.0}));
-  EXPECT_NO_THROW(
-      state.setLinearVelocity(std::array<double, State::linear_velocity_length>{1.0, 2.0, 3.0}));
-  auto state_position = state.getPosition();
-  EXPECT_DOUBLE_EQ(state_position[0], 1.0);
-  EXPECT_DOUBLE_EQ(state.data[State::position_offset + 0], 1.0);
-  EXPECT_DOUBLE_EQ(state_position[1], 2.0);
-  EXPECT_DOUBLE_EQ(state.data[State::position_offset + 1], 2.0);
-  EXPECT_DOUBLE_EQ(state_position[2], 3.0);
-  EXPECT_DOUBLE_EQ(state.data[State::position_offset + 2], 3.0);
-  auto state_orientation = state.getOrientation();
-  EXPECT_DOUBLE_EQ(state_orientation[0], 1.0);
-  EXPECT_DOUBLE_EQ(state.data[State::orientation_offset + 0], 1.0);
-  EXPECT_DOUBLE_EQ(state_orientation[1], 2.0);
-  EXPECT_DOUBLE_EQ(state.data[State::orientation_offset + 1], 2.0);
-  EXPECT_DOUBLE_EQ(state_orientation[2], 3.0);
-  EXPECT_DOUBLE_EQ(state.data[State::orientation_offset + 2], 3.0);
-  EXPECT_DOUBLE_EQ(state_orientation[3], 4.0);
-  EXPECT_DOUBLE_EQ(state.data[State::orientation_offset + 3], 4.0);
-  auto state_linear_velocity = state.getLinearVelocity();
-  EXPECT_DOUBLE_EQ(state_linear_velocity[0], 1.0);
-  EXPECT_DOUBLE_EQ(state.data[State::linear_velocity_offset + 0], 1.0);
-  EXPECT_DOUBLE_EQ(state_linear_velocity[1], 2.0);
-  EXPECT_DOUBLE_EQ(state.data[State::linear_velocity_offset + 1], 2.0);
-  EXPECT_DOUBLE_EQ(state_linear_velocity[2], 3.0);
-  EXPECT_DOUBLE_EQ(state.data[State::linear_velocity_offset + 2], 3.0);
+{%- for param in state_parameters %}
+  EXPECT_NO_THROW(state.set{{ param.name | pascalCase }}({{ test_value_expr('State', param) }}));
+{%- endfor %}
+{%- for param in state_parameters %}
+  auto state_{{ param.name }} = state.get{{ param.name | pascalCase }}();
+{%- if param.size == 1 %}
+  EXPECT_DOUBLE_EQ(state_{{ param.name }}, 1.0);
+  EXPECT_DOUBLE_EQ(state.data[State::{{ param.name }}_offset], 1.0);
+{%- else %}
+{%- for idx in range(param.size) %}
+  EXPECT_DOUBLE_EQ(state_{{ param.name }}[{{ idx }}], {{ idx + 1 }}.0);
+  EXPECT_DOUBLE_EQ(state.data[State::{{ param.name }}_offset + {{ idx }}], {{ idx + 1 }}.0);
+{%- endfor %}
+{%- endif %}
+{%- endfor %}
   EXPECT_NO_THROW(state.setData(0, 0.0));
   EXPECT_DOUBLE_EQ(state.data[0], 0.0);
 
   EXPECT_NO_THROW(Actuation());
-  EXPECT_EQ(Actuation::thrust_offset, 0u);
-  EXPECT_EQ(Actuation::thrust_length, 1u);
-  EXPECT_EQ(Actuation::angular_velocity_offset, 1u);
-  EXPECT_EQ(Actuation::angular_velocity_length, 3u);
+{%- for param in actuation_parameters %}
+  EXPECT_EQ(Actuation::{{ param.name }}_offset, {{ param.offset }}u);
+  EXPECT_EQ(Actuation::{{ param.name }}_length, {{ param.size }}u);
+{%- endfor %}
   auto actuation = Actuation();
-  EXPECT_NO_THROW(actuation.setThrust(1.0));
-  EXPECT_NO_THROW(actuation.setAngularVelocity(
-      std::array<double, Actuation::angular_velocity_length>{1.0, 2.0, 3.0}));
-  auto actuation_thrust = actuation.getThrust();
-  EXPECT_DOUBLE_EQ(actuation_thrust, 1.0);
-  EXPECT_DOUBLE_EQ(actuation.data[Actuation::thrust_offset], 1.0);
-  auto actuation_angular_velocity = actuation.getAngularVelocity();
-  EXPECT_DOUBLE_EQ(actuation_angular_velocity[0], 1.0);
-  EXPECT_DOUBLE_EQ(actuation.data[Actuation::angular_velocity_offset + 0], 1.0);
-  EXPECT_DOUBLE_EQ(actuation_angular_velocity[1], 2.0);
-  EXPECT_DOUBLE_EQ(actuation.data[Actuation::angular_velocity_offset + 1], 2.0);
-  EXPECT_DOUBLE_EQ(actuation_angular_velocity[2], 3.0);
-  EXPECT_DOUBLE_EQ(actuation.data[Actuation::angular_velocity_offset + 2], 3.0);
+{%- for param in actuation_parameters %}
+  EXPECT_NO_THROW(actuation.set{{ param.name | pascalCase }}({{ test_value_expr('Actuation', param) }}));
+{%- endfor %}
+{%- for param in actuation_parameters %}
+  auto actuation_{{ param.name }} = actuation.get{{ param.name | pascalCase }}();
+{%- if param.size == 1 %}
+  EXPECT_DOUBLE_EQ(actuation_{{ param.name }}, 1.0);
+  EXPECT_DOUBLE_EQ(actuation.data[Actuation::{{ param.name }}_offset], 1.0);
+{%- else %}
+{%- for idx in range(param.size) %}
+  EXPECT_DOUBLE_EQ(actuation_{{ param.name }}[{{ idx }}], {{ idx + 1 }}.0);
+  EXPECT_DOUBLE_EQ(actuation.data[Actuation::{{ param.name }}_offset + {{ idx }}], {{ idx + 1 }}.0);
+{%- endfor %}
+{%- endif %}
+{%- endfor %}
   EXPECT_NO_THROW(actuation.setData(0, 0.0));
   EXPECT_DOUBLE_EQ(actuation.data[0], 0.0);
 
@@ -177,39 +172,28 @@ TEST(acadosMpc, testAcadosDatatypes) {
   }
 
   EXPECT_NO_THROW(Parameters());
-  EXPECT_EQ(Parameters::mass_offset, 0u);
-  EXPECT_EQ(Parameters::mass_length, 1u);
-  EXPECT_EQ(Parameters::desired_orientation_offset, 1u);
-  EXPECT_EQ(Parameters::desired_orientation_length, 4u);
-  EXPECT_EQ(Parameters::external_force_offset, 5u);
-  EXPECT_EQ(Parameters::external_force_length, 3u);
+{%- for param in online_parameters %}
+  EXPECT_EQ(Parameters::{{ param.name }}_offset, {{ param.offset }}u);
+  EXPECT_EQ(Parameters::{{ param.name }}_length, {{ param.size }}u);
+{%- endfor %}
   auto p_params = Parameters();
   EXPECT_NO_THROW(p_params.getData());
   EXPECT_NO_THROW(p_params.getParameters());
-  EXPECT_NO_THROW(p_params.setMass(1.0));
-  EXPECT_NO_THROW(p_params.setDesiredOrientation(
-      std::array<double, Parameters::desired_orientation_length>{1.0, 2.0, 3.0, 4.0}));
-  EXPECT_NO_THROW(p_params.setExternalForce(
-      std::array<double, Parameters::external_force_length>{1.0, 2.0, 3.0}));
-  auto parameters_mass = p_params.getMass();
-  EXPECT_DOUBLE_EQ(parameters_mass, 1.0);
-  EXPECT_DOUBLE_EQ(p_params.getData()[Parameters::mass_offset], 1.0);
-  auto parameters_desired_orientation = p_params.getDesiredOrientation();
-  EXPECT_DOUBLE_EQ(parameters_desired_orientation[0], 1.0);
-  EXPECT_DOUBLE_EQ(p_params.getData()[Parameters::desired_orientation_offset + 0], 1.0);
-  EXPECT_DOUBLE_EQ(parameters_desired_orientation[1], 2.0);
-  EXPECT_DOUBLE_EQ(p_params.getData()[Parameters::desired_orientation_offset + 1], 2.0);
-  EXPECT_DOUBLE_EQ(parameters_desired_orientation[2], 3.0);
-  EXPECT_DOUBLE_EQ(p_params.getData()[Parameters::desired_orientation_offset + 2], 3.0);
-  EXPECT_DOUBLE_EQ(parameters_desired_orientation[3], 4.0);
-  EXPECT_DOUBLE_EQ(p_params.getData()[Parameters::desired_orientation_offset + 3], 4.0);
-  auto parameters_external_force = p_params.getExternalForce();
-  EXPECT_DOUBLE_EQ(parameters_external_force[0], 1.0);
-  EXPECT_DOUBLE_EQ(p_params.getData()[Parameters::external_force_offset + 0], 1.0);
-  EXPECT_DOUBLE_EQ(parameters_external_force[1], 2.0);
-  EXPECT_DOUBLE_EQ(p_params.getData()[Parameters::external_force_offset + 1], 2.0);
-  EXPECT_DOUBLE_EQ(parameters_external_force[2], 3.0);
-  EXPECT_DOUBLE_EQ(p_params.getData()[Parameters::external_force_offset + 2], 3.0);
+{%- for param in online_parameters %}
+  EXPECT_NO_THROW(p_params.set{{ param.name | pascalCase }}({{ test_value_expr('Parameters', param) }}));
+{%- endfor %}
+{%- for param in online_parameters %}
+  auto parameters_{{ param.name }} = p_params.get{{ param.name | pascalCase }}();
+{%- if param.size == 1 %}
+  EXPECT_DOUBLE_EQ(parameters_{{ param.name }}, 1.0);
+  EXPECT_DOUBLE_EQ(p_params.getData()[Parameters::{{ param.name }}_offset], 1.0);
+{%- else %}
+{%- for idx in range(param.size) %}
+  EXPECT_DOUBLE_EQ(parameters_{{ param.name }}[{{ idx }}], {{ idx + 1 }}.0);
+  EXPECT_DOUBLE_EQ(p_params.getData()[Parameters::{{ param.name }}_offset + {{ idx }}], {{ idx + 1 }}.0);
+{%- endfor %}
+{%- endif %}
+{%- endfor %}
   EXPECT_NO_THROW(p_params.setData(0, 0.0));
   EXPECT_DOUBLE_EQ(p_params.getData()[0], 0.0);
 }
@@ -217,7 +201,7 @@ TEST(acadosMpc, testAcadosDatatypes) {
 TEST(acadosMpc, testAcadosSimSolver) {
   EXPECT_NO_THROW(MPCSimSolver());
   auto sim_solver = MPCSimSolver();
-  auto mpc_data   = MPCData();
+  auto mpc_data = MPCData();
   EXPECT_NO_THROW(sim_solver.solve(&mpc_data));
 }
 }  // namespace acados_mpc

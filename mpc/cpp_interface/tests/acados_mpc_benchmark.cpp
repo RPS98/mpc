@@ -39,29 +39,29 @@
 #include <memory>
 #include "acados_mpc/acados_mpc.hpp"
 
-static void BM_TEST_INIT(benchmark::State &state) {
+static void bmTestInit(benchmark::State &state) {
   // Perform setup here
   acados_mpc::MPC mpc;
   for (auto _ : state) {
     mpc.solve();
   }
 }
-BENCHMARK(BM_TEST_INIT)->Threads(1)->Repetitions(10);
+BENCHMARK(bmTestInit)->Threads(1)->Repetitions(10);
 
-static void BM_TEST_UpdateGains(benchmark::State &state) {
+static void bmTestUpdateGains(benchmark::State &state) {
   // Perform setup here
   acados_mpc::MPC mpc;
   acados_mpc::Gains gains;
   acados_mpc::ActuationBounds actuation_bounds;
   acados_mpc::StateBounds state_bounds;
   for (auto _ : state) {
-    mpc.get_gains()->set_gains(gains);
-    mpc.get_actuation_bounds()->set_bounds(actuation_bounds);
-    mpc.get_state_bounds()->set_bounds(state_bounds);
-    mpc.update_actuation_bounds();
-    mpc.update_gains();
+    mpc.getGains()->setGains(gains);
+    mpc.getActuationBounds()->setBounds(actuation_bounds);
+    mpc.getStateBounds()->setBounds(state_bounds);
+    mpc.updateActuationBounds();
+    mpc.updateGains();
   }
 }
-BENCHMARK(BM_TEST_UpdateGains)->Threads(1)->Repetitions(10);
+BENCHMARK(bmTestUpdateGains)->Threads(1)->Repetitions(10);
 
 BENCHMARK_MAIN();

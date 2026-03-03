@@ -195,7 +195,7 @@ class YamlConfig:
                 return val_str, 'str'
 
 
-def generate_file(template_path, output_path, context):
+def generate_file(template_path, output_path, context, trailing_blank_line=False):
     env = Environment(loader=FileSystemLoader(os.path.dirname(template_path)))
     env.filters['camelCase'] = snake_to_camel
     env.filters['pascalCase'] = snake_to_pascal
@@ -203,6 +203,10 @@ def generate_file(template_path, output_path, context):
     template = env.get_template(os.path.basename(template_path))
     context['template_file'] = os.path.basename(template_path)
     rendered = template.render(**context)
+    if trailing_blank_line:
+        rendered = rendered.rstrip('\n') + '\n\n'
+    elif not rendered.endswith('\n'):
+        rendered += '\n'
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, 'w') as f:

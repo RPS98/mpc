@@ -75,6 +75,7 @@ class Ca{{ class_name }}(_{{ class_name }}Def, VectorBase):
     """
 
     _type = 'ca.SX'
+{%- if class_name == 'Parameters' %}
 
 
 class {{ class_name }}(_{{ class_name }}Def, VectorBase):
@@ -100,6 +101,200 @@ class {{ class_name }}(_{{ class_name }}Def, VectorBase):
 {%- endfor %}
 
 
+class Online{{ class_name }}:
+    """{{ class_name }} for all MPC stages."""
+
+    _names: ClassVar[List[str]] = _{{ class_name }}Def._names
+    _names_sx: ClassVar[List[str]] = _{{ class_name }}Def._names_sx
+    _sizes: ClassVar[List[int]] = _{{ class_name }}Def._sizes
+    Np: ClassVar[int] = {{ size }}
+{% for param in parameters %}
+    {{ param.name }}_offset: ClassVar[int] = {{ param.offset }}
+    {{ param.name }}_length: ClassVar[int] = {{ param.size }}
+{%- endfor %}
+
+    def __init__(
+            self,
+            num_stages: int = 1,
+{%- for param in parameters %}
+            {{ param.name }}: np.array = np.array({{ param.value }}){% if not loop.last %},{% else %}):{%- endif %}
+{%- endfor %}
+        """
+        {{ class_name }} for all MPC stages.
+
+        :param num_stages: Number of stored stages.
+        :type num_stages: int
+{% for param in parameters %}
+        :param {{ param.name }}: {{ param.description }}
+        :type {{ param.name }}: np.array
+{%- endfor %}
+        """
+        if num_stages < 1:
+            raise ValueError('num_stages must be greater than zero')
+        self.num_stages = int(num_stages)
+        stage_parameters = {{ class_name }}(
+{%- for param in parameters %}
+            {{ param.name }}={{ param.name }}{% if not loop.last %},{% endif %}
+{%- endfor %}
+        )
+        self.data = np.tile(stage_parameters.vector, (self.num_stages, 1))
+
+    def _check_stage(self, stage: int) -> None:
+        """Validate a stage index."""
+        if stage < 0 or stage >= self.num_stages:
+            raise IndexError(f'stage={stage} is out of range [0, {self.num_stages}).')
+
+    @property
+    def full_vector(self) -> np.ndarray:
+        """Get all stage parameters flattened by stage."""
+        return self.data.reshape(-1)
+
+    @full_vector.setter
+    def full_vector(self, value: np.ndarray) -> None:
+        """Set all stage parameters from a flat or 2D array."""
+        array = np.asarray(value, dtype=float)
+        if array.shape == (self.Np,):
+            self.set_parameters(array)
+            return
+        if array.shape == (self.num_stages * self.Np,):
+            self.data[:, :] = array.reshape(self.num_stages, self.Np)
+            return
+        if array.shape == (self.num_stages, self.Np):
+            self.data[:, :] = array
+            return
+        raise ValueError(
+            f"Size mismatch: full_vector has shape {array.shape}, "
+            f"but expected ({self.Np},), ({self.num_stages * self.Np},) "
+            f"or ({self.num_stages}, {self.Np}).")
+
+    @property
+    def size(self) -> int:
+        """Get the total number of stored scalar values."""
+        return self.num_stages * self.Np
+
+    def get_data(self, stage: int = 0) -> np.ndarray:
+        """Get the raw parameter vector of one stage."""
+        self._check_stage(stage)
+        return self.data[stage, :]
+
+    def get_parameters(self, stage: int = 0) -> {{ class_name }}:
+        """Get one stage as a {{ class_name }} object."""
+        self._check_stage(stage)
+        parameters = {{ class_name }}()
+        parameters.vector = self.data[stage, :].copy()
+        return parameters
+
+    def get_online_parameters(self) -> np.ndarray:
+        """Get all stage parameters flattened by stage."""
+        return self.full_vector.copy()
+
+    def set_parameters(self, params, stage: int = -1) -> None:
+        """Set one stage or broadcast parameters to all stages."""
+        if isinstance(params, Online{{ class_name }}):
+            if params.num_stages != self.num_stages:
+                raise ValueError(
+                    f'num_stages mismatch: got {params.num_stages}, expected {self.num_stages}.')
+            if stage == -1:
+                self.data[:, :] = params.data
+            else:
+                self._check_stage(stage)
+                self.data[stage, :] = params.data[stage, :]
+            return
+
+        if isinstance(params, {{ class_name }}):
+            params = params.vector
+
+        array = np.asarray(params, dtype=float)
+        if array.shape == (self.Np,):
+            if stage == -1:
+                self.data[:, :] = array
+            else:
+                self._check_stage(stage)
+                self.data[stage, :] = array
+            return
+        if array.shape == (self.num_stages * self.Np,):
+            reshaped = array.reshape(self.num_stages, self.Np)
+            if stage == -1:
+                self.data[:, :] = reshaped
+            else:
+                self._check_stage(stage)
+                self.data[stage, :] = reshaped[stage, :]
+            return
+        if array.shape == (self.num_stages, self.Np):
+            if stage == -1:
+                self.data[:, :] = array
+            else:
+                self._check_stage(stage)
+                self.data[stage, :] = array[stage, :]
+            return
+        raise ValueError(
+            f"Size mismatch: params has shape {array.shape}, "
+            f"but expected ({self.Np},), ({self.num_stages * self.Np},) "
+            f"or ({self.num_stages}, {self.Np}).")
+
+{%- for param in parameters %}
+
+    def set_{{ param.name }}(self, value: np.array, stage: int = -1) -> None:
+        """Set {{ param.name }} for one stage or all stages."""
+{%- if param.size == 1 %}
+        scalar_value = float(np.asarray(value, dtype=float).reshape(()))
+        if stage == -1:
+            self.data[:, self.{{ param.name }}_offset] = scalar_value
+            return
+        self._check_stage(stage)
+        self.data[stage, self.{{ param.name }}_offset] = scalar_value
+{%- else %}
+        vector_value = np.atleast_1d(value).astype(float)
+        if vector_value.shape != (self.{{ param.name }}_length,):
+            raise ValueError(
+                f"Size mismatch: {{ param.name }} has shape {vector_value.shape}, "
+                f"but expected ({self.{{ param.name }}_length},).")
+        start = self.{{ param.name }}_offset
+        end = start + self.{{ param.name }}_length
+        if stage == -1:
+            self.data[:, start:end] = vector_value
+            return
+        self._check_stage(stage)
+        self.data[stage, start:end] = vector_value
+{%- endif %}
+
+    def get_{{ param.name }}(self, stage: int = 0):
+        """Get {{ param.name }} for one stage."""
+        self._check_stage(stage)
+{%- if param.size == 1 %}
+        return float(self.data[stage, self.{{ param.name }}_offset])
+{%- else %}
+        start = self.{{ param.name }}_offset
+        end = start + self.{{ param.name }}_length
+        return self.data[stage, start:end].copy()
+{%- endif %}
+{%- endfor %}
+{%- else %}
+
+
+class {{ class_name }}(_{{ class_name }}Def, VectorBase):
+    """{{ class_name }} for the UAV Model."""
+
+    _type = 'np.array'
+
+    def __init__(
+            self,
+{%- for param in parameters %}
+            {{ param.name }}: np.array = np.array({{ param.value }}){% if not loop.last %},{% else %}):{%- endif %}
+{%- endfor %}
+        """
+        {{ class_name }} for the UAV Model.
+{% for param in parameters %}
+        :param {{ param.name }}: {{ param.description }}
+        :type {{ param.name }}: np.array
+{%- endfor %}
+        """
+        super().__init__()
+{%- for param in parameters %}
+        self.{{ param.name }} = {{ param.name }}
+{%- endfor %}
+{% endif %}
+
 if __name__ == '__main__':
     # Test the {{ class_name }} class
     {{ class_name | lower }} = {{ class_name }}()
@@ -111,4 +306,7 @@ if __name__ == '__main__':
     print('{{ param.name }}:', {{ class_name | lower }}.{{ param.name }})
 {%- endfor %}
     print({{ class_name | lower }})
-
+{% if class_name == 'Parameters' %}
+    online_parameters = Online{{ class_name }}(num_stages=2)
+    print('Online Vector:', online_parameters.full_vector)
+{% endif %}

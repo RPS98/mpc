@@ -1,0 +1,30 @@
+sim_config:
+  max_speed: 1.0 # m/s
+  waypoints:
+    - [0.0, 0.0, 1.0]
+    - [1.0, 0.0, 1.0]
+    - [1.0, 1.0, 1.0]
+    - [0.0, 1.0, 1.0]
+    - [0.0, 0.0, 1.0]
+  path_facing: true 
+controller:
+  solver_definition_path: 'solver_definition_mpc.yaml'
+  ocp_json_file_path: 'acados_mpc/mpc_generated_code/acados_ocp.json'
+  mpc:
+    dt: 0.2 # Delta time between control steps in seconds
+    parameters:
+      mass: [1.0] # Mass of the MAV (kg)
+      desired_orientation: [1.0, 0.0, 0.0, 0.0] # Desired orientation as a quaternion [qw, qx, qy, qz]
+      external_force: [0.0, 0.0, 0.0] # External force acting on the MAV in base frame [fx, fy, fz]
+    cost:
+      # Weight for internal states: [x, y, z, roll, pitch, yaw, vx, vy, vz]
+      Q: [5.0, 5.0, 10.0, 0.1, 0.1, 20.0, 0.1, 0.1, 0.1]
+      # Weight for end states: [x, y, z, roll, pitch, yaw, vx, vy, vz]
+      Qe: [10.0, 10.0, 20.0, 0.1, 0.1, 20.0, 0.1, 0.1, 0.1]
+      # Weight for control inputs: [thrust, wx, wy, wz]
+      R: [0.8, 1.0, 1.0, 0.5]
+    constraints:
+      # Lower bounds for control inputs: [thrust, wx, wy, wz]
+      lbu: [0.01, -3.0, -3.0, -3.0]
+      # Upper bounds for control inputs: [thrust, wx, wy, wz]
+      ubu: [40.0, 3.0, 3.0, 3.0]
