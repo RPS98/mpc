@@ -63,6 +63,8 @@ from mpc_acados_core.generate.utils.read_config import YamlConfig, generate_file
 
 
 CORE_PACKAGE = 'mpc_acados_core'
+DEFAULT_CPP_NAMESPACE = 'acados_mpc'
+DEFAULT_MODEL_NAME = 'mpc'
 TEMPLATES_DIR = Path(__file__).resolve().parent / 'templates'
 
 PY_TEMPLATE = 'templ_model_definition.py.j2'
@@ -72,6 +74,10 @@ CPP_GTEST_TEMPLATE = 'templ_acados_mpc_gtest.cpp.j2'
 MPC_YAML_HPP_TEMPLATE = 'templ_acados_mpc_yaml.hpp.j2'
 MPC_YAML_PY_TEMPLATE = 'templ_acados_mpc_yaml.py.j2'
 MPC_CONFIG_YAML_TEMPLATE = 'templ_mpc_config.yaml.j2'
+ACADOS_MPC_HPP_TEMPLATE = 'templ_acados_mpc.hpp.j2'
+ACADOS_MPC_CPP_TEMPLATE = 'templ_acados_mpc.cpp.j2'
+ACADOS_SIM_HPP_TEMPLATE = 'templ_acados_sim_solver.hpp.j2'
+ACADOS_SIM_CPP_TEMPLATE = 'templ_acados_sim_solver.cpp.j2'
 
 
 def _sanitize_cpp_comment(comment: str) -> str:
@@ -180,6 +186,49 @@ def generate_cpp_datatypes(
     generate_file(
         template_path=_template_path(CPP_GTEST_TEMPLATE),
         output_path=os.path.join(tests_dir, 'acados_mpc_gtest.cpp'),
+        context=context,
+        trailing_blank_line=True,
+    )
+
+
+def generate_cpp_wrappers(
+        controller_root: str,
+        controller_package: str,
+        cpp_namespace: str = DEFAULT_CPP_NAMESPACE,
+        model_name: str = DEFAULT_MODEL_NAME,
+        core_package: str = CORE_PACKAGE) -> None:
+    """Generate the variant-specific C++ wrappers around the acados solver."""
+    context = dict(
+        controller_package=controller_package,
+        cpp_namespace=cpp_namespace,
+        model_name=model_name,
+        core_package=core_package,
+    )
+
+    include_dir = os.path.join(controller_root, 'include', controller_package)
+    src_dir = os.path.join(controller_root, 'src')
+
+    generate_file(
+        template_path=_template_path(ACADOS_MPC_HPP_TEMPLATE),
+        output_path=os.path.join(include_dir, 'acados_mpc.hpp'),
+        context=context,
+        trailing_blank_line=True,
+    )
+    generate_file(
+        template_path=_template_path(ACADOS_MPC_CPP_TEMPLATE),
+        output_path=os.path.join(src_dir, 'acados_mpc.cpp'),
+        context=context,
+        trailing_blank_line=True,
+    )
+    generate_file(
+        template_path=_template_path(ACADOS_SIM_HPP_TEMPLATE),
+        output_path=os.path.join(include_dir, 'acados_sim_solver.hpp'),
+        context=context,
+        trailing_blank_line=True,
+    )
+    generate_file(
+        template_path=_template_path(ACADOS_SIM_CPP_TEMPLATE),
+        output_path=os.path.join(src_dir, 'acados_sim_solver.cpp'),
         context=context,
         trailing_blank_line=True,
     )
@@ -304,6 +353,10 @@ def generate_controller(
     )
     generate_cpp_yaml_header(
         config_data,
+        str(controller_root),
+        controller_package=controller_package,
+    )
+    generate_cpp_wrappers(
         str(controller_root),
         controller_package=controller_package,
     )

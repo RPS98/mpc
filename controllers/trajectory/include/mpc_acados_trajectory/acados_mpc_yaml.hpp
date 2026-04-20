@@ -51,7 +51,7 @@
 #include <string>
 #include <vector>
 
-#include "acados_mpc/acados_mpc.hpp"
+#include "mpc_acados_trajectory/acados_mpc.hpp"
 
 namespace acados_mpc {
 

@@ -19,5 +19,5 @@ integrator:
   num_stages: 4
   num_steps: 3
 cpp_module:
-  generate: true
+  generate: false
   project_name: acados_trajectory_mpc

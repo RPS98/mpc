@@ -8,8 +8,9 @@ build/
 dist/
 
 # Acados generated
-*/c_generated_code/
-*/mpc_generated_code/
+**/c_generated_code/
+**/mpc_generated_code/
+controllers/*/acados_*_mpc/
 *.json
 
 # CMake / C++

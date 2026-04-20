@@ -11,5 +11,5 @@ sim_config:
     - [0.0, 0.0, 2.0]
   path_facing: true
 controller:
-  solver_definition_path: 'solver_definition_mpc_position.yaml'
+  solver_definition_path: 'examples/solver_definition_mpc_position.yaml'
   ocp_json_file_path: 'acados_position_mpc/mpc_generated_code/acados_ocp.json'

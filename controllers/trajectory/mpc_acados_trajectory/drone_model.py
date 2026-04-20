@@ -179,7 +179,7 @@ class DroneModel(CaDynamics, DroneModelBase):
 
 def get_acados_model() -> tuple[AcadosModel, DroneModel]:
     """Initialize the Acados multirotor model for the trajectory controller."""
-    model_name = 'mpc_trajectory'
+    model_name = 'mpc'
 
     drone_model = DroneModel()
 

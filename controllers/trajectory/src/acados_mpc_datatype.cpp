@@ -35,7 +35,7 @@
  * @author Rafael Perez-Segui <r.psegui@upm.es>
  */
 
-#include "acados_mpc/acados_mpc_datatype.hpp"
+#include "mpc_acados_trajectory/acados_mpc_datatype.hpp"
 
 namespace acados_mpc {
 

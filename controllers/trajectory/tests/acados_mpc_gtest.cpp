@@ -39,9 +39,9 @@
 
 #include <memory>
 
-#include "acados_mpc/acados_mpc.hpp"
-#include "acados_mpc/acados_mpc_datatype.hpp"
-#include "acados_mpc/acados_sim_solver.hpp"
+#include "mpc_acados_trajectory/acados_mpc.hpp"
+#include "mpc_acados_trajectory/acados_mpc_datatype.hpp"
+#include "mpc_acados_trajectory/acados_sim_solver.hpp"
 
 namespace acados_mpc {
 
