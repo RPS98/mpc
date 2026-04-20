@@ -5,7 +5,7 @@ mpc:
     # Indices of bounds on u at intermediate shooting nodes (0 to N-1)
     idxbu: [0, 1, 2, 3] # Bounded control inputs: [thrust, wx, wy, wz]
 solver:
-  export_dir: 'acados_trajectory_mpc/'
+  export_dir: 'mpc_acados_trajectory/acados_generated/'
   generate_c_code: true
   verbose: true
   cost_type: EXTERNAL

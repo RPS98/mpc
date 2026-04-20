@@ -11,7 +11,7 @@ mpc:
     # Indices of soft nonlinear constraints at shooting nodes (1 to N)
     idxsh: [0] # Soft constraint on ||v||^2 allow violation with penalty
 solver:
-  export_dir: 'acados_position_mpc/'
+  export_dir: 'mpc_acados_position/acados_generated/'
   generate_c_code: true
   verbose: true
   cost_type: EXTERNAL

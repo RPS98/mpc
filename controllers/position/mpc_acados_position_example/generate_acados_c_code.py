@@ -4,14 +4,14 @@
 
 """Entry point for regenerating acados C code for the position controller.
 
-Run from the controller root so that the configured ``export_dir`` in the
-solver definition yaml resolves to ``./acados_position_mpc/mpc_generated_code``:
+Run from this directory so that the configured ``export_dir`` in the solver
+definition yaml resolves to ``../mpc_acados_position/acados_generated/mpc_generated_code``:
 
     python3 generate_acados_c_code.py
 
 or from anywhere by passing the yaml path:
 
-    python3 generate_acados_c_code.py --yaml controllers/position/examples/solver_definition_mpc_position.yaml
+    python3 generate_acados_c_code.py --yaml /path/to/solver_definition_mpc_position.yaml
 """
 
 from __future__ import annotations
@@ -24,8 +24,9 @@ from pathlib import Path
 from mpc_acados_position import AcadosMPCSolver
 
 
-CONTROLLER_ROOT = Path(__file__).resolve().parent
-DEFAULT_YAML = CONTROLLER_ROOT / 'examples' / 'solver_definition_mpc_position.yaml'
+_EXAMPLE_DIR = Path(__file__).resolve().parent
+CONTROLLER_ROOT = _EXAMPLE_DIR.parent
+DEFAULT_YAML = _EXAMPLE_DIR / 'examples' / 'solver_definition_mpc_position.yaml'
 
 
 def main() -> int:
@@ -53,7 +54,7 @@ def main() -> int:
         generate_code=True,
     )
     print('Acados C code generated under:',
-          args.workdir / 'acados_position_mpc' / 'mpc_generated_code')
+          CONTROLLER_ROOT / 'mpc_acados_position' / 'acados_generated' / 'mpc_generated_code')
     return 0
 
 

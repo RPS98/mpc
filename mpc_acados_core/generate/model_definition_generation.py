@@ -45,12 +45,12 @@ that names the Python/C++ package to generate (e.g. ``mpc_acados_position``).
 
 Usage
 -----
-Run from the controller root (``--output-root`` defaults to the directory two
-levels above the config file, i.e. the controller root when the YAML lives in
-``generate_model_definition/model_definition.yaml``)::
+Run from the controller root (``--output-root`` defaults to the directory
+containing the config file, i.e. the controller root when the YAML lives at
+``<controller_root>/model_definition.yaml``)::
 
     python3 -m mpc_acados_core.generate.model_definition_generation \\
-        --config generate_model_definition/model_definition.yaml
+        --config model_definition.yaml
 
 From an arbitrary location::
 
@@ -171,7 +171,7 @@ def generate_cpp_datatypes(
         controller_root: str,
         controller_package: str,
         core_package: str = CORE_PACKAGE) -> None:
-    """Generate C++ interface files into controller/include, src, tests."""
+    """Generate C++ interface files into <pkg>/include, <pkg>/src, <pkg>/tests."""
     context = dict(
         state_parameters=_get_cpp_parameters(config_data, 'state'),
         actuation_parameters=_get_cpp_parameters(config_data, 'actuation'),
@@ -180,9 +180,9 @@ def generate_cpp_datatypes(
         core_package=core_package,
     )
 
-    include_dir = os.path.join(controller_root, 'include', controller_package)
-    src_dir = os.path.join(controller_root, 'src')
-    tests_dir = os.path.join(controller_root, 'tests')
+    include_dir = os.path.join(controller_root, controller_package, 'include', controller_package)
+    src_dir = os.path.join(controller_root, controller_package, 'src')
+    tests_dir = os.path.join(controller_root, controller_package, 'tests')
 
     generate_file(
         template_path=_template_path(CPP_HPP_TEMPLATE),
@@ -218,8 +218,8 @@ def generate_cpp_wrappers(
         core_package=core_package,
     )
 
-    include_dir = os.path.join(controller_root, 'include', controller_package)
-    src_dir = os.path.join(controller_root, 'src')
+    include_dir = os.path.join(controller_root, controller_package, 'include', controller_package)
+    src_dir = os.path.join(controller_root, controller_package, 'src')
 
     generate_file(
         template_path=_template_path(ACADOS_MPC_HPP_TEMPLATE),
@@ -260,7 +260,7 @@ def generate_cpp_yaml_header(
         core_package=core_package,
     )
 
-    include_dir = os.path.join(controller_root, 'include', controller_package)
+    include_dir = os.path.join(controller_root, controller_package, 'include', controller_package)
     generate_file(
         template_path=_template_path(MPC_YAML_HPP_TEMPLATE),
         output_path=os.path.join(include_dir, 'acados_mpc_yaml.hpp'),
@@ -377,8 +377,9 @@ def generate_controller(
         str(controller_root),
         controller_package=package_name,
     )
+    lib_dir = controller_root / package_name
     if generate_mpc_config:
-        mpc_config_output = controller_root / 'config' / 'mpc_config_template.yaml'
+        mpc_config_output = controller_root / f'{package_name}_example' / 'config' / 'mpc_config_template.yaml'
         os.makedirs(mpc_config_output.parent, exist_ok=True)
         generate_mpc_config_yaml(
             config_data,
@@ -386,17 +387,17 @@ def generate_controller(
             controller_package=package_name,
         )
 
-    cpp_files = _collect_cpp_like_files(str(controller_root / 'include'))
-    cpp_files += _collect_cpp_like_files(str(controller_root / 'src'))
-    cpp_files += _collect_cpp_like_files(str(controller_root / 'tests'))
+    cpp_files = _collect_cpp_like_files(str(lib_dir / 'include'))
+    cpp_files += _collect_cpp_like_files(str(lib_dir / 'src'))
+    cpp_files += _collect_cpp_like_files(str(lib_dir / 'tests'))
     _clang_format_files(cpp_files)
 
     print(f'[{package_name}] Python datatypes -> {output_py_dir}')
-    print(f'[{package_name}] C++ include      -> {controller_root / "include" / package_name}')
-    print(f'[{package_name}] C++ src          -> {controller_root / "src"}')
-    print(f'[{package_name}] C++ tests        -> {controller_root / "tests"}')
+    print(f'[{package_name}] C++ include      -> {lib_dir / "include" / package_name}')
+    print(f'[{package_name}] C++ src          -> {lib_dir / "src"}')
+    print(f'[{package_name}] C++ tests        -> {lib_dir / "tests"}')
     if generate_mpc_config:
-        print(f'[{package_name}] MPC config       -> {controller_root / "config" / "mpc_config_template.yaml"}')
+        print(f'[{package_name}] MPC config       -> {mpc_config_output}')
 
 
 def _read_package_name(config_file: Path) -> str:
@@ -425,9 +426,8 @@ def _parse_args(argv=None):
         default=None,
         metavar='PATH',
         help='Controller root directory where output is written. '
-             'Defaults to the directory two levels above --config '
-             '(i.e. <controller_root>/generate_model_definition/model_definition.yaml '
-             '-> <controller_root>).',
+             'Defaults to the directory containing --config '
+             '(i.e. <controller_root>/model_definition.yaml -> <controller_root>).',
     )
     parser.add_argument(
         '--no-mpc-config',
@@ -445,8 +445,8 @@ def main(argv=None) -> int:
     if args.output_root is not None:
         controller_root = Path(args.output_root).resolve()
     else:
-        # Convention: config lives at <controller_root>/generate_model_definition/model_definition.yaml
-        controller_root = config_file.parent.parent
+        # Convention: config lives at <controller_root>/model_definition.yaml
+        controller_root = config_file.parent
 
     generate_controller(
         controller_root=controller_root,

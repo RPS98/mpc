@@ -10,7 +10,7 @@ dist/
 # Acados generated
 **/c_generated_code/
 **/mpc_generated_code/
-controllers/*/acados_*_mpc/
+**/acados_generated/
 *.json
 
 # CMake / C++

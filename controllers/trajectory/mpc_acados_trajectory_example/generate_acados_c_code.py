@@ -4,8 +4,8 @@
 
 """Entry point for regenerating acados C code for the trajectory controller.
 
-Run from the controller root so that the configured ``export_dir`` in the
-solver definition yaml resolves to ``./acados_trajectory_mpc/mpc_generated_code``.
+Run from this directory so that the configured ``export_dir`` in the solver
+definition yaml resolves to ``../mpc_acados_trajectory/acados_generated/mpc_generated_code``.
 """
 
 from __future__ import annotations
@@ -18,8 +18,9 @@ from pathlib import Path
 from mpc_acados_trajectory import AcadosMPCSolver
 
 
-CONTROLLER_ROOT = Path(__file__).resolve().parent
-DEFAULT_YAML = CONTROLLER_ROOT / 'examples' / 'solver_definition_mpc_trajectory.yaml'
+_EXAMPLE_DIR = Path(__file__).resolve().parent
+CONTROLLER_ROOT = _EXAMPLE_DIR.parent
+DEFAULT_YAML = _EXAMPLE_DIR / 'examples' / 'solver_definition_mpc_trajectory.yaml'
 
 
 def main() -> int:
@@ -47,7 +48,7 @@ def main() -> int:
         generate_code=True,
     )
     print('Acados C code generated under:',
-          args.workdir / 'acados_trajectory_mpc' / 'mpc_generated_code')
+          CONTROLLER_ROOT / 'mpc_acados_trajectory' / 'acados_generated' / 'mpc_generated_code')
     return 0
 
 

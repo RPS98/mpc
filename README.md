@@ -1,17 +1,6 @@
 # mpc_acados_core
 
-Controller-agnostic MPC library built on [acados](https://github.com/acados/acados)
-for quadrotor-style vehicles.
-
-The core provides:
-
-- **Python base classes** — `MPCBase`, `AcadosMPCSolverBase`, datatypes, gains,
-  bounds, logging and plotting utilities.
-- **C++ INTERFACE target** — `mpc_acados_core::mpc_acados_core` (header-only;
-  re-exports acados include dirs and libraries).
-- **Code generator** — Jinja2-based generator that reads a
-  `model_definition.yaml` and produces the variant-specific Python modules and
-  C++ headers/sources.
+Controller MPC library built on [acados](https://github.com/acados/acados) for quadrotor aerial vehicles.
 
 Controller variants that depend on this core:
 
@@ -93,9 +82,6 @@ python3 -m mpc_acados_core.generate.model_definition_generation \
   --config /path/to/model_definition.yaml \
   --output-root /path/to/controller_root
 ```
-
-Each controller ships a `generate.sh` wrapper that invokes this command with
-the controller's own `model_definition.yaml`.
 
 ---
 

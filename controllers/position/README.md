@@ -19,6 +19,29 @@ Actuation: `thrust` (N), `angular_velocity[3]` (rad/s).
 
 ---
 
+## Directory layout
+
+```
+controllers/position/
+├── mpc_acados_position/              ← THE LIBRARY
+│   ├── *.py                          (generated Python modules)
+│   ├── include/mpc_acados_position/  (generated C++ headers)
+│   ├── src/                          (generated C++ sources)
+│   ├── acados_generated/             (generated acados C code)
+│   └── tests/                        (generated C++ gtest skeleton)
+├── mpc_acados_position_example/      ← GENERATE + EXAMPLE
+│   ├── generate.sh                   (regenerate mpc_acados_position/ from model_definition.yaml)
+│   ├── generate_acados_c_code.py     (generate acados C solver)
+│   ├── config/mpc_config_template.yaml
+│   └── examples/                     (run_example.py, run_example.cpp, configs)
+├── model_definition.yaml             ← MODEL DEFINITION (input to the generator)
+├── pyproject.toml
+├── CMakeLists.txt
+└── README.md
+```
+
+---
+
 ## Prerequisites
 
 1. **acados** — build from source with `ACADOS_SOURCE_DIR` set:
@@ -44,12 +67,11 @@ Actuation: `thrust` (N), `angular_velocity[3]` (rad/s).
 
 ### Step 1 — Generate Python/C++ datatypes
 
-Generates `mpc_acados_position/` (Python modules) and `include/`/`src/`
-(C++ headers and sources) from `generate_model_definition/model_definition.yaml`.
-Only needed when the model definition changes.
+Generates `mpc_acados_position/` (Python modules, C++ headers, C++ sources)
+from `model_definition.yaml`. Only needed when the model definition changes.
 
 ```bash
-cd /path/to/this/controller
+cd mpc_acados_position_example
 ./generate.sh
 ```
 
@@ -57,17 +79,17 @@ Or from anywhere:
 
 ```bash
 python3 -m mpc_acados_core.generate.model_definition_generation \
-  --config /path/to/this/controller/generate_model_definition/model_definition.yaml
+  --config /path/to/this/controller/model_definition.yaml
 ```
 
 ### Step 2 — Generate acados C code
 
 Compiles the CasADi model and runs acados to produce the C solver under
-`acados_position_mpc/mpc_generated_code/`. Only needed once (or after changing
+`mpc_acados_position/acados_generated/`. Only needed once (or after changing
 the solver definition).
 
 ```bash
-cd /path/to/this/controller
+cd mpc_acados_position_example
 python3 generate_acados_c_code.py
 # or point to a custom solver definition:
 python3 generate_acados_c_code.py --yaml examples/solver_definition_mpc_position.yaml
@@ -86,7 +108,8 @@ cmake --build build -j
 ```
 
 CMake will **auto-run step 2** at configure time if the generated `.so` is
-missing. To force regeneration, delete `acados_position_mpc/` and reconfigure.
+missing. To force regeneration, delete `mpc_acados_position/acados_generated/`
+and reconfigure.
 
 ### Step 4 — Install Python package (optional)
 
@@ -101,7 +124,7 @@ pip install -e /path/to/this/controller
 ### Python
 
 ```bash
-cd /path/to/this/controller
+cd mpc_acados_position_example
 python3 examples/run_example.py \
   -c examples/simulation_config.yaml \
   -m examples/mpc_config.yaml \
@@ -114,9 +137,9 @@ python3 -m mpc_acados_core.plotting.plot_results -f simulator_logs/mpc_log.csv
 ### C++
 
 ```bash
-./build/examples/mpc_acados_position_run_example \
-  -c examples/simulation_config.yaml \
-  -m examples/mpc_config.yaml \
+./build/mpc_acados_position_example/examples/mpc_acados_position_run_example \
+  -c mpc_acados_position_example/examples/simulation_config.yaml \
+  -m mpc_acados_position_example/examples/mpc_config.yaml \
   -f mpc_log.csv
 
 # Plot results:
@@ -125,30 +148,32 @@ python3 -m mpc_acados_core.plotting.plot_results -f simulator_logs/mpc_log.csv
 
 Available arguments:
 
-| Flag | Default                             | Description                   |
-| ---- | ----------------------------------- | ----------------------------- |
-| `-c` | `examples/simulation_config.yaml`  | Simulation + waypoint config  |
-| `-m` | `examples/mpc_config.yaml`         | MPC gains and bounds config   |
-| `-f` | `mpc_log.csv`                      | Output CSV filename           |
+| Flag | Default                                                    | Description                   |
+| ---- | ---------------------------------------------------------- | ----------------------------- |
+| `-c` | `mpc_acados_position_example/examples/simulation_config.yaml` | Simulation + waypoint config  |
+| `-m` | `mpc_acados_position_example/examples/mpc_config.yaml`    | MPC gains and bounds config   |
+| `-f` | `mpc_log.csv`                                             | Output CSV filename           |
 
 ---
 
 ## Files
 
-| Path                                        | Hand-written | Notes                                    |
-| ------------------------------------------- | ------------ | ---------------------------------------- |
-| `generate_model_definition/model_definition.yaml` | yes    | Input to the code generator.             |
-| `generate.sh`                               | yes          | Invokes the core generator.              |
-| `generate_acados_c_code.py`                 | yes          | Generates the acados C solver.           |
-| `CMakeLists.txt`                            | yes          | Builds `libmpc_acados_position.so`.      |
-| `pyproject.toml`                            | yes          | Pip distribution `mpc_acados_position`.  |
-| `examples/`                                 | yes          | Run scripts and YAML configs.            |
-| `config/mpc_config_template.yaml`           | generated    | Array sizes derived from model.          |
-| `include/mpc_acados_position/*.hpp`         | generated    | C++ datatype headers and wrappers.       |
-| `src/*.cpp`                                 | generated    | C++ sources.                             |
-| `mpc_acados_position/*.py`                  | generated    | Python modules (state, actuation, ...).  |
-| `tests/`                                    | generated    | C++ gtest skeleton.                      |
-| `acados_position_mpc/`                      | generated    | acados C code (from step 2).             |
+| Path                                                        | Hand-written | Notes                                    |
+| ----------------------------------------------------------- | ------------ | ---------------------------------------- |
+| `model_definition.yaml`                                     | yes          | Input to the code generator.             |
+| `CMakeLists.txt`                                            | yes          | Builds `libmpc_acados_position.so`.      |
+| `pyproject.toml`                                            | yes          | Pip distribution `mpc_acados_position`.  |
+| `mpc_acados_position_example/generate.sh`                   | yes          | Invokes the core generator.              |
+| `mpc_acados_position_example/generate_acados_c_code.py`     | yes          | Generates the acados C solver.           |
+| `mpc_acados_position_example/examples/`                     | yes          | Run scripts and YAML configs.            |
+| `mpc_acados_position/drone_model.py`                        | yes          | CasADi quadrotor dynamics.               |
+| `mpc_acados_position/__init__.py`                           | yes          | Package exports.                         |
+| `mpc_acados_position_example/config/mpc_config_template.yaml` | generated  | Array sizes derived from model.          |
+| `mpc_acados_position/include/mpc_acados_position/*.hpp`     | generated    | C++ datatype headers and wrappers.       |
+| `mpc_acados_position/src/*.cpp`                             | generated    | C++ sources.                             |
+| `mpc_acados_position/*.py` (state, actuation, ...)          | generated    | Python modules.                          |
+| `mpc_acados_position/tests/`                                | generated    | C++ gtest skeleton.                      |
+| `mpc_acados_position/acados_generated/`                     | generated    | acados C code (from step 2).             |
 
 ---
 

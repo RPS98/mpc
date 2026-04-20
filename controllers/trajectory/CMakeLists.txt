@@ -27,7 +27,7 @@ if(NOT TARGET mpc_acados_core::mpc_acados_core)
 endif()
 
 set(MPC_ACADOS_TRAJECTORY_CODEGEN_ROOT
-  "${CMAKE_CURRENT_SOURCE_DIR}/acados_trajectory_mpc"
+  "${CMAKE_CURRENT_SOURCE_DIR}/mpc_acados_trajectory/acados_generated"
   CACHE PATH
   "Directory that contains mpc_generated_code for the trajectory controller."
 )
@@ -42,7 +42,7 @@ set(MPC_ACADOS_TRAJECTORY_GEN_CODE_DIR
 if(NOT EXISTS "${MPC_ACADOS_TRAJECTORY_GEN_CODE_DIR}/libacados_ocp_solver_mpc.so")
   message(STATUS "[trajectory] Generating acados C code (one-time, ~30s)...")
   execute_process(
-    COMMAND ${Python3_EXECUTABLE} generate_acados_c_code.py
+    COMMAND ${Python3_EXECUTABLE} mpc_acados_trajectory_example/generate_acados_c_code.py
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     RESULT_VARIABLE _gen_result
     OUTPUT_VARIABLE _gen_output
@@ -64,16 +64,16 @@ set(MPC_ACADOS_TRAJECTORY_GEN_LIBS
 )
 
 set(MPC_ACADOS_TRAJECTORY_SOURCES
-  src/acados_mpc.cpp
-  src/acados_sim_solver.cpp
-  src/acados_mpc_datatype.cpp
+  mpc_acados_trajectory/src/acados_mpc.cpp
+  mpc_acados_trajectory/src/acados_sim_solver.cpp
+  mpc_acados_trajectory/src/acados_mpc_datatype.cpp
 )
 
 add_library(mpc_acados_trajectory SHARED ${MPC_ACADOS_TRAJECTORY_SOURCES})
 add_library(mpc_acados_trajectory::mpc_acados_trajectory ALIAS mpc_acados_trajectory)
 
 target_include_directories(mpc_acados_trajectory PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/mpc_acados_trajectory/include>
   $<INSTALL_INTERFACE:include>
 )
 foreach(_gen_inc ${MPC_ACADOS_TRAJECTORY_GEN_INCLUDE_DIRS})
@@ -91,5 +91,5 @@ target_link_libraries(mpc_acados_trajectory
 target_compile_features(mpc_acados_trajectory PUBLIC cxx_std_17)
 
 if(MPC_ACADOS_BUILD_EXAMPLES)
-  add_subdirectory(examples)
+  add_subdirectory(mpc_acados_trajectory_example/examples)
 endif()

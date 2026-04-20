@@ -28,7 +28,7 @@ endif()
 
 # Where acados generates the C code when generate_acados_c_code.py is run.
 set(MPC_ACADOS_POSITION_CODEGEN_ROOT
-  "${CMAKE_CURRENT_SOURCE_DIR}/acados_position_mpc"
+  "${CMAKE_CURRENT_SOURCE_DIR}/mpc_acados_position/acados_generated"
   CACHE PATH
   "Directory that contains mpc_generated_code for the position controller."
 )
@@ -42,11 +42,11 @@ set(MPC_ACADOS_POSITION_GEN_CODE_DIR
 
 # Regenerate the acados C code at configure time if it is missing. Users can
 # force regeneration by removing ${MPC_ACADOS_POSITION_CODEGEN_ROOT} or by
-# running generate_acados_c_code.py manually.
+# running mpc_acados_position_example/generate_acados_c_code.py manually.
 if(NOT EXISTS "${MPC_ACADOS_POSITION_GEN_CODE_DIR}/libacados_ocp_solver_mpc.so")
   message(STATUS "[position] Generating acados C code (one-time, ~30s)...")
   execute_process(
-    COMMAND ${Python3_EXECUTABLE} generate_acados_c_code.py
+    COMMAND ${Python3_EXECUTABLE} mpc_acados_position_example/generate_acados_c_code.py
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     RESULT_VARIABLE _gen_result
     OUTPUT_VARIABLE _gen_output
@@ -68,16 +68,16 @@ set(MPC_ACADOS_POSITION_GEN_LIBS
 )
 
 set(MPC_ACADOS_POSITION_SOURCES
-  src/acados_mpc.cpp
-  src/acados_sim_solver.cpp
-  src/acados_mpc_datatype.cpp
+  mpc_acados_position/src/acados_mpc.cpp
+  mpc_acados_position/src/acados_sim_solver.cpp
+  mpc_acados_position/src/acados_mpc_datatype.cpp
 )
 
 add_library(mpc_acados_position SHARED ${MPC_ACADOS_POSITION_SOURCES})
 add_library(mpc_acados_position::mpc_acados_position ALIAS mpc_acados_position)
 
 target_include_directories(mpc_acados_position PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/mpc_acados_position/include>
   $<INSTALL_INTERFACE:include>
 )
 foreach(_gen_inc ${MPC_ACADOS_POSITION_GEN_INCLUDE_DIRS})
@@ -95,5 +95,5 @@ target_link_libraries(mpc_acados_position
 target_compile_features(mpc_acados_position PUBLIC cxx_std_17)
 
 if(MPC_ACADOS_BUILD_EXAMPLES)
-  add_subdirectory(examples)
+  add_subdirectory(mpc_acados_position_example/examples)
 endif()
