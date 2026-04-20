@@ -11,6 +11,7 @@ dist/
 **/c_generated_code/
 **/mpc_generated_code/
 **/acados_generated/
+controllers/*/mpc_acados_*_example/mpc_interface/
 *.json
 
 # CMake / C++

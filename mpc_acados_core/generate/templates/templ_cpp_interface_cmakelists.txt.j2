@@ -1,0 +1,69 @@
+# THIS FILE HAS BEEN AUTOMATICALLY GENERATED USING {{ template_file }}
+#
+# CMake target for {{ controller_package }} (library template).
+#
+# This CMakeLists.txt is a template: it is NOT buildable in isolation. It
+# expects the acados-generated C code to live in a sibling directory
+# ``./mpc_generated_code/``. A consumer project is expected to copy this
+# ``cpp_interface/`` next to the acados artifacts (typically as
+# ``mpc_interface/`` via ``generate_mpc_interface.sh``) and then do
+# ``add_subdirectory(mpc_interface)`` from its own CMakeLists.txt.
+#
+# The consumer must provide ``{{ core_package }}::{{ core_package }}``. This
+# file will pull it via ``add_subdirectory(${MPC_ACADOS_CORE_DIR} ...)`` if
+# the target is not already defined and ``MPC_ACADOS_CORE_DIR`` is set.
+
+cmake_minimum_required(VERSION 3.16)
+project({{ controller_package }} CXX)
+
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 17)
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
+endif()
+
+if(NOT TARGET {{ core_package }}::{{ core_package }})
+  if(NOT DEFINED MPC_ACADOS_CORE_DIR)
+    message(FATAL_ERROR
+      "{{ controller_package }}: target {{ core_package }}::{{ core_package }} not found and "
+      "MPC_ACADOS_CORE_DIR is not set. Either add {{ core_package }} to your build "
+      "before add_subdirectory({{ controller_package }}), or pass "
+      "-DMPC_ACADOS_CORE_DIR=<path-to-{{ core_package }}/cpp_interface>.")
+  endif()
+  add_subdirectory(${MPC_ACADOS_CORE_DIR} {{ core_package }}_build)
+endif()
+
+# acados writes its C code under ${export_dir}/mpc_generated_code/mpc_generated_code
+# (the outer folder is the export_dir set in the solver yaml, the inner one
+# is appended by acados itself during template rendering).
+set(GEN_CODE_PARENT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/mpc_generated_code")
+set(GEN_CODE_DIR        "${GEN_CODE_PARENT_DIR}/mpc_generated_code")
+
+if(NOT EXISTS "${GEN_CODE_DIR}/libacados_ocp_solver_mpc.so")
+  message(FATAL_ERROR
+    "{{ controller_package }}: acados C code not found under\n"
+    "    ${GEN_CODE_DIR}\n"
+    "Run generate_mpc_interface.sh in the consumer project to produce it.")
+endif()
+
+add_library({{ controller_package }} SHARED
+  src/acados_mpc.cpp
+  src/acados_sim_solver.cpp
+  src/acados_mpc_datatype.cpp
+)
+add_library({{ controller_package }}::{{ controller_package }} ALIAS {{ controller_package }})
+
+target_include_directories({{ controller_package }} PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<BUILD_INTERFACE:${GEN_CODE_PARENT_DIR}>
+  $<BUILD_INTERFACE:${GEN_CODE_DIR}>
+  $<INSTALL_INTERFACE:include>
+)
+
+target_link_libraries({{ controller_package }}
+  PUBLIC
+    {{ core_package }}::{{ core_package }}
+    ${GEN_CODE_DIR}/libacados_ocp_solver_mpc.so
+    ${GEN_CODE_DIR}/libacados_sim_solver_mpc.so
+)
+
+target_compile_features({{ controller_package }} PUBLIC cxx_std_17)

@@ -20,6 +20,3 @@ requires-python = ">=3.8"
 
 [tool.setuptools.packages.find]
 include = ["mpc_acados_position", "mpc_acados_position.*"]
-
-[tool.setuptools.package-data]
-"mpc_acados_position" = ["../include/**/*", "../src/**/*", "../config/**/*"]

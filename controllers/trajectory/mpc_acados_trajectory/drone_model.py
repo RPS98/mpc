@@ -46,10 +46,10 @@ import casadi as ca
 from mpc_acados_core.drone_model import DroneModelBase
 from mpc_acados_core.utils import quaternion_utils as q_utils
 
-from mpc_acados_trajectory.actuation import CaActuation
-from mpc_acados_trajectory.dynamics import CaDynamics
-from mpc_acados_trajectory.parameters import CaParameters
-from mpc_acados_trajectory.state import CaState
+from mpc_acados_trajectory.model_definition.actuation import CaActuation
+from mpc_acados_trajectory.model_definition.dynamics import CaDynamics
+from mpc_acados_trajectory.model_definition.parameters import CaParameters
+from mpc_acados_trajectory.model_definition.state import CaState
 
 
 class DroneModel(CaDynamics, DroneModelBase):

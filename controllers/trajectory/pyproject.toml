@@ -20,6 +20,3 @@ requires-python = ">=3.8"
 
 [tool.setuptools.packages.find]
 include = ["mpc_acados_trajectory", "mpc_acados_trajectory.*"]
-
-[tool.setuptools.package-data]
-"mpc_acados_trajectory" = ["../include/**/*", "../src/**/*", "../config/**/*"]

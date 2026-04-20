@@ -24,14 +24,17 @@ from mpc_acados_core import (
     StateBounds,
 )
 
-from mpc_acados_trajectory.actuation import Actuation, CaActuation
-from mpc_acados_trajectory.dynamics import CaDynamics, Dynamics
-from mpc_acados_trajectory.parameters import (
+from mpc_acados_trajectory.model_definition import (
+    Actuation,
+    CaActuation,
+    CaDynamics,
     CaParameters,
+    CaState,
+    Dynamics,
     OnlineParameters,
     Parameters,
+    State,
 )
-from mpc_acados_trajectory.state import CaState, State
 from mpc_acados_trajectory.drone_model import DroneModel, get_acados_model
 
 

@@ -4,19 +4,19 @@ Trajectory-tracking MPC controller for quadrotor-style vehicles.
 
 Uses **9 online parameters per stage**:
 
-| Parameter              | Size | Description                                 |
-| ---------------------- | ---- | ------------------------------------------- |
-| `mass`                 | 1    | Vehicle mass (kg)                           |
-| `desired_position`     | 3    | Reference position in world frame (m)       |
-| `desired_orientation`  | 4    | Reference orientation as quaternion         |
-| `desired_velocity`     | 3    | Reference linear velocity (m/s)             |
-| `desired_acceleration` | 3    | Reference linear acceleration (m/s²)        |
-| `external_force`       | 3    | External force in body frame (N)            |
-| `Q`                    | 9    | Stage cost gains (pos + attitude + vel)     |
-| `Qe`                   | 9    | Terminal cost gains                         |
-| `R`                    | 4    | Control input cost gains                    |
+| Parameter              | Size | Description                             |
+| ---------------------- | ---- | --------------------------------------- |
+| `mass`                 | 1    | Vehicle mass (kg)                       |
+| `desired_position`     | 3    | Reference position in world frame (m)   |
+| `desired_orientation`  | 4    | Reference orientation as quaternion     |
+| `desired_velocity`     | 3    | Reference linear velocity (m/s)         |
+| `desired_acceleration` | 3    | Reference linear acceleration (m/s²)    |
+| `external_force`       | 3    | External force in body frame (N)        |
+| `Q`                    | 9    | Stage cost gains (pos + attitude + vel) |
+| `Qe`                   | 9    | Terminal cost gains                     |
+| `R`                    | 4    | Control input cost gains                |
 
-State: `position[3]`, `orientation[4]`, `linear_velocity[3]` (10 DOF).  
+State: `position[3]`, `orientation[4]`, `linear_velocity[3]` (10 DOF).
 Actuation: `thrust` (N), `angular_velocity[3]` (rad/s).
 
 ---
@@ -25,157 +25,165 @@ Actuation: `thrust` (N), `angular_velocity[3]` (rad/s).
 
 ```
 controllers/trajectory/
-├── mpc_acados_trajectory/              ← THE LIBRARY
-│   ├── *.py                            (generated Python modules)
-│   ├── include/mpc_acados_trajectory/  (generated C++ headers)
-│   ├── src/                            (generated C++ sources)
-│   ├── acados_generated/               (generated acados C code)
-│   └── tests/                          (generated C++ gtest skeleton)
-├── mpc_acados_trajectory_example/      ← GENERATE + EXAMPLE
-│   ├── generate.sh                     (regenerate mpc_acados_trajectory/ from model_definition.yaml)
-│   ├── generate_acados_c_code.py       (generate acados C solver)
-│   ├── config/mpc_config_template.yaml
-│   └── examples/                       (run_example.py, run_example.cpp, configs)
-├── model_definition.yaml               ← MODEL DEFINITION (input to the generator)
+├── mpc_acados_trajectory/                       ← LIBRARY (template)
+│   ├── __init__.py                              (hand-written)
+│   ├── drone_model.py                           (hand-written)
+│   ├── model_definition/                        ← Python datatypes (generated)
+│   │   ├── __init__.py, state.py, actuation.py,
+│   │   │   parameters.py, dynamics.py
+│   ├── utils/
+│   │   ├── __init__.py, mpc_yaml.py             (generated)
+│   └── cpp_interface/                           ← C++ template (not buildable alone)
+│       ├── CMakeLists.txt                       (generated)
+│       ├── include/mpc_acados_trajectory/*.hpp  (generated)
+│       ├── src/*.cpp                            (generated)
+│       └── tests/                               (generated)
+├── mpc_acados_trajectory_example/               ← CONSUMER PROJECT
+│   ├── CMakeLists.txt                           (entry point C++ build)
+│   ├── generate_mpc_interface.sh                (builds mpc_interface/ from cpp_interface/ + acados-C)
+│   ├── solver_definition_mpc_trajectory.yaml    (input to generate_mpc_interface.sh)
+│   ├── mpc_interface/                           (generated, gitignored)
+│   │   ├── CMakeLists.txt, include/, src/, tests/
+│   │   └── mpc_generated_code/mpc_generated_code/
+│   │       ├── libacados_ocp_solver_mpc.so
+│   │       └── libacados_sim_solver_mpc.so
+│   ├── examples/
+│   │   ├── run_example.py, run_example.cpp
+│   │   └── simulation_config.yaml, mpc_config.yaml, sim_yaml.hpp
+│   ├── run_py_example.sh
+│   └── run_cpp_example.sh
+├── generate_datatypes.sh                        ← regenerate the library
+├── model_definition.yaml                        ← MODEL DEFINITION (input)
 ├── pyproject.toml
-├── CMakeLists.txt
 └── README.md
 ```
+
+`cpp_interface/` is deliberately not self-contained: it expects the
+acados-generated C code in a sibling directory named `mpc_generated_code/`.
+A consumer is expected to copy `cpp_interface/` somewhere writable, drop the
+acados artifacts next to it, and `add_subdirectory(<the_copy>)`. That is
+exactly what `mpc_acados_trajectory_example/generate_mpc_interface.sh` does
+to produce `mpc_interface/`.
 
 ---
 
 ## Prerequisites
 
-1. **acados** — build from source with `ACADOS_SOURCE_DIR` set:
+1. **acados** — build from source with `ACADOS_SOURCE_DIR` exported:
    ```bash
    export ACADOS_SOURCE_DIR=/path/to/acados
    ```
-
-2. **mpc_acados_core** — install the core library:
+2. **mpc_acados_core** — install or put on `PYTHONPATH`:
    ```bash
    pip install -e /path/to/mpc_acados_core_repo
-   # or add to PYTHONPATH:
-   export PYTHONPATH=/path/to/mpc_acados_core_repo:$PYTHONPATH
+   # or: export PYTHONPATH=/path/to/mpc_acados_core_repo:$PYTHONPATH
    ```
-
-3. Python packages: `numpy`, `casadi`, `acados_template`, `pyyaml`, `jinja2`,
-   `matplotlib`, `tqdm`
-
-4. C++ build tools: CMake 3.16+, C++17 compiler, Eigen3, yaml-cpp
+3. Python packages: `numpy`, `casadi`, `acados_template`, `pyyaml`,
+   `jinja2`, `matplotlib`, `tqdm`.
+4. C++ toolchain: CMake 3.16+, C++17 compiler, Eigen3, yaml-cpp.
 
 ---
 
 ## Workflow
 
-### Step 1 — Generate Python/C++ datatypes
-
-Generates `mpc_acados_trajectory/` (Python modules, C++ headers, C++ sources)
-from `model_definition.yaml`. Only needed when the model definition changes.
+### 1. Regenerate the library (when `model_definition.yaml` changes)
 
 ```bash
-cd mpc_acados_trajectory_example
-./generate.sh
+cd controllers/trajectory
+./generate_datatypes.sh
 ```
 
-Or from anywhere:
+Produces Python modules under `mpc_acados_trajectory/model_definition/` and
+`mpc_acados_trajectory/utils/`, the C++ headers/sources/tests under
+`mpc_acados_trajectory/cpp_interface/`, and the C++ template's
+`cpp_interface/CMakeLists.txt`.
+
+Equivalent call (run from anywhere):
 
 ```bash
 python3 -m mpc_acados_core.generate.model_definition_generation \
-  --config /path/to/this/controller/model_definition.yaml
+  --config /path/to/controllers/trajectory/model_definition.yaml
 ```
 
-### Step 2 — Generate acados C code
-
-Compiles the CasADi model and runs acados to produce the C solver under
-`mpc_acados_trajectory/acados_generated/`. Only needed once (or after changing
-the solver definition).
+### 2. Install the Python package (optional)
 
 ```bash
-cd mpc_acados_trajectory_example
-python3 generate_acados_c_code.py
-# or point to a custom solver definition:
-python3 generate_acados_c_code.py --yaml examples/solver_definition_mpc_trajectory.yaml
+pip install -e controllers/trajectory
 ```
 
-### Step 3 — Build C++
+### 3. Build the C++ example
 
 ```bash
-cmake -S /path/to/this/controller -B build
-cmake --build build -j
-
-# With mpc_acados_core in a non-default location:
-cmake -S /path/to/this/controller -B build \
-  -DMPC_ACADOS_CORE_DIR=/path/to/mpc_acados_core/cpp_interface
+cd controllers/trajectory/mpc_acados_trajectory_example
+cmake -S . -B build
 cmake --build build -j
 ```
 
-CMake will **auto-run step 2** at configure time if the generated `.so` is
-missing. To force regeneration, delete `mpc_acados_trajectory/acados_generated/`
-and reconfigure.
+The very first CMake configure calls `generate_mpc_interface.sh`
+automatically. That script:
 
-### Step 4 — Install Python package (optional)
+1. Copies `../mpc_acados_trajectory/cpp_interface/` to
+   `mpc_acados_trajectory_example/mpc_interface/`.
+2. Runs acados (via the Python API) with
+   `solver_definition_mpc_trajectory.yaml`, writing the C solver to
+   `mpc_interface/mpc_generated_code/mpc_generated_code/`.
+
+After that the CMake graph is just
+`add_subdirectory(mpc_interface) + add_subdirectory(examples)`.
+
+To force a fresh `mpc_interface/` (e.g. after editing the solver definition),
+delete it and re-run CMake, or invoke `./generate_mpc_interface.sh` by hand.
+
+### 4. Run the examples
 
 ```bash
-pip install -e /path/to/this/controller
+# Python:
+./run_py_example.sh
+
+# C++ (needs build from step 3):
+./run_cpp_example.sh
 ```
+
+Both produce `simulator_logs/mpc_log.csv` and open a plot.
 
 ---
 
-## Run the examples
+## Using the controller in a separate repository
 
-### Python
+`mpc_acados_trajectory_example/` is intentionally laid out as a minimal
+downstream consumer. To integrate the controller in another project:
 
-```bash
-cd mpc_acados_trajectory_example
-python3 examples/run_example.py \
-  -c examples/simulation_config.yaml \
-  -m examples/mpc_config.yaml \
-  -f mpc_log.csv
-
-# Plot results:
-python3 -m mpc_acados_core.plotting.plot_results -f simulator_logs/mpc_log.csv
-```
-
-### C++
-
-```bash
-./build/mpc_acados_trajectory_example/examples/mpc_acados_trajectory_run_example \
-  -c mpc_acados_trajectory_example/examples/simulation_config.yaml \
-  -m mpc_acados_trajectory_example/examples/mpc_config.yaml \
-  -f mpc_log.csv
-
-# Plot results:
-python3 -m mpc_acados_core.plotting.plot_results -f simulator_logs/mpc_log.csv
-```
-
-Available arguments:
-
-| Flag | Default                                                      | Description                   |
-| ---- | ------------------------------------------------------------ | ----------------------------- |
-| `-c` | `mpc_acados_trajectory_example/examples/simulation_config.yaml` | Simulation + waypoint config  |
-| `-m` | `mpc_acados_trajectory_example/examples/mpc_config.yaml`    | MPC gains and bounds config   |
-| `-f` | `mpc_log.csv`                                               | Output CSV filename           |
+1. Copy `mpc_acados_trajectory_example/` into your repo.
+2. Adjust `LIB_CPP_DIR` in `generate_mpc_interface.sh` so it points at
+   your local copy of `mpc_acados_trajectory/cpp_interface/`.
+3. Adjust the `MPC_ACADOS_CORE_DIR` default in `CMakeLists.txt` (or pass
+   it with `-DMPC_ACADOS_CORE_DIR=...`).
+4. Run `./generate_mpc_interface.sh` to populate `mpc_interface/`.
+5. `add_subdirectory(mpc_interface)` from your own CMakeLists.
 
 ---
 
 ## Files
 
-| Path                                                          | Hand-written | Notes                                     |
-| ------------------------------------------------------------- | ------------ | ----------------------------------------- |
-| `model_definition.yaml`                                       | yes          | Input to the code generator.              |
-| `CMakeLists.txt`                                              | yes          | Builds `libmpc_acados_trajectory.so`.     |
-| `pyproject.toml`                                              | yes          | Pip distribution `mpc_acados_trajectory`. |
-| `mpc_acados_trajectory_example/generate.sh`                   | yes          | Invokes the core generator.               |
-| `mpc_acados_trajectory_example/generate_acados_c_code.py`     | yes          | Generates the acados C solver.            |
-| `mpc_acados_trajectory_example/examples/`                     | yes          | Run scripts and YAML configs.             |
-| `mpc_acados_trajectory/drone_model.py`                        | yes          | CasADi quadrotor dynamics.                |
-| `mpc_acados_trajectory/__init__.py`                           | yes          | Package exports.                          |
-| `mpc_acados_trajectory_example/config/mpc_config_template.yaml` | generated | Array sizes derived from model.           |
-| `mpc_acados_trajectory/include/mpc_acados_trajectory/*.hpp`   | generated    | C++ datatype headers and wrappers.        |
-| `mpc_acados_trajectory/src/*.cpp`                             | generated    | C++ sources.                              |
-| `mpc_acados_trajectory/*.py` (state, actuation, ...)          | generated    | Python modules.                           |
-| `mpc_acados_trajectory/tests/`                                | generated    | C++ gtest skeleton.                       |
-| `mpc_acados_trajectory/acados_generated/`                     | generated    | acados C code (from step 2).              |
+| Path                                                                  | Hand-written | Notes                                        |
+| --------------------------------------------------------------------- | ------------ | -------------------------------------------- |
+| `model_definition.yaml`                                               | yes          | Input to `generate_datatypes.sh`.            |
+| `generate_datatypes.sh`                                               | yes          | Regenerates the library template.            |
+| `pyproject.toml`                                                      | yes          | Pip distribution `mpc_acados_trajectory`.    |
+| `mpc_acados_trajectory/__init__.py`                                   | yes          | Package exports.                             |
+| `mpc_acados_trajectory/drone_model.py`                                | yes          | CasADi quadrotor dynamics.                   |
+| `mpc_acados_trajectory/model_definition/*.py`                         | generated    | State, actuation, parameters, dynamics.      |
+| `mpc_acados_trajectory/utils/mpc_yaml.py`                             | generated    | YAML loader.                                 |
+| `mpc_acados_trajectory/cpp_interface/CMakeLists.txt`                  | generated    | Builds the library target (consumed).        |
+| `mpc_acados_trajectory/cpp_interface/include/mpc_acados_trajectory/*` | generated    | C++ headers.                                 |
+| `mpc_acados_trajectory/cpp_interface/src/*.cpp`                       | generated    | C++ sources.                                 |
+| `mpc_acados_trajectory/cpp_interface/tests/*`                         | generated    | Gtest skeleton.                              |
+| `mpc_acados_trajectory_example/CMakeLists.txt`                        | yes          | Example C++ entry point.                     |
+| `mpc_acados_trajectory_example/generate_mpc_interface.sh`             | yes          | Builds `mpc_interface/`.                     |
+| `mpc_acados_trajectory_example/solver_definition_mpc_trajectory.yaml` | yes          | Acados solver config.                        |
+| `mpc_acados_trajectory_example/examples/*`                            | yes          | Python + C++ run scripts and their configs. |
+| `mpc_acados_trajectory_example/run_{py,cpp}_example.sh`               | yes          | Convenience wrappers.                        |
+| `mpc_acados_trajectory_example/mpc_interface/`                        | generated    | Gitignored; produced by `generate_mpc_interface.sh`. |
 
 ---
 

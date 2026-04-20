@@ -29,16 +29,37 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Generator for controller-specific Python and C++ MPC datatypes.
 
-Reads a ``model_definition.yaml`` and produces:
+Reads a ``model_definition.yaml`` and produces the library template for a
+controller package. Output layout (for ``package_name = mpc_acados_position``)::
 
-- Python datatype modules (``state.py``, ``actuation.py``, ``parameters.py``,
-  ``dynamics.py``) under ``<output_root>/<package_name>/``.
-- C++ datatype header + source and gtest under
-  ``<output_root>/include/<package_name>/``,
-  ``<output_root>/src/`` and ``<output_root>/tests/``.
-- C++ YAML loader header under ``<output_root>/include/<package_name>/``.
-- Python YAML loader module under ``<output_root>/<package_name>/utils/``.
-- Optional runtime ``mpc_config.yaml`` under ``<output_root>/config/``.
+    <controller_root>/mpc_acados_position/
+    ├── model_definition/
+    │   ├── __init__.py            (re-exports every generated datatype)
+    │   ├── state.py
+    │   ├── actuation.py
+    │   ├── parameters.py
+    │   └── dynamics.py
+    ├── utils/
+    │   ├── __init__.py
+    │   └── mpc_yaml.py
+    └── cpp_interface/
+        ├── CMakeLists.txt         (expects sibling mpc_generated_code/)
+        ├── include/mpc_acados_position/
+        │   ├── acados_mpc.hpp
+        │   ├── acados_mpc_datatype.hpp
+        │   ├── acados_mpc_yaml.hpp
+        │   └── acados_sim_solver.hpp
+        ├── src/
+        │   ├── acados_mpc.cpp
+        │   ├── acados_mpc_datatype.cpp
+        │   └── acados_sim_solver.cpp
+        └── tests/
+            └── acados_mpc_gtest.cpp
+
+The ``cpp_interface/`` directory is a template: it is *not* buildable in
+isolation. A consumer project is expected to copy it next to the
+acados-generated C code (as ``mpc_interface/mpc_generated_code/``) and do
+``add_subdirectory(mpc_interface)``.
 
 The ``model_definition.yaml`` must contain a top-level ``package_name`` field
 that names the Python/C++ package to generate (e.g. ``mpc_acados_position``).
@@ -86,11 +107,21 @@ CPP_CPP_TEMPLATE = 'templ_acados_mpc_datatype.cpp.j2'
 CPP_GTEST_TEMPLATE = 'templ_acados_mpc_gtest.cpp.j2'
 MPC_YAML_HPP_TEMPLATE = 'templ_acados_mpc_yaml.hpp.j2'
 MPC_YAML_PY_TEMPLATE = 'templ_acados_mpc_yaml.py.j2'
-MPC_CONFIG_YAML_TEMPLATE = 'templ_mpc_config.yaml.j2'
 ACADOS_MPC_HPP_TEMPLATE = 'templ_acados_mpc.hpp.j2'
 ACADOS_MPC_CPP_TEMPLATE = 'templ_acados_mpc.cpp.j2'
 ACADOS_SIM_HPP_TEMPLATE = 'templ_acados_sim_solver.hpp.j2'
 ACADOS_SIM_CPP_TEMPLATE = 'templ_acados_sim_solver.cpp.j2'
+CPP_INTERFACE_CMAKE_TEMPLATE = 'templ_cpp_interface_cmakelists.txt.j2'
+
+# Datatypes generated under <pkg>/model_definition/. The __init__.py re-exports
+# each (class, CaClass) pair plus OnlineParameters, so user code can import
+# from <pkg>.model_definition or (via the package __init__) from <pkg> directly.
+_MODEL_DEFINITION_EXPORTS = {
+    'state': ('State', 'CaState'),
+    'actuation': ('Actuation', 'CaActuation'),
+    'parameters': ('Parameters', 'CaParameters', 'OnlineParameters'),
+    'dynamics': ('Dynamics', 'CaDynamics'),
+}
 
 
 def _sanitize_cpp_comment(comment: str) -> str:
@@ -102,12 +133,37 @@ def _template_path(name: str) -> str:
     return str(TEMPLATES_DIR / name)
 
 
+def _cpp_interface_dir(controller_root: str, controller_package: str) -> str:
+    return os.path.join(controller_root, controller_package, 'cpp_interface')
+
+
+def _cpp_include_dir(controller_root: str, controller_package: str) -> str:
+    return os.path.join(
+        _cpp_interface_dir(controller_root, controller_package),
+        'include', controller_package)
+
+
+def _cpp_src_dir(controller_root: str, controller_package: str) -> str:
+    return os.path.join(
+        _cpp_interface_dir(controller_root, controller_package), 'src')
+
+
+def _cpp_tests_dir(controller_root: str, controller_package: str) -> str:
+    return os.path.join(
+        _cpp_interface_dir(controller_root, controller_package), 'tests')
+
+
 def generate_python_datatypes(
         config_data: YamlConfig,
         output_dir: str,
         controller_package: str,
         core_package: str = CORE_PACKAGE) -> None:
-    """Generate Python datatypes from model definition sections."""
+    """Generate Python datatype modules and an ``__init__.py`` that re-exports them.
+
+    Writes one module per section under ``output_dir`` plus an
+    ``__init__.py`` that re-exports every public symbol listed in
+    ``_MODEL_DEFINITION_EXPORTS``.
+    """
     os.makedirs(output_dir, exist_ok=True)
 
     for section_name, section in config_data.sections.items():
@@ -125,6 +181,40 @@ def generate_python_datatypes(
             output_path=os.path.join(output_dir, f'{section_name.lower()}.py'),
             context=context,
         )
+
+    _write_model_definition_init(output_dir, controller_package)
+
+
+def _write_model_definition_init(output_dir: str, controller_package: str) -> None:
+    """Write ``model_definition/__init__.py`` with re-exports of every section."""
+    lines = [
+        '"""Generated datatypes for {pkg}.'.format(pkg=controller_package),
+        '',
+        'This sub-package is produced by',
+        '``mpc_acados_core.generate.model_definition_generation`` from the',
+        'controller\'s ``model_definition.yaml``. Do not edit by hand.',
+        '"""',
+        '',
+        '# THIS FILE HAS BEEN AUTOMATICALLY GENERATED.',
+        '',
+    ]
+    all_symbols = []
+    for section_name, symbols in _MODEL_DEFINITION_EXPORTS.items():
+        import_list = ', '.join(symbols)
+        lines.append(
+            f'from {controller_package}.model_definition.{section_name} '
+            f'import {import_list}'
+        )
+        all_symbols.extend(symbols)
+    lines.append('')
+    lines.append('__all__ = [')
+    for symbol in sorted(all_symbols):
+        lines.append(f"    '{symbol}',")
+    lines.append(']')
+    lines.append('')
+
+    with open(os.path.join(output_dir, '__init__.py'), 'w') as f:
+        f.write('\n'.join(lines))
 
 
 def _get_cpp_parameters(config_data: YamlConfig, section_name: str):
@@ -171,7 +261,7 @@ def generate_cpp_datatypes(
         controller_root: str,
         controller_package: str,
         core_package: str = CORE_PACKAGE) -> None:
-    """Generate C++ interface files into <pkg>/include, <pkg>/src, <pkg>/tests."""
+    """Generate C++ datatype files into <pkg>/cpp_interface/{include,src,tests}."""
     context = dict(
         state_parameters=_get_cpp_parameters(config_data, 'state'),
         actuation_parameters=_get_cpp_parameters(config_data, 'actuation'),
@@ -180,9 +270,9 @@ def generate_cpp_datatypes(
         core_package=core_package,
     )
 
-    include_dir = os.path.join(controller_root, controller_package, 'include', controller_package)
-    src_dir = os.path.join(controller_root, controller_package, 'src')
-    tests_dir = os.path.join(controller_root, controller_package, 'tests')
+    include_dir = _cpp_include_dir(controller_root, controller_package)
+    src_dir = _cpp_src_dir(controller_root, controller_package)
+    tests_dir = _cpp_tests_dir(controller_root, controller_package)
 
     generate_file(
         template_path=_template_path(CPP_HPP_TEMPLATE),
@@ -218,8 +308,8 @@ def generate_cpp_wrappers(
         core_package=core_package,
     )
 
-    include_dir = os.path.join(controller_root, controller_package, 'include', controller_package)
-    src_dir = os.path.join(controller_root, controller_package, 'src')
+    include_dir = _cpp_include_dir(controller_root, controller_package)
+    src_dir = _cpp_src_dir(controller_root, controller_package)
 
     generate_file(
         template_path=_template_path(ACADOS_MPC_HPP_TEMPLATE),
@@ -252,7 +342,7 @@ def generate_cpp_yaml_header(
         controller_root: str,
         controller_package: str,
         core_package: str = CORE_PACKAGE) -> None:
-    """Generate ``<controller_include>/acados_mpc_yaml.hpp``."""
+    """Generate ``<cpp_include>/acados_mpc_yaml.hpp``."""
     context = dict(
         actuation_parameters=_get_cpp_parameters(config_data, 'actuation'),
         online_parameters=_get_cpp_parameters(config_data, 'parameters'),
@@ -260,12 +350,37 @@ def generate_cpp_yaml_header(
         core_package=core_package,
     )
 
-    include_dir = os.path.join(controller_root, controller_package, 'include', controller_package)
+    include_dir = _cpp_include_dir(controller_root, controller_package)
     generate_file(
         template_path=_template_path(MPC_YAML_HPP_TEMPLATE),
         output_path=os.path.join(include_dir, 'acados_mpc_yaml.hpp'),
         context=context,
         trailing_blank_line=True,
+    )
+
+
+def generate_cpp_interface_cmakelists(
+        controller_root: str,
+        controller_package: str,
+        core_package: str = CORE_PACKAGE) -> None:
+    """Generate ``<pkg>/cpp_interface/CMakeLists.txt``.
+
+    This CMakeLists is a template: it expects the acados C code to be present
+    in a sibling directory ``./mpc_generated_code/`` at configure time. It
+    errors out otherwise with a message pointing the user at
+    ``generate_mpc_interface.sh``.
+    """
+    context = dict(
+        controller_package=controller_package,
+        core_package=core_package,
+    )
+    output_path = os.path.join(
+        _cpp_interface_dir(controller_root, controller_package),
+        'CMakeLists.txt')
+    generate_file(
+        template_path=_template_path(CPP_INTERFACE_CMAKE_TEMPLATE),
+        output_path=output_path,
+        context=context,
     )
 
 
@@ -296,41 +411,10 @@ def generate_python_yaml_module(
     )
 
 
-def generate_mpc_config_yaml(
-        config_data: YamlConfig,
-        output_path: str,
-        controller_package: str,
-        core_package: str = CORE_PACKAGE) -> None:
-    """Generate a starter ``mpc_config.yaml`` with correct array sizes."""
-    actuation_parameters = _get_cpp_parameters(config_data, 'actuation')
-    online_parameters = _get_cpp_parameters(config_data, 'parameters')
-    state_parameters = _get_cpp_parameters(config_data, 'state')
-
-    total_nu = sum(p['size'] for p in actuation_parameters)
-    total_nx = sum(p['size'] for p in state_parameters)
-    actuation_names = ', '.join(p['name'] for p in actuation_parameters)
-
-    context = dict(
-        online_parameters=online_parameters,
-        actuation_parameters=actuation_parameters,
-        total_nu=total_nu,
-        total_nx=total_nx,
-        actuation_names=actuation_names,
-        controller_package=controller_package,
-        core_package=core_package,
-    )
-    generate_file(
-        template_path=_template_path(MPC_CONFIG_YAML_TEMPLATE),
-        output_path=output_path,
-        context=context,
-    )
-
-
 def generate_controller(
         controller_root: Path,
         package_name: str,
-        config_file: Path,
-        generate_mpc_config: bool = True) -> None:
+        config_file: Path) -> None:
     """Generate every artifact for a controller.
 
     Parameters
@@ -341,8 +425,6 @@ def generate_controller(
         Python/C++ package name, e.g. ``mpc_acados_position``.
     config_file:
         Path to the ``model_definition.yaml``.
-    generate_mpc_config:
-        Whether to generate ``config/mpc_config_template.yaml``.
     """
     controller_root = Path(controller_root).resolve()
     config_file = Path(config_file).resolve()
@@ -352,7 +434,9 @@ def generate_controller(
 
     config_data = YamlConfig(str(config_file))
 
-    output_py_dir = controller_root / package_name
+    lib_dir = controller_root / package_name
+    output_py_dir = lib_dir / 'model_definition'
+
     generate_python_datatypes(
         config_data,
         str(output_py_dir),
@@ -377,27 +461,21 @@ def generate_controller(
         str(controller_root),
         controller_package=package_name,
     )
-    lib_dir = controller_root / package_name
-    if generate_mpc_config:
-        mpc_config_output = controller_root / f'{package_name}_example' / 'config' / 'mpc_config_template.yaml'
-        os.makedirs(mpc_config_output.parent, exist_ok=True)
-        generate_mpc_config_yaml(
-            config_data,
-            str(mpc_config_output),
-            controller_package=package_name,
-        )
+    generate_cpp_interface_cmakelists(
+        str(controller_root),
+        controller_package=package_name,
+    )
 
-    cpp_files = _collect_cpp_like_files(str(lib_dir / 'include'))
-    cpp_files += _collect_cpp_like_files(str(lib_dir / 'src'))
-    cpp_files += _collect_cpp_like_files(str(lib_dir / 'tests'))
+    cpp_interface_dir = lib_dir / 'cpp_interface'
+    cpp_files = _collect_cpp_like_files(str(cpp_interface_dir))
     _clang_format_files(cpp_files)
 
     print(f'[{package_name}] Python datatypes -> {output_py_dir}')
-    print(f'[{package_name}] C++ include      -> {lib_dir / "include" / package_name}')
-    print(f'[{package_name}] C++ src          -> {lib_dir / "src"}')
-    print(f'[{package_name}] C++ tests        -> {lib_dir / "tests"}')
-    if generate_mpc_config:
-        print(f'[{package_name}] MPC config       -> {mpc_config_output}')
+    print(f'[{package_name}] Python utils     -> {lib_dir / "utils"}')
+    print(f'[{package_name}] C++ include      -> {cpp_interface_dir / "include" / package_name}')
+    print(f'[{package_name}] C++ src          -> {cpp_interface_dir / "src"}')
+    print(f'[{package_name}] C++ tests        -> {cpp_interface_dir / "tests"}')
+    print(f'[{package_name}] C++ CMakeLists   -> {cpp_interface_dir / "CMakeLists.txt"}')
 
 
 def _read_package_name(config_file: Path) -> str:
@@ -429,11 +507,6 @@ def _parse_args(argv=None):
              'Defaults to the directory containing --config '
              '(i.e. <controller_root>/model_definition.yaml -> <controller_root>).',
     )
-    parser.add_argument(
-        '--no-mpc-config',
-        action='store_true',
-        help='Skip generation of config/mpc_config_template.yaml.',
-    )
     return parser.parse_args(argv)
 
 
@@ -452,7 +525,6 @@ def main(argv=None) -> int:
         controller_root=controller_root,
         package_name=package_name,
         config_file=config_file,
-        generate_mpc_config=not args.no_mpc_config,
     )
     return 0
 

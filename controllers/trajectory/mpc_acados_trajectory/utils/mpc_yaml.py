@@ -42,7 +42,7 @@ from typing import Any, Callable, Dict, Optional
 import numpy as np
 import yaml
 
-from mpc_acados_trajectory.parameters import OnlineParameters
+from mpc_acados_trajectory.model_definition.parameters import OnlineParameters
 
 
 class MpcYamlConfig:
