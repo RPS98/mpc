@@ -1,3 +1,5 @@
+package_name: mpc_acados_position
+
 state:
   position: [0.0, 0.0, 0.0] # Position in world frame [x, y, z] (m)
   orientation: [1.0, 0.0, 0.0, 0.0] # Orientation of the body frame in world frame as a quaternion [qw, qx, qy, qz]

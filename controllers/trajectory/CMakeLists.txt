@@ -6,6 +6,26 @@ if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD_REQUIRED ON)
 endif()
 
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+endif()
+
+option(MPC_ACADOS_BUILD_EXAMPLES "Build the C++ examples." ON)
+
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+
+# Locate mpc_acados_core — override with -DMPC_ACADOS_CORE_DIR=<path>.
+# Default assumes this controller lives inside the mpc_acados monorepo at
+# controllers/trajectory/. Adjust if the controller is a standalone repo.
+if(NOT TARGET mpc_acados_core::mpc_acados_core)
+  if(NOT DEFINED MPC_ACADOS_CORE_DIR)
+    set(MPC_ACADOS_CORE_DIR
+      "${CMAKE_CURRENT_SOURCE_DIR}/../../mpc_acados_core/cpp_interface"
+      CACHE PATH "Path to mpc_acados_core/cpp_interface")
+  endif()
+  add_subdirectory(${MPC_ACADOS_CORE_DIR} mpc_acados_core_build)
+endif()
+
 set(MPC_ACADOS_TRAJECTORY_CODEGEN_ROOT
   "${CMAKE_CURRENT_SOURCE_DIR}/acados_trajectory_mpc"
   CACHE PATH

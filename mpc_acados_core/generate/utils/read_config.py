@@ -151,7 +151,8 @@ class YamlConfig:
             if stripped and not stripped.startswith('#') and ':' in stripped and not stripped.startswith('-'):
                 if not line.startswith(' '):
                     section_name = stripped.split(':')[0]
-                    if section_name in self.yaml_data:
+                    if section_name in self.yaml_data and isinstance(
+                            self.yaml_data[section_name], dict):
                         current_section = YamlSection(section_name)
                         self.sections[section_name] = current_section
                         indent_level = len(line) - len(line.lstrip())

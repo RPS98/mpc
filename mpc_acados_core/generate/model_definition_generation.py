@@ -29,23 +29,34 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """Generator for controller-specific Python and C++ MPC datatypes.
 
-Reads a ``model_definition.yaml`` living in a controller package
-(``controllers/<name>/generate_model_definition/model_definition.yaml``) and
-produces:
+Reads a ``model_definition.yaml`` and produces:
 
 - Python datatype modules (``state.py``, ``actuation.py``, ``parameters.py``,
-  ``dynamics.py``) under ``controllers/<name>/mpc_acados_<name>/``.
+  ``dynamics.py``) under ``<output_root>/<package_name>/``.
 - C++ datatype header + source and gtest under
-  ``controllers/<name>/include/mpc_acados_<name>/``,
-  ``controllers/<name>/src/`` and ``controllers/<name>/tests/``.
-- C++ YAML loader header under ``controllers/<name>/include/mpc_acados_<name>/``.
-- Python YAML loader module under
-  ``controllers/<name>/mpc_acados_<name>/utils/``.
-- Optional runtime ``mpc_config.yaml`` under
-  ``controllers/<name>/config/``.
+  ``<output_root>/include/<package_name>/``,
+  ``<output_root>/src/`` and ``<output_root>/tests/``.
+- C++ YAML loader header under ``<output_root>/include/<package_name>/``.
+- Python YAML loader module under ``<output_root>/<package_name>/utils/``.
+- Optional runtime ``mpc_config.yaml`` under ``<output_root>/config/``.
 
-All templates receive ``core_package`` and ``controller_package`` in their
-Jinja context so generated code imports from the right packages.
+The ``model_definition.yaml`` must contain a top-level ``package_name`` field
+that names the Python/C++ package to generate (e.g. ``mpc_acados_position``).
+
+Usage
+-----
+Run from the controller root (``--output-root`` defaults to the directory two
+levels above the config file, i.e. the controller root when the YAML lives in
+``generate_model_definition/model_definition.yaml``)::
+
+    python3 -m mpc_acados_core.generate.model_definition_generation \\
+        --config generate_model_definition/model_definition.yaml
+
+From an arbitrary location::
+
+    python3 -m mpc_acados_core.generate.model_definition_generation \\
+        --config /path/to/model_definition.yaml \\
+        --output-root /path/to/controller_root
 """
 
 __authors__ = 'Rafael Pérez Seguí'
@@ -58,6 +69,8 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+
+import yaml
 
 from mpc_acados_core.generate.utils.read_config import YamlConfig, generate_file
 
@@ -313,57 +326,56 @@ def generate_mpc_config_yaml(
     )
 
 
-def _resolve_controller_root(controller: str, repo_root: Path) -> Path:
-    """Locate ``controllers/<controller>`` relative to the repo root."""
-    candidate = repo_root / 'controllers' / controller
-    if not candidate.is_dir():
-        raise FileNotFoundError(
-            f'Controller directory not found: {candidate}. Expected layout '
-            f'controllers/<name>/generate_model_definition/model_definition.yaml.')
-    return candidate
-
-
 def generate_controller(
-        controller: str,
-        repo_root: Path = None,
+        controller_root: Path,
+        package_name: str,
+        config_file: Path,
         generate_mpc_config: bool = True) -> None:
-    """Generate every artifact for ``controllers/<controller>``."""
-    if repo_root is None:
-        # Assumes this file lives at repo_root/mpc_acados_core/generate/
-        repo_root = Path(__file__).resolve().parents[2]
+    """Generate every artifact for a controller.
 
-    controller_root = _resolve_controller_root(controller, repo_root)
-    controller_package = f'mpc_acados_{controller}'
-    config_file = controller_root / 'generate_model_definition' / 'model_definition.yaml'
+    Parameters
+    ----------
+    controller_root:
+        Root directory of the controller (output is written here).
+    package_name:
+        Python/C++ package name, e.g. ``mpc_acados_position``.
+    config_file:
+        Path to the ``model_definition.yaml``.
+    generate_mpc_config:
+        Whether to generate ``config/mpc_config_template.yaml``.
+    """
+    controller_root = Path(controller_root).resolve()
+    config_file = Path(config_file).resolve()
+
     if not config_file.is_file():
-        raise FileNotFoundError(f'Missing YAML: {config_file}')
+        raise FileNotFoundError(f'Config not found: {config_file}')
 
     config_data = YamlConfig(str(config_file))
 
-    output_py_dir = controller_root / controller_package
+    output_py_dir = controller_root / package_name
     generate_python_datatypes(
         config_data,
         str(output_py_dir),
-        controller_package=controller_package,
+        controller_package=package_name,
     )
     generate_cpp_datatypes(
         config_data,
         str(controller_root),
-        controller_package=controller_package,
+        controller_package=package_name,
     )
     generate_cpp_yaml_header(
         config_data,
         str(controller_root),
-        controller_package=controller_package,
+        controller_package=package_name,
     )
     generate_cpp_wrappers(
         str(controller_root),
-        controller_package=controller_package,
+        controller_package=package_name,
     )
     generate_python_yaml_module(
         config_data,
         str(controller_root),
-        controller_package=controller_package,
+        controller_package=package_name,
     )
     if generate_mpc_config:
         mpc_config_output = controller_root / 'config' / 'mpc_config_template.yaml'
@@ -371,7 +383,7 @@ def generate_controller(
         generate_mpc_config_yaml(
             config_data,
             str(mpc_config_output),
-            controller_package=controller_package,
+            controller_package=package_name,
         )
 
     cpp_files = _collect_cpp_like_files(str(controller_root / 'include'))
@@ -379,34 +391,67 @@ def generate_controller(
     cpp_files += _collect_cpp_like_files(str(controller_root / 'tests'))
     _clang_format_files(cpp_files)
 
-    print(f"[{controller}] Python datatypes -> {output_py_dir}")
-    print(f"[{controller}] C++ include      -> {controller_root / 'include' / controller_package}")
-    print(f"[{controller}] C++ src          -> {controller_root / 'src'}")
-    print(f"[{controller}] C++ tests        -> {controller_root / 'tests'}")
+    print(f'[{package_name}] Python datatypes -> {output_py_dir}')
+    print(f'[{package_name}] C++ include      -> {controller_root / "include" / package_name}')
+    print(f'[{package_name}] C++ src          -> {controller_root / "src"}')
+    print(f'[{package_name}] C++ tests        -> {controller_root / "tests"}')
     if generate_mpc_config:
-        print(f"[{controller}] MPC config       -> {mpc_config_output}")
+        print(f'[{package_name}] MPC config       -> {controller_root / "config" / "mpc_config_template.yaml"}')
+
+
+def _read_package_name(config_file: Path) -> str:
+    """Read ``package_name`` from the model_definition YAML."""
+    with open(config_file, 'r') as f:
+        data = yaml.safe_load(f)
+    name = data.get('package_name', '').strip()
+    if not name:
+        raise ValueError(
+            f"'package_name' field is missing or empty in {config_file}. "
+            "Add 'package_name: <your_package>' at the top of the file.")
+    return name
 
 
 def _parse_args(argv=None):
     parser = argparse.ArgumentParser(
         description='Generate controller-specific Python and C++ MPC datatypes.')
-    parser.add_argument('-C', '--controller', required=True,
-                        help='Controller name, e.g. "position" or "trajectory". '
-                             'Resolves to controllers/<name>/.')
-    parser.add_argument('--repo-root', default=None,
-                        help='Override repository root. Defaults to the repo that '
-                             'contains this mpc_acados_core package.')
-    parser.add_argument('--no-mpc-config', action='store_true',
-                        help='Skip generation of config/mpc_config_template.yaml.')
+    parser.add_argument(
+        '-c', '--config',
+        required=True,
+        metavar='PATH',
+        help='Path to model_definition.yaml (must contain a package_name field).',
+    )
+    parser.add_argument(
+        '-o', '--output-root',
+        default=None,
+        metavar='PATH',
+        help='Controller root directory where output is written. '
+             'Defaults to the directory two levels above --config '
+             '(i.e. <controller_root>/generate_model_definition/model_definition.yaml '
+             '-> <controller_root>).',
+    )
+    parser.add_argument(
+        '--no-mpc-config',
+        action='store_true',
+        help='Skip generation of config/mpc_config_template.yaml.',
+    )
     return parser.parse_args(argv)
 
 
 def main(argv=None) -> int:
     args = _parse_args(argv)
-    repo_root = Path(args.repo_root).resolve() if args.repo_root else None
+    config_file = Path(args.config).resolve()
+    package_name = _read_package_name(config_file)
+
+    if args.output_root is not None:
+        controller_root = Path(args.output_root).resolve()
+    else:
+        # Convention: config lives at <controller_root>/generate_model_definition/model_definition.yaml
+        controller_root = config_file.parent.parent
+
     generate_controller(
-        args.controller,
-        repo_root=repo_root,
+        controller_root=controller_root,
+        package_name=package_name,
+        config_file=config_file,
         generate_mpc_config=not args.no_mpc_config,
     )
     return 0
