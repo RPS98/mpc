@@ -1,0 +1,238 @@
+// Copyright 2024 Universidad Politécnica de Madrid
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//
+//    * Redistributions of source code must retain the above copyright
+//      notice, this list of conditions and the following disclaimer.
+//
+//    * Redistributions in binary form must reproduce the above copyright
+//      notice, this list of conditions and the following disclaimer in the
+//      documentation and/or other materials provided with the distribution.
+//
+//    * Neither the name of the Universidad Politécnica de Madrid nor the names of its
+//      contributors may be used to endorse or promote products derived from
+//      this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+/**
+ * @file acados_mpc_gtest.cpp
+ *
+ * Acados MPC gtest tests.
+ *
+ * @author Rafael Perez-Segui <r.psegui@upm.es>
+ */
+
+#include <gtest/gtest.h>
+
+#include <memory>
+
+#include "acados_mpc/acados_mpc.hpp"
+#include "acados_mpc/acados_mpc_datatype.hpp"
+#include "acados_mpc/acados_sim_solver.hpp"
+
+namespace acados_mpc {
+
+{% macro test_value_expr(class_name, param) -%}
+{%- if param.size == 1 -%}
+1.0
+{%- else -%}
+std::array<double, {{ class_name }}::{{ param.name }}_length>{ {% for idx in range(param.size) %}{{ idx + 1 }}.0{% if not loop.last %}, {% endif %}{% endfor %} }
+{%- endif -%}
+{%- endmacro %}
+
+TEST(acadosMpc, testAcadosMpc) {
+  EXPECT_NO_THROW(MPC());
+  auto mpc = MPC();
+
+  EXPECT_NO_THROW(mpc.solve());
+  EXPECT_NO_THROW(mpc.getPredictionSteps());
+  EXPECT_NO_THROW(mpc.getPredictionTimeHorizon());
+  EXPECT_NO_THROW(mpc.getPredictionTimeStep());
+  EXPECT_NO_THROW(mpc.getData());
+  EXPECT_NO_THROW(mpc.getParameters());
+
+  auto online_params = OnlineParameters();
+  if constexpr (OnlineParameters::size > 0) {
+    EXPECT_NO_THROW(online_params.setData(0, 1.5));
+    EXPECT_EQ(OnlineParameters::Nstages, static_cast<size_t>(MPC_N + 1));
+    EXPECT_NO_THROW(mpc.setParameters(online_params));
+    EXPECT_DOUBLE_EQ(mpc.getParameters()->getData()[0], 1.5);
+  } else {
+    EXPECT_NO_THROW(mpc.setParameters(online_params));
+  }
+
+  EXPECT_NO_THROW(mpc.getGains());
+  EXPECT_NO_THROW(mpc.getActuationBounds());
+  EXPECT_NO_THROW(mpc.getStateBounds());
+  EXPECT_NO_THROW(mpc.getSoftStateBounds());
+  EXPECT_NO_THROW(mpc.getSlackWeights());
+  EXPECT_NO_THROW(mpc.getSlackWeightsEnd());
+  EXPECT_NO_THROW(mpc.getNonlinearConstraintBounds());
+  EXPECT_NO_THROW(mpc.getSoftNonlinearConstraintBounds());
+  EXPECT_NO_THROW(mpc.updateGains());
+  EXPECT_NO_THROW(mpc.updateActuationBounds());
+  EXPECT_NO_THROW(mpc.updateStateBounds());
+  EXPECT_NO_THROW(mpc.updateSoftStateBounds());
+  EXPECT_NO_THROW(mpc.updateSlackWeights());
+  EXPECT_NO_THROW(mpc.updateSlackWeightsEnd());
+  EXPECT_NO_THROW(mpc.updateNonlinearConstraintBounds());
+  EXPECT_NO_THROW(mpc.updateSoftNonlinearConstraintBounds());
+}
+
+TEST(acadosMpc, testAcadosDatatypes) {
+  EXPECT_NO_THROW(State());
+{%- for param in state_parameters %}
+  EXPECT_EQ(State::{{ param.name }}_offset, {{ param.offset }}u);
+  EXPECT_EQ(State::{{ param.name }}_length, {{ param.size }}u);
+{%- endfor %}
+  auto state = State();
+{%- for param in state_parameters %}
+  EXPECT_NO_THROW(state.set{{ param.name | pascalCase }}({{ test_value_expr('State', param) }}));
+{%- endfor %}
+{%- for param in state_parameters %}
+  auto state_{{ param.name }} = state.get{{ param.name | pascalCase }}();
+{%- if param.size == 1 %}
+  EXPECT_DOUBLE_EQ(state_{{ param.name }}, 1.0);
+  EXPECT_DOUBLE_EQ(state.data[State::{{ param.name }}_offset], 1.0);
+{%- else %}
+{%- for idx in range(param.size) %}
+  EXPECT_DOUBLE_EQ(state_{{ param.name }}[{{ idx }}], {{ idx + 1 }}.0);
+  EXPECT_DOUBLE_EQ(state.data[State::{{ param.name }}_offset + {{ idx }}], {{ idx + 1 }}.0);
+{%- endfor %}
+{%- endif %}
+{%- endfor %}
+  EXPECT_NO_THROW(state.setData(0, 0.0));
+  EXPECT_DOUBLE_EQ(state.data[0], 0.0);
+
+  EXPECT_NO_THROW(Actuation());
+{%- for param in actuation_parameters %}
+  EXPECT_EQ(Actuation::{{ param.name }}_offset, {{ param.offset }}u);
+  EXPECT_EQ(Actuation::{{ param.name }}_length, {{ param.size }}u);
+{%- endfor %}
+  auto actuation = Actuation();
+{%- for param in actuation_parameters %}
+  EXPECT_NO_THROW(actuation.set{{ param.name | pascalCase }}({{ test_value_expr('Actuation', param) }}));
+{%- endfor %}
+{%- for param in actuation_parameters %}
+  auto actuation_{{ param.name }} = actuation.get{{ param.name | pascalCase }}();
+{%- if param.size == 1 %}
+  EXPECT_DOUBLE_EQ(actuation_{{ param.name }}, 1.0);
+  EXPECT_DOUBLE_EQ(actuation.data[Actuation::{{ param.name }}_offset], 1.0);
+{%- else %}
+{%- for idx in range(param.size) %}
+  EXPECT_DOUBLE_EQ(actuation_{{ param.name }}[{{ idx }}], {{ idx + 1 }}.0);
+  EXPECT_DOUBLE_EQ(actuation.data[Actuation::{{ param.name }}_offset + {{ idx }}], {{ idx + 1 }}.0);
+{%- endfor %}
+{%- endif %}
+{%- endfor %}
+  EXPECT_NO_THROW(actuation.setData(0, 0.0));
+  EXPECT_DOUBLE_EQ(actuation.data[0], 0.0);
+
+  EXPECT_NO_THROW(Gains());
+  auto gains = Gains();
+  EXPECT_NO_THROW(gains.getW());
+  EXPECT_NO_THROW(gains.getWe());
+  EXPECT_NO_THROW(gains.getQ());
+  EXPECT_NO_THROW(gains.getQEnd());
+  EXPECT_NO_THROW(gains.getR());
+  EXPECT_NO_THROW(gains.setW(0, 0.0));
+  EXPECT_NO_THROW(gains.setWe(0, 0.0));
+  EXPECT_NO_THROW(gains.setQ(0, 0.0));
+  EXPECT_NO_THROW(gains.setR(0, 0.0));
+  EXPECT_NO_THROW(gains.setQEnd(0, 0.0));
+
+  EXPECT_NO_THROW(ActuationBounds());
+  auto actuation_bounds = ActuationBounds();
+  EXPECT_NO_THROW(actuation_bounds.getLbu());
+  EXPECT_NO_THROW(actuation_bounds.getLbuArray());
+  EXPECT_NO_THROW(actuation_bounds.getUbu());
+  EXPECT_NO_THROW(actuation_bounds.getUbuArray());
+  if constexpr (ActuationBounds::Nu > 0) {
+    EXPECT_NO_THROW(actuation_bounds.setLbu(0, 0.0));
+    EXPECT_NO_THROW(actuation_bounds.setUbu(0, 0.0));
+  }
+
+  EXPECT_NO_THROW(StateBounds());
+  auto state_bounds = StateBounds();
+  EXPECT_NO_THROW(state_bounds.getLbx());
+  EXPECT_NO_THROW(state_bounds.getLbxArray());
+  EXPECT_NO_THROW(state_bounds.getUbx());
+  EXPECT_NO_THROW(state_bounds.getUbxArray());
+  if constexpr (StateBounds::Nx > 0) {
+    EXPECT_NO_THROW(state_bounds.setLbx(0, 0.0));
+    EXPECT_NO_THROW(state_bounds.setUbx(0, 0.0));
+  }
+
+  EXPECT_NO_THROW(Parameters());
+{%- for param in online_parameters %}
+  EXPECT_EQ(Parameters::{{ param.name }}_offset, {{ param.offset }}u);
+  EXPECT_EQ(Parameters::{{ param.name }}_length, {{ param.size }}u);
+{%- endfor %}
+  auto p_params = Parameters();
+  EXPECT_NO_THROW(p_params.getData());
+  EXPECT_NO_THROW(p_params.getParameters());
+{%- for param in online_parameters %}
+  EXPECT_NO_THROW(p_params.set{{ param.name | pascalCase }}({{ test_value_expr('Parameters', param) }}));
+{%- endfor %}
+{%- for param in online_parameters %}
+  auto parameters_{{ param.name }} = p_params.get{{ param.name | pascalCase }}();
+{%- if param.size == 1 %}
+  EXPECT_DOUBLE_EQ(parameters_{{ param.name }}, 1.0);
+  EXPECT_DOUBLE_EQ(p_params.getData()[Parameters::{{ param.name }}_offset], 1.0);
+{%- else %}
+{%- for idx in range(param.size) %}
+  EXPECT_DOUBLE_EQ(parameters_{{ param.name }}[{{ idx }}], {{ idx + 1 }}.0);
+  EXPECT_DOUBLE_EQ(p_params.getData()[Parameters::{{ param.name }}_offset + {{ idx }}], {{ idx + 1 }}.0);
+{%- endfor %}
+{%- endif %}
+{%- endfor %}
+  EXPECT_NO_THROW(p_params.setData(0, 0.0));
+  EXPECT_DOUBLE_EQ(p_params.getData()[0], 0.0);
+
+  EXPECT_NO_THROW(NonlinearConstraintBounds());
+  auto nonlinear_constraint_bounds = NonlinearConstraintBounds();
+  EXPECT_NO_THROW(nonlinear_constraint_bounds.getLh());
+  EXPECT_NO_THROW(nonlinear_constraint_bounds.getUh());
+  EXPECT_NO_THROW(nonlinear_constraint_bounds.getLhArray());
+  EXPECT_NO_THROW(nonlinear_constraint_bounds.getUhArray());
+  if constexpr (NonlinearConstraintBounds::Nh > 0) {
+    EXPECT_NO_THROW(nonlinear_constraint_bounds.setLh(0, 0.0));
+    EXPECT_NO_THROW(nonlinear_constraint_bounds.setUh(0, 0.0));
+  }
+
+  EXPECT_NO_THROW(SoftNonlinearConstraintBounds());
+  auto soft_nonlinear_constraint_bounds = SoftNonlinearConstraintBounds();
+  EXPECT_NO_THROW(soft_nonlinear_constraint_bounds.getLsh());
+  EXPECT_NO_THROW(soft_nonlinear_constraint_bounds.getUsh());
+  EXPECT_NO_THROW(soft_nonlinear_constraint_bounds.getLshArray());
+  EXPECT_NO_THROW(soft_nonlinear_constraint_bounds.getUshArray());
+  if constexpr (SoftNonlinearConstraintBounds::Nsh > 0) {
+    EXPECT_NO_THROW(soft_nonlinear_constraint_bounds.setLsh(0, 0.0));
+    EXPECT_NO_THROW(soft_nonlinear_constraint_bounds.setUsh(0, 0.0));
+  }
+}
+
+TEST(acadosMpc, testAcadosSimSolver) {
+  EXPECT_NO_THROW(MPCSimSolver());
+  auto sim_solver = MPCSimSolver();
+  auto mpc_data = MPCData();
+  EXPECT_NO_THROW(sim_solver.solve(&mpc_data));
+}
+}  // namespace acados_mpc
+
+int main(int argc, char* argv[]) {
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}

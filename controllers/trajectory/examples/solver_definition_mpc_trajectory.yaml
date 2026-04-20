@@ -1,0 +1,23 @@
+mpc:
+  N_horizon: 30 # Prediction steps
+  tf: 2.0 # Prediction horizon in seconds
+  constraints:
+    # Indices of bounds on u at intermediate shooting nodes (0 to N-1)
+    idxbu: [0, 1, 2, 3] # Bounded control inputs: [thrust, wx, wy, wz]
+solver:
+  export_dir: 'acados_trajectory_mpc/'
+  generate_c_code: true
+  verbose: true
+  cost_type: EXTERNAL
+  qp_solver: PARTIAL_CONDENSING_HPIPM
+  nlp_solver_type: SQP_RTI
+  hessian_approx: EXACT
+  integrator_type: ERK
+integrator:
+  generate_c_code: true
+  integrator_type: ERK
+  num_stages: 4
+  num_steps: 3
+cpp_module:
+  generate: true
+  project_name: acados_trajectory_mpc

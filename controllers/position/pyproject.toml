@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mpc_acados_position"
+version = "0.1.0"
+authors = [{ name = "Rafael Pérez Seguí", email = "r.psegui@upm.es" }]
+description = "Position-tracking MPC controller (acados) for MAVs"
+license = { text = "BSD-3-Clause" }
+dependencies = [
+    "mpc_acados_core>=0.1.0",
+    "numpy>=1.22",
+    "casadi",
+    "acados-template",
+    "pyyaml",
+]
+readme = "README.md"
+requires-python = ">=3.8"
+
+[tool.setuptools.packages.find]
+include = ["mpc_acados_position", "mpc_acados_position.*"]
+
+[tool.setuptools.package-data]
+"mpc_acados_position" = ["../include/**/*", "../src/**/*", "../config/**/*"]

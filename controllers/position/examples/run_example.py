@@ -1,0 +1,289 @@
+#!/usr/bin/env python3
+
+# Copyright 2025 Universidad Politécnica de Madrid
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+#    * Redistributions of source code must retain the above copyright
+#      notice, this list of conditions and the following disclaimer.
+#
+#    * Redistributions in binary form must reproduce the above copyright
+#      notice, this list of conditions and the following disclaimer in the
+#      documentation and/or other materials provided with the distribution.
+#
+#    * Neither the name of the Universidad Politécnica de Madrid nor the names of its
+#      contributors may be used to endorse or promote products derived from
+#      this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+"""Position-reference MPC example using the Acados integrator as simulator.
+
+This is a standalone smoke test for the ``mpc_acados_position`` controller:
+closed-loop tracking of a sequence of waypoints using only the Acados sim
+solver (no motor dynamics). For a full drone-simulation runner, see
+``mpc_examples/examples/mpc_controller/run_example.py``.
+"""
+
+__authors__ = 'Rafael Perez-Segui'
+__copyright__ = 'Copyright (c) 2025 Universidad Politécnica de Madrid'
+__license__ = 'BSD-3-Clause'
+
+import argparse
+import time
+from functools import wraps
+
+import numpy as np
+from acados_template import AcadosSimSolver
+from tqdm import tqdm
+
+from mpc_acados_core.logging import CsvLogger, get_desired_orientation
+from mpc_acados_core.utils.yaml_to_dict import yaml_to_dict
+from mpc_acados_position import MPC, AcadosMPCSolver
+from mpc_acados_position.utils.mpc_yaml import configure_mpc_from_yaml
+
+
+HOVER_TIME = 2.0
+WAYPOINT_REACHED_TOLERANCE = 0.1
+ZERO_VEC3 = np.zeros(3, dtype=float)
+ZERO_MOTOR_W = np.zeros(4, dtype=float)
+
+
+def _simulator_step(integrator: AcadosSimSolver, mpc_data) -> int:
+    """Advance the Acados integrator one step using the current MPC actuation."""
+    integrator.set('x', mpc_data.state.vector)
+    integrator.set('u', mpc_data.actuation.vector)
+    try:
+        integrator.set('p', mpc_data.parameters.get_data(0))
+    except Exception:
+        pass
+    status = integrator.solve()
+    if status != 0:
+        raise RuntimeError(f'acados integrator returned status {status}. Exiting.')
+    mpc_data.state.vector = integrator.get('x')
+    return status
+
+
+def set_progressive_references(
+        mpc_data,
+        current_position: np.ndarray,
+        goal_position: np.ndarray,
+        desired_orientation: np.ndarray,
+        v_ref: float,
+        dt_horizon: float,
+        N: int) -> None:
+    """Fill per-stage position references interpolating from current to goal at ``v_ref``."""
+    d = goal_position - current_position
+    L = np.linalg.norm(d)
+
+    if L < 1e-9:
+        mpc_data.parameters.set_desired_position(goal_position)
+    else:
+        d_hat = d / L
+        for k in range(N + 1):
+            s_k = min((k + 1) * v_ref * dt_horizon, L)
+            mpc_data.parameters.set_desired_position(
+                current_position + s_k * d_hat, stage=k)
+
+    mpc_data.parameters.set_desired_orientation(desired_orientation)
+
+
+def _progress_bar(func):
+    @wraps(func)
+    def wrapper(mpc, simulator, yaml_data, logger, *args, **kwargs):
+        total_time = float(yaml_data.sim_config.sim_time) + HOVER_TIME
+        pbar = tqdm(
+            total=total_time,
+            desc=f'Progress {func.__name__}',
+            unit='s',
+            bar_format='{l_bar}{bar} | {n:.4f}/{total:.2f} '
+                       '[{elapsed}<{remaining}, {rate_fmt}]',
+        )
+        result = func(mpc, simulator, yaml_data, logger, pbar, *args, **kwargs)
+        pbar.close()
+        return result
+    return wrapper
+
+
+@_progress_bar
+def test_mpc_controller(
+        mpc: MPC,
+        simulator: AcadosSimSolver,
+        yaml_data,
+        logger: CsvLogger,
+        pbar: tqdm) -> None:
+    """Run the closed-loop MPC + Acados integrator simulation."""
+    mpc_data = mpc.get_data()
+    prediction_steps = mpc.get_prediction_steps()
+    dt = mpc.get_prediction_time_step()
+    dt_horizon = dt
+
+    sim_cfg = yaml_data.sim_config
+    sim_time = float(sim_cfg.sim_time)
+    total_time = sim_time + HOVER_TIME
+    waypoints = np.asarray(sim_cfg.waypoints, dtype=float)
+    pos_index = 0
+    v_max = float(sim_cfg.max_speed)
+    path_facing = bool(sim_cfg.path_facing)
+
+    # Set MPC nonlinear speed bound to v_max^2.
+    h_bounds = mpc.get_nonlinear_constraint_bounds()
+    h_bounds.set_lh(np.array([0.0], dtype=float))
+    h_bounds.set_uh(np.array([v_max ** 2], dtype=float))
+    mpc.update_nonlinear_constraint_bounds()
+
+    # First log entry.
+    logger.save(
+        0.0,
+        ZERO_VEC3,
+        np.array([1.0, 0.0, 0.0, 0.0], dtype=float),
+        ZERO_VEC3,
+        ZERO_VEC3,
+        waypoints[0],
+        np.array([1.0, 0.0, 0.0, 0.0], dtype=float),
+        0.0,
+        ZERO_VEC3,
+        ZERO_MOTOR_W,
+        0.0,
+        0,
+        False,
+        v_max,
+    )
+
+    mpc_times = np.array([])
+    sim_times = np.array([])
+    total_times = np.array([])
+
+    print('Starting MPC simulation...')
+    print(f'Total time: {total_time} s')
+    print(f'Time step: {dt} s')
+    print(f'Prediction steps: {prediction_steps}')
+
+    t = 0.0
+    while t < total_time + 1e-9:
+        t += dt
+        iter_start = time.perf_counter()
+
+        current_position = np.asarray(mpc_data.state.position, dtype=float)
+        current_orientation = np.asarray(mpc_data.state.orientation, dtype=float)
+        desired_position = waypoints[pos_index]
+        desired_orientation = get_desired_orientation(
+            desired_position, current_position, current_orientation, path_facing)
+        set_progressive_references(
+            mpc_data, current_position, desired_position,
+            desired_orientation, v_max, dt_horizon, prediction_steps)
+
+        # Solve MPC.
+        mpc_start = time.perf_counter()
+        mpc_status = mpc.solve()
+        mpc_end = time.perf_counter()
+        if mpc_status != 0:
+            print(f'\nMPC solver failed with status {mpc_status} at time {t:.3f}s')
+
+        # Advance the integrator.
+        sim_start = time.perf_counter()
+        _simulator_step(simulator, mpc_data)
+        sim_end = time.perf_counter()
+
+        # Waypoint advance when close enough.
+        error = float(np.linalg.norm(mpc_data.state.position - desired_position))
+        hover_active = (pos_index == len(waypoints) - 1 and error < WAYPOINT_REACHED_TOLERANCE)
+        if error < WAYPOINT_REACHED_TOLERANCE and pos_index < len(waypoints) - 1:
+            pos_index += 1
+
+        mpc_times = np.append(mpc_times, mpc_end - mpc_start)
+        sim_times = np.append(sim_times, sim_end - sim_start)
+        total_times = np.append(total_times, sim_end - iter_start)
+
+        controller_solve_time_us = (mpc_end - mpc_start) * 1e6
+        logger.save(
+            t,
+            mpc_data.state.position,
+            mpc_data.state.orientation,
+            mpc_data.state.linear_velocity,
+            ZERO_VEC3,  # no angular velocity state in this model
+            desired_position,
+            desired_orientation,
+            float(mpc_data.actuation.thrust),
+            np.asarray(mpc_data.actuation.angular_velocity, dtype=float),
+            ZERO_MOTOR_W,
+            controller_solve_time_us,
+            pos_index,
+            hover_active,
+            v_max,
+        )
+
+        pbar.update(dt)
+
+    print('\n')
+    logger.close()
+
+    mpc_avg_time = float(np.mean(mpc_times))
+    sim_avg_time = float(np.mean(sim_times))
+    total_avg_time = float(np.mean(total_times))
+
+    print('\n=== Time Statistics ===')
+    print(f'MPC average time: {mpc_avg_time * 1000.0:.3f} ms')
+    print(f'Simulator average time: {sim_avg_time * 1000.0:.3f} ms')
+    print(f'Total average time: {total_avg_time * 1000.0:.3f} ms')
+    if total_avg_time > 0.0:
+        print(f'Real-time factor: {dt / total_avg_time:.3f}')
+
+
+def main() -> None:
+    """Run the position MPC example."""
+    parser = argparse.ArgumentParser(
+        description='Run MPC example with configurable simulation config and log file')
+    parser.add_argument(
+        '-c', '--config_path',
+        type=str,
+        default='examples/simulation_config.yaml',
+        help='Path to the simulation configuration YAML file'
+             ' (default: examples/simulation_config.yaml)',
+    )
+    parser.add_argument(
+        '-f', '--file_name',
+        type=str,
+        default='mpc_log.csv',
+        help='CSV file name where logs will be saved (default: mpc_log.csv)',
+    )
+    parser.add_argument(
+        '-m', '--mpc_config_path',
+        type=str,
+        default='examples/mpc_config.yaml',
+        help='Path to the MPC configuration YAML file'
+             ' (default: examples/mpc_config.yaml)',
+    )
+    args = parser.parse_args()
+
+    yaml_data = yaml_to_dict(args.config_path)
+
+    mpc = MPC(ocp_json_file=yaml_data.controller.ocp_json_file_path)
+    configure_mpc_from_yaml(mpc, args.mpc_config_path)
+
+    # Build the Acados sim integrator from the same solver definition.
+    sim_builder = AcadosMPCSolver(
+        solver_definition_path=yaml_data.controller.solver_definition_path,
+        generate_acados_solver=False,
+        generate_acados_simulator=True,
+        generate_code=False,
+    )
+    integrator = sim_builder.acados_integrator
+
+    logger = CsvLogger(args.file_name)
+    test_mpc_controller(mpc, integrator, yaml_data, logger)
+
+
+if __name__ == '__main__':
+    main()

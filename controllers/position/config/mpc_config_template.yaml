@@ -1,0 +1,42 @@
+mpc:
+  parameters:
+    mass: [1.0] # Mass of the MAV (kg)
+    desired_position: [0.0, 0.0, 0.0] # Desired position in world frame [x, y, z] (m)
+    desired_orientation: [1.0, 0.0, 0.0, 0.0] # Desired orientation as a quaternion [qw, qx, qy, qz]
+    external_force: [0.0, 0.0, 0.0] # External force acting on the MAV in base frame [fx, fy, fz] (N)
+    Q: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # Stage gains for [x, y, z, roll, pitch, yaw, vx, vy, vz]
+    Qe: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # Terminal gains for [x, y, z, roll, pitch, yaw, vx, vy, vz]
+    R: [0.0, 0.0, 0.0, 0.0] # Stage gains for control inputs [thrust, wx, wy, wz]
+  constraints:
+    # Lower bounds for control inputs: [thrust, wx, wy, wz]
+    lbu: [0.0, 0.0, 0.0, 0.0]
+    # Upper bounds for control inputs: [thrust, wx, wy, wz]
+    ubu: [0.0, 0.0, 0.0, 0.0]
+    # Lower bounds on x at shooting nodes (1 to N)
+    lbx: []
+    # Upper bounds on x at shooting nodes (1 to N)
+    ubx: []
+    # Lower bounds on slacks at shooting nodes (1 to N)
+    lsbx: []
+    # Upper bounds on slacks at shooting nodes (1 to N)
+    usbx: []
+    # Lower bounds for nonlinear constraints h = ||v||^2 (always >= 0, so lower is inactive)
+    lh: [0.0]
+    # Upper bounds for nonlinear constraints h = ||v||^2 (always >= 0, so upper is active)
+    uh: [0.0]
+    # Diagonal Hessian weights for lower slack variables
+    Zl: [0.0]
+    # Diagonal Hessian weights for upper slack variables
+    Zu: [0.0]
+    # Linear weights for lower slack variables
+    zl: [0.0]
+    # Linear weights for upper slack variables
+    zu: [0.0]
+    # Diagonal Hessian weights for lower slack variables at end state
+    Zl_e: [0.0]
+    # Diagonal Hessian weights for upper slack variables at end state
+    Zu_e: [0.0]
+    # Linear weights for lower slack variables at end state
+    zl_e: [0.0]
+    # Linear weights for upper slack variables at end state
+    zu_e: [0.0]

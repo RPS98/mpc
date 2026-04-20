@@ -1,0 +1,29 @@
+mpc:
+  N_horizon: 30 # Prediction steps
+  tf: 2.0 # Prediction horizon in seconds
+  constraints:
+    # Indices of bounds on u at intermediate shooting nodes (0 to N-1)
+    idxbu: [0, 1, 2, 3] # Bounded control inputs: [thrust, wx, wy, wz]
+    # Lower bounds on nonlinear constraints at shooting nodes (1 to N)
+    lh: [0.0] # h(x,u)=||v||^2, lower bound (large negative = effectively inactive)
+    # Upper bounds on nonlinear constraints at shooting nodes (1 to N)
+    uh: [0.0] # h(x,u)=||v||^2, upper bound (max speed squared = 1.0 m/s)
+    # Indices of soft nonlinear constraints at shooting nodes (1 to N)
+    idxsh: [0] # Soft constraint on ||v||^2 allow violation with penalty
+solver:
+  export_dir: 'acados_position_mpc/'
+  generate_c_code: true
+  verbose: true
+  cost_type: EXTERNAL
+  qp_solver: PARTIAL_CONDENSING_HPIPM
+  nlp_solver_type: SQP_RTI
+  hessian_approx: EXACT
+  integrator_type: ERK
+integrator:
+  generate_c_code: true
+  integrator_type: ERK
+  num_stages: 4
+  num_steps: 3
+cpp_module:
+  generate: true
+  project_name: acados_position_mpc

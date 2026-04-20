@@ -1,0 +1,17 @@
+mpc:
+  parameters:
+    mass: [1.0] # Mass of the MAV (kg)
+    # Weight for internal states:
+    #   state position [x, y, z],
+    #   state orientation [roll, pitch, yaw],
+    #   state velocity [vx, vy, vz]
+    Q: [1.0, 1.0, 1.0, 0.1, 0.1, 5.0, 0.5, 0.5, 0.5]
+    # Weight for end states:
+    Qe: [1.0, 1.0, 1.0, 0.1, 0.1, 5.0, 0.5, 0.5, 0.5]
+    # Weight for control inputs: [thrust, wx, wy, wz]
+    R: [1.0, 2.0, 2.0, 1.0]
+  constraints:
+    # Lower bounds for control inputs: [thrust, wx, wy, wz]
+    lbu: [0.01, -3.0, -3.0, -2.0]
+    # Upper bounds for control inputs: [thrust, wx, wy, wz]
+    ubu: [35.0, 3.0, 3.0, 2.0]

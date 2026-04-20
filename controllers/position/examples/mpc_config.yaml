@@ -1,0 +1,37 @@
+mpc:
+  parameters:
+    mass: [1.0] # Mass of the MAV (kg)
+    # Weight for internal states:
+    #   state position [x, y, z],
+    #   state orientation[roll, pitch, yaw],
+    #   state velocity [vx, vy, vz]
+    Q: [1.0, 1.0, 1.0, 0.1, 0.1, 5.0, 0.5, 0.5, 0.5]
+    # Weight for end states:
+    Qe: [1.0, 1.0, 1.0, 0.1, 0.1, 5.0, 0.5, 0.5, 0.5]
+    # Weight for control inputs: [thrust, wx, wy, wz]
+    R: [1.0, 2.0, 2.0, 1.0]
+  constraints:
+    # Lower bounds for control inputs: [thrust, wx, wy, wz]
+    lbu: [0.01, -3.0, -3.0, -2.0]
+    # Upper bounds for control inputs: [thrust, wx, wy, wz]
+    ubu: [35.0, 3.0, 3.0, 2.0]
+    # Lower bounds for nonlinear constraints h = ||v||^2 (always >= 0, so lower is inactive)
+    lh: [0.0]
+    # Upper bounds for nonlinear constraints h = ||v||^2 (always >= 0, so upper is active)
+    uh: [0.0]
+    # Diagonal Hessian weights for lower slack variables
+    Zl: [0.0]
+    # Diagonal Hessian weights for upper slack variables
+    Zu: [0.0]
+    # Linear weights for lower slack variables
+    zl: [0.0]
+    # Linear weights for upper slack variables
+    zu: [10.0]
+    # Diagonal Hessian weights for lower slack variables at end state
+    Zl_e: [0.0]
+    # Diagonal Hessian weights for upper slack variables at end state
+    Zu_e: [0.0]
+    # Linear weights for lower slack variables at end state
+    zl_e: [0.0]
+    # Linear weights for upper slack variables at end state
+    zu_e: [10.0]

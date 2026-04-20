@@ -1,0 +1,15 @@
+sim_config:
+  sim_time: 30.0 # seconds
+  max_speed: 1.0 # m/s
+  waypoints:
+    - [0.0, 0.0, 2.0]
+    - [2.0, 0.0, 2.0]
+    - [2.0, 2.0, 2.0]
+    - [-2.0, 2.0, 4.0]
+    - [-2.0, -2.0, 2.0]
+    - [2.0, -2.0, 4.0]
+    - [0.0, 0.0, 2.0]
+  path_facing: true
+controller:
+  solver_definition_path: 'solver_definition_mpc_trajectory.yaml'
+  ocp_json_file_path: 'acados_trajectory_mpc/mpc_generated_code/acados_ocp.json'

@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Acados generated
+*/c_generated_code/
+*/mpc_generated_code/
+*.json
+
+# CMake / C++
+build/
+cmake-build-*/
+*.so
+*.o
+*.a
+CMakeCache.txt
+CMakeFiles/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Logs
+simulator_logs/
+*.csv

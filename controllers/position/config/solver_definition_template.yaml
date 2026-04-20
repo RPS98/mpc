@@ -1,0 +1,74 @@
+mpc:
+  N_horizon: 0 # Prediction steps
+  tf: 0.0 # Prediction horizon in seconds
+  parameters:
+    mass: 1.0 # Mass of the MAV (kg)
+    desired_position: [0.0, 0.0, 0.0] # Desired position in world frame [x, y, z] (m)
+    desired_orientation: [1.0, 0.0, 0.0, 0.0] # Desired orientation as a quaternion [qw, qx, qy, qz]
+    external_force: [0.0, 0.0, 0.0] # External force acting on the MAV in base frame [fx, fy, fz] (N)
+  cost:
+    Q: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # Weight for internal states: [x, y, z, roll, pitch, yaw, vx, vy, vz]
+    Qe: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # Weight for end states: [x, y, z, roll, pitch, yaw, vx, vy, vz]
+    R: [0.0, 0.0, 0.0, 0.0] # Weight for control inputs: [thrust, wx, wy, wz]
+  constraints:
+    # Indices of bounds on u at intermediate shooting nodes (0 to N-1)
+    idxbu: [0, 1, 2, 3]
+    # Lower bounds on u at intermediate shooting nodes (0 to N-1)
+    lbu: [0.0, 0.0, 0.0, 0.0]
+     # Upper bounds on u at intermediate shooting nodes (0 to N-1)
+    ubu: [0.0, 0.0, 0.0, 0.0]
+    # Indices of bounds on x at shooting nodes (1 to N)
+    idxbx: []
+    # Lower bounds on x at shooting nodes (1 to N)
+    lbx: []
+    # Upper bounds on x at shooting nodes (1 to N)
+    ubx: []
+    # Indices of soft bounds on x at shooting nodes (1 to N)
+    idxsbx: []
+    # Lower bounds on slacks at shooting nodes (1 to N)
+    lsbx: []
+    # Upper bounds on slacks at shooting nodes (1 to N)
+    usbx: []
+    # Gradient wrt lower slack at shooting nodes (0 to N)
+    zl: []
+    # Gradient wrt upper slack at shooting nodes (0 to N)
+    zu: []
+    # Diagonal of Hessian wrt lower slack at shooting nodes (0 to N)
+    Zl: []
+    # Diagonal of Hessian wrt upper slack at shooting nodes (0 to N)
+    Zu: []
+    # Gradient wrt lower slack at terminal shooting node (N)
+    zl_e: []
+    # Gradient wrt upper slack at terminal shooting node (N)
+    zu_e: []
+    # Diagonal of Hessian wrt lower slack at terminal shooting node (N)
+    Zl_e: []
+    # Diagonal of Hessian wrt upper slack at terminal shooting node (N)
+    Zu_e: []
+    # Lower bounds on nonlinear constraints at shooting nodes (1 to N)
+    lh: []
+    # Upper bounds on nonlinear constraints at shooting nodes (1 to N)
+    uh: []
+    # Indices of soft nonlinear constraints at shooting nodes (1 to N)
+    idxsh: []
+    # Lower bounds on slacks at shooting nodes (1 to N)
+    lsh: []
+    # Upper bounds on slacks at shooting nodes (1 to N)
+    ush: []
+solver:
+  export_dir: 'acados_position_mpc/'
+  generate_c_code: true
+  verbose: true
+  cost_type: EXTERNAL
+  qp_solver: PARTIAL_CONDENSING_HPIPM
+  nlp_solver_type: SQP_RTI
+  hessian_approx: GAUSS_NEWTON
+  integrator_type: ERK
+integrator:
+  generate_c_code: true
+  integrator_type: ERK
+  num_stages: 4
+  num_steps: 3
+cpp_module:
+  generate: true
+  project_name: acados_position_mpc
