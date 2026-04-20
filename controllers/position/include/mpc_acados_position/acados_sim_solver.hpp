@@ -10,7 +10,8 @@
 //      notice, this list of conditions and the following disclaimer in the
 //      documentation and/or other materials provided with the distribution.
 //
-//    * Neither the name of the Universidad Politécnica de Madrid nor the names of its
+//    * Neither the name of the Universidad Politécnica de Madrid nor the names
+//    of its
 //      contributors may be used to endorse or promote products derived from
 //      this software without specific prior written permission.
 //
@@ -47,7 +48,7 @@
 #include <iostream>
 #include <stdexcept>
 
-#include "acados_mpc/acados_mpc.hpp"
+#include "mpc_acados_position/acados_mpc.hpp"
 
 namespace acados_mpc {
 
@@ -105,12 +106,12 @@ private:
 private:
   // acados
   mpc_sim_solver_capsule *capsule_ = nullptr;
-  sim_in *sim_in_                  = nullptr;
-  sim_out *sim_out_                = nullptr;
+  sim_in *sim_in_ = nullptr;
+  sim_out *sim_out_ = nullptr;
 
   // Internal variables
   int status_ = 0;
 };
-}  // namespace acados_mpc
+} // namespace acados_mpc
 
-#endif  // ACADOS_MPC_ACADOS_SIM_SOLVER_HPP_
+#endif // ACADOS_MPC_ACADOS_SIM_SOLVER_HPP_

@@ -10,7 +10,8 @@
 //      notice, this list of conditions and the following disclaimer in the
 //      documentation and/or other materials provided with the distribution.
 //
-//    * Neither the name of the Universidad Politécnica de Madrid nor the names of its
+//    * Neither the name of the Universidad Politécnica de Madrid nor the names
+//    of its
 //      contributors may be used to endorse or promote products derived from
 //      this software without specific prior written permission.
 //
@@ -47,7 +48,7 @@
 #include <iostream>
 #include <stdexcept>
 
-#include "acados_mpc/acados_mpc_datatype.hpp"
+#include "mpc_acados_position/acados_mpc_datatype.hpp"
 
 namespace acados_mpc {
 
@@ -64,12 +65,12 @@ namespace acados_mpc {
  * @param nlp_dims Acados NLP dimensions.
  */
 struct AcadosSolverPointers {
-  mpc_solver_capsule* capsule = nullptr;
-  ocp_nlp_in* nlp_in          = nullptr;
-  ocp_nlp_out* nlp_out        = nullptr;
-  ocp_nlp_solver* nlp_solver  = nullptr;
-  ocp_nlp_config* nlp_config  = nullptr;
-  ocp_nlp_dims* nlp_dims      = nullptr;
+  mpc_solver_capsule *capsule = nullptr;
+  ocp_nlp_in *nlp_in = nullptr;
+  ocp_nlp_out *nlp_out = nullptr;
+  ocp_nlp_solver *nlp_solver = nullptr;
+  ocp_nlp_config *nlp_config = nullptr;
+  ocp_nlp_dims *nlp_dims = nullptr;
 };
 
 /**
@@ -138,29 +139,35 @@ public:
    *
    * It is the prediction steps multiplied by the prediction time step.
    */
-  inline double getPredictionTimeHorizon() const { return MPC_N * *acados_pointers_.nlp_in->Ts; }
+  inline double getPredictionTimeHorizon() const {
+    return MPC_N * *acados_pointers_.nlp_in->Ts;
+  }
 
   /**
    * @brief Get the prediction time step in seconds.
    */
-  inline double getPredictionTimeStep() const { return *acados_pointers_.nlp_in->Ts; }
+  inline double getPredictionTimeStep() const {
+    return *acados_pointers_.nlp_in->Ts;
+  }
 
   /**
    * @brief Get the MPCData pointer to modify the data.
    */
-  MPCData* getData() { return &mpc_data_; }
+  MPCData *getData() { return &mpc_data_; }
 
   /**
    * @brief Get the OnlineParameters pointer to modify online parameters.
    */
-  OnlineParameters* getParameters() { return &mpc_data_.p_params; }
+  OnlineParameters *getParameters() { return &mpc_data_.p_params; }
 
   /**
    * @brief Set all online parameters at once.
    *
    * @param params online parameters to copy.
    */
-  void setParameters(const OnlineParameters& params) { mpc_data_.p_params.setParameters(params); }
+  void setParameters(const OnlineParameters &params) {
+    mpc_data_.p_params.setParameters(params);
+  }
 
   /**
    * @brief Set one stage parameter vector or broadcast it to all stages.
@@ -168,7 +175,7 @@ public:
    * @param params stage parameters to copy.
    * @param stage stage index, or -1 to broadcast.
    */
-  void setParameters(const Parameters& params, const int stage = -1) {
+  void setParameters(const Parameters &params, const int stage = -1) {
     mpc_data_.p_params.setParameters(params, stage);
   }
 
@@ -177,58 +184,62 @@ public:
    *
    * updateGains() must be called to update the gains.
    */
-  Gains* getGains() { return &gains_; }
+  Gains *getGains() { return &gains_; }
 
   /**
    * @brief Get the ActuationBounds pointer to modify the actuation_bounds.
    *
    * updateActuationBounds() must be called to update the actuation_bounds.
    */
-  ActuationBounds* getActuationBounds() { return &actuation_bounds_; }
+  ActuationBounds *getActuationBounds() { return &actuation_bounds_; }
 
   /**
    * @brief Get the StateBounds pointer to modify the state_bounds.
    *
    * updateStateBounds() must be called to update the state_bounds.
    */
-  StateBounds* getStateBounds() { return &state_bounds_; }
+  StateBounds *getStateBounds() { return &state_bounds_; }
 
   /**
    * @brief Get the SoftStateBounds pointer to modify the soft_state_bounds.
    *
    * updateSoftStateBounds() must be called to update the soft_state_bounds.
    */
-  SoftStateBounds* getSoftStateBounds() { return &soft_state_bounds_; }
+  SoftStateBounds *getSoftStateBounds() { return &soft_state_bounds_; }
 
   /**
    * @brief Get the SlackWeights pointer to modify the slack_weights.
    *
    * updateSlackWeights() must be called to update the slack_weights.
    */
-  SlackWeights* getSlackWeights() { return &slack_weights_; }
+  SlackWeights *getSlackWeights() { return &slack_weights_; }
 
   /**
    * @brief Get the SlackWeightsEnd pointer to modify the slack_weights_end.
    *
    * updateSlackWeightsEnd() must be called to update the slack_weights_end.
    */
-  SlackWeightsEnd* getSlackWeightsEnd() { return &slack_weights_end_; }
+  SlackWeightsEnd *getSlackWeightsEnd() { return &slack_weights_end_; }
 
   /**
-   * @brief Get the NonlinearConstraintBounds pointer to modify the nonlinear_constraint_bounds.
+   * @brief Get the NonlinearConstraintBounds pointer to modify the
+   * nonlinear_constraint_bounds.
    *
-   * updateNonlinearConstraintBounds() must be called to apply changes to the solver.
+   * updateNonlinearConstraintBounds() must be called to apply changes to the
+   * solver.
    */
-  NonlinearConstraintBounds* getNonlinearConstraintBounds() {
+  NonlinearConstraintBounds *getNonlinearConstraintBounds() {
     return &nonlinear_constraint_bounds_;
   }
 
   /**
-   * @brief Get the SoftNonlinearConstraintBounds pointer to modify soft nonlinear bounds.
+   * @brief Get the SoftNonlinearConstraintBounds pointer to modify soft
+   * nonlinear bounds.
    *
-   * updateSoftNonlinearConstraintBounds() must be called to apply changes to the solver.
+   * updateSoftNonlinearConstraintBounds() must be called to apply changes to
+   * the solver.
    */
-  SoftNonlinearConstraintBounds* getSoftNonlinearConstraintBounds() {
+  SoftNonlinearConstraintBounds *getSoftNonlinearConstraintBounds() {
     return &soft_nonlinear_constraint_bounds_;
   }
 
@@ -237,7 +248,9 @@ public:
    *
    * Allows direct access to acados solver internals for advanced operations.
    */
-  const AcadosSolverPointers* getAcadosSolverPointers() const { return &acados_pointers_; }
+  const AcadosSolverPointers *getAcadosSolverPointers() const {
+    return &acados_pointers_;
+  }
 
   /**
    * @brief Update the time step used in the prediction model.
@@ -366,15 +379,17 @@ private:
   MPCData mpc_data_ = MPCData();
 
   // Parameters
-  Gains gains_                                                    = Gains();
-  ActuationBounds actuation_bounds_                               = ActuationBounds();
-  StateBounds state_bounds_                                       = StateBounds();
-  SoftStateBounds soft_state_bounds_                              = SoftStateBounds();
-  SlackWeights slack_weights_                                     = SlackWeights();
-  SlackWeightsEnd slack_weights_end_                              = SlackWeightsEnd();
-  NonlinearConstraintBounds nonlinear_constraint_bounds_          = NonlinearConstraintBounds();
-  SoftNonlinearConstraintBounds soft_nonlinear_constraint_bounds_ = SoftNonlinearConstraintBounds();
+  Gains gains_ = Gains();
+  ActuationBounds actuation_bounds_ = ActuationBounds();
+  StateBounds state_bounds_ = StateBounds();
+  SoftStateBounds soft_state_bounds_ = SoftStateBounds();
+  SlackWeights slack_weights_ = SlackWeights();
+  SlackWeightsEnd slack_weights_end_ = SlackWeightsEnd();
+  NonlinearConstraintBounds nonlinear_constraint_bounds_ =
+      NonlinearConstraintBounds();
+  SoftNonlinearConstraintBounds soft_nonlinear_constraint_bounds_ =
+      SoftNonlinearConstraintBounds();
 };
-}  // namespace acados_mpc
+} // namespace acados_mpc
 
-#endif  // ACADOS_MPC_ACADOS_MPC_HPP_
+#endif // ACADOS_MPC_ACADOS_MPC_HPP_

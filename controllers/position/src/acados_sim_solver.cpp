@@ -10,7 +10,8 @@
 //      notice, this list of conditions and the following disclaimer in the
 //      documentation and/or other materials provided with the distribution.
 //
-//    * Neither the name of the Universidad Politécnica de Madrid nor the names of its
+//    * Neither the name of the Universidad Politécnica de Madrid nor the names
+//    of its
 //      contributors may be used to endorse or promote products derived from
 //      this software without specific prior written permission.
 //
@@ -34,7 +35,7 @@
  * @author Rafael Perez-Segui <r.psegui@upm.es>
  */
 
-#include "acados_mpc/acados_sim_solver.hpp"
+#include "mpc_acados_position/acados_sim_solver.hpp"
 
 namespace acados_mpc {
 
@@ -44,11 +45,11 @@ MPCSimSolver::~MPCSimSolver() {}
 
 void MPCSimSolver::initializeSolver() {
   capsule_ = mpc_acados_sim_solver_create_capsule();
-  status_  = mpc_acados_sim_create(capsule_);
+  status_ = mpc_acados_sim_create(capsule_);
   validateStatus(status_);
 
   // Get acados structs
-  sim_in_  = mpc_acados_get_sim_in(capsule_);
+  sim_in_ = mpc_acados_get_sim_in(capsule_);
   sim_out_ = mpc_acados_get_sim_out(capsule_);
 }
 
@@ -64,7 +65,8 @@ int MPCSimSolver::solve(MPCData *data) {
   }
 
   // Set online parameters
-  status_ = mpc_acados_sim_update_params(capsule_, data->p_params.getData(0), OnlineParameters::Np);
+  status_ = mpc_acados_sim_update_params(capsule_, data->p_params.getData(0),
+                                         OnlineParameters::Np);
   validateStatus(status_);
 
   // Solve
@@ -79,4 +81,4 @@ int MPCSimSolver::solve(MPCData *data) {
   return status_;
 }
 
-}  // namespace acados_mpc
+} // namespace acados_mpc
