@@ -73,12 +73,12 @@ private:
 
 private:
   mpc_sim_solver_capsule *capsule_ = nullptr;
-  sim_in *sim_in_ = nullptr;
-  sim_out *sim_out_ = nullptr;
+  sim_in *sim_in_                  = nullptr;
+  sim_out *sim_out_                = nullptr;
 
   int status_ = 0;
 };
 
-} // namespace acados_mpc
+}  // namespace acados_mpc
 
-#endif // MPC_ACADOS_TRAJECTORY_ACADOS_SIM_SOLVER_HPP_
+#endif  // MPC_ACADOS_TRAJECTORY_ACADOS_SIM_SOLVER_HPP_

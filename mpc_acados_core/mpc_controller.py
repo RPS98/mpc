@@ -40,6 +40,7 @@ __copyright__ = 'Copyright (c) 2022 Universidad Politécnica de Madrid'
 __license__ = 'BSD-3-Clause'
 
 import json
+import os
 from typing import Type, Union
 
 import numpy as np
@@ -138,6 +139,43 @@ class MPCBase:
                 f"{cls.__name__} must set class attributes: {', '.join(missing)}"
             )
 
+    @staticmethod
+    def _heal_code_export_directory(ocp_json_file: str) -> None:
+        """Rewrite a stale ``code_export_directory`` to a sibling generated dir.
+
+        Acados bakes ``code_export_directory`` (and ``json_file``) into the OCP
+        JSON as absolute paths at generation time. When the generated tree is
+        relocated (checked into VCS, copied by CMake, moved to another
+        machine, …), loading fails with ``OSError: …libacados_ocp_solver_*.so:
+        cannot open shared object file``. This helper rewrites the path to
+        ``<dir(ocp_json_file)>/mpc_generated_code`` — the layout produced by
+        :class:`AcadosMPCSolverBase` — whenever the stored path is missing on
+        disk. Idempotent: if the stored path already exists, nothing changes.
+        """
+        try:
+            with open(ocp_json_file, 'r') as f:
+                data = json.load(f)
+        except (OSError, json.JSONDecodeError):
+            return
+
+        stored = data.get('code_export_directory', '')
+        if stored and os.path.isdir(stored):
+            return  # Stored path is valid; nothing to do.
+
+        json_dir = os.path.dirname(os.path.abspath(ocp_json_file))
+        candidate = os.path.join(json_dir, 'mpc_generated_code')
+        if not os.path.isdir(candidate):
+            # Nothing we can do; let AcadosOcpSolver raise the original error.
+            return
+
+        data['code_export_directory'] = candidate
+        data['json_file'] = os.path.abspath(ocp_json_file)
+
+        tmp_path = ocp_json_file + '.tmp'
+        with open(tmp_path, 'w') as f:
+            json.dump(data, f, indent=4)
+        os.replace(tmp_path, ocp_json_file)
+
     def __init__(self, ocp_json_file: str) -> None:
         """
         Initialize the Acados MPC controller.
@@ -145,6 +183,14 @@ class MPCBase:
         :param ocp_json_file: Path to the OCP JSON file produced by Acados.
         """
         self._assert_bound()
+
+        # Make the OCP JSON portable: acados stores ``code_export_directory``
+        # as an absolute path at generation time. When the generated artefacts
+        # are later relocated (copied from a build tree, checked into VCS,
+        # or moved between machines), that path becomes stale and the shared
+        # library fails to load. Heal it in-place by pointing to the sibling
+        # ``mpc_generated_code/`` directory when available.
+        self._heal_code_export_directory(ocp_json_file)
 
         # Initialize the AcadosOcpSolver
         self.acados_ocp_solver = AcadosOcpSolver(

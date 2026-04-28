@@ -98,6 +98,12 @@ class AcadosMPCSolverBase:
         # Acados model
         self.acados_model, self.drone_model = type(self).get_acados_model()
 
+        # Optional per-variant override of the acados model name. Must run
+        # before code generation so that the exported library/header/symbol
+        # names inherit the override.
+        if solver_definition.solver.model_name:
+            self.acados_model.name = solver_definition.solver.model_name
+
         # Acados solver and integrator
         if generate_acados_solver:
             self.solver = self.get_acados_solver(solver_definition, generate_code)
@@ -292,6 +298,12 @@ class AcadosMPCSolverBase:
         # Integrator type. String in (‘ERK’, ‘IRK’, ‘GNSF’, ‘DISCRETE’, ‘LIFTED_IRK’).
         # Default: ‘ERK’.
         solver_options.integrator_type = solver_definition.solver.integrator_type
+        # Optional Hessian regularization. String in (‘NO_REGULARIZE’,
+        # ‘PROJECT’, ‘PROJECT_REDUC_HESS’, ‘MIRROR’, ‘CONVEXIFY’). Only applied
+        # when the user provides a non-empty value, so existing variants that
+        # do not set it keep the acados default (‘NO_REGULARIZE’).
+        if solver_definition.solver.regularize_method:
+            solver_options.regularize_method = solver_definition.solver.regularize_method
 
         # Create solver
         base_export_dir = solver_definition.solver.export_dir + 'mpc_generated_code/'

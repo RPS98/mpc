@@ -54,11 +54,11 @@ namespace acados_mpc {
 struct State {
   static constexpr size_t Nx = MPC_NX;
   std::array<double, MPC_NX> data;
-  static const std::size_t size = MPC_NX;
-  static constexpr size_t position_offset = 0;
-  static constexpr size_t position_length = 3;
-  static constexpr size_t orientation_offset = 3;
-  static constexpr size_t orientation_length = 4;
+  static const std::size_t size                  = MPC_NX;
+  static constexpr size_t position_offset        = 0;
+  static constexpr size_t position_length        = 3;
+  static constexpr size_t orientation_offset     = 3;
+  static constexpr size_t orientation_length     = 4;
   static constexpr size_t linear_velocity_offset = 7;
   static constexpr size_t linear_velocity_length = 3;
 
@@ -107,8 +107,7 @@ struct State {
    *
    * @param value linear_velocity value.
    */
-  void
-  setLinearVelocity(const std::array<double, linear_velocity_length> &value);
+  void setLinearVelocity(const std::array<double, linear_velocity_length> &value);
 
   /**
    * @brief Linear velocity in world frame [vx, vy, vz] (m/s)
@@ -124,9 +123,9 @@ struct State {
 struct Actuation {
   static constexpr size_t Nu = MPC_NU;
   std::array<double, MPC_NU> data;
-  static const std::size_t size = MPC_NU;
-  static constexpr size_t thrust_offset = 0;
-  static constexpr size_t thrust_length = 1;
+  static const std::size_t size                   = MPC_NU;
+  static constexpr size_t thrust_offset           = 0;
+  static constexpr size_t thrust_length           = 1;
   static constexpr size_t angular_velocity_offset = 1;
   static constexpr size_t angular_velocity_length = 3;
 
@@ -160,8 +159,7 @@ struct Actuation {
    *
    * @param value angular_velocity value.
    */
-  void
-  setAngularVelocity(const std::array<double, angular_velocity_length> &value);
+  void setAngularVelocity(const std::array<double, angular_velocity_length> &value);
 
   /**
    * @brief Angular velocity in body frame [wx, wy, wz] (rad/s)
@@ -256,9 +254,9 @@ struct ReferenceEnd {
  * Gains Q, R and Qe for the MPC.
  */
 struct Gains {
-  static constexpr size_t Nq = MPC_NYN;
+  static constexpr size_t Nq  = MPC_NYN;
   static constexpr size_t Nqe = MPC_NYN;
-  static constexpr size_t Nr = (MPC_NY - MPC_NYN);
+  static constexpr size_t Nr  = (MPC_NY - MPC_NYN);
   std::array<double, MPC_NY * MPC_NY> W;
   std::array<double, MPC_NYN * MPC_NYN> We;
 
@@ -584,21 +582,21 @@ struct StateBounds {
 struct Parameters {
   static constexpr size_t Np = MPC_NP;
   std::array<double, MPC_NP> data;
-  static const std::size_t size = MPC_NP;
-  static constexpr size_t mass_offset = 0;
-  static constexpr size_t mass_length = 1;
-  static constexpr size_t desired_position_offset = 1;
-  static constexpr size_t desired_position_length = 3;
+  static const std::size_t size                      = MPC_NP;
+  static constexpr size_t mass_offset                = 0;
+  static constexpr size_t mass_length                = 1;
+  static constexpr size_t desired_position_offset    = 1;
+  static constexpr size_t desired_position_length    = 3;
   static constexpr size_t desired_orientation_offset = 4;
   static constexpr size_t desired_orientation_length = 4;
-  static constexpr size_t external_force_offset = 8;
-  static constexpr size_t external_force_length = 3;
-  static constexpr size_t Q_offset = 11;
-  static constexpr size_t Q_length = 9;
-  static constexpr size_t Qe_offset = 20;
-  static constexpr size_t Qe_length = 9;
-  static constexpr size_t R_offset = 29;
-  static constexpr size_t R_length = 4;
+  static constexpr size_t external_force_offset      = 8;
+  static constexpr size_t external_force_length      = 3;
+  static constexpr size_t Q_offset                   = 11;
+  static constexpr size_t Q_length                   = 9;
+  static constexpr size_t Qe_offset                  = 20;
+  static constexpr size_t Qe_length                  = 9;
+  static constexpr size_t R_offset                   = 29;
+  static constexpr size_t R_length                   = 4;
 
   /**
    * @brief Constructor
@@ -658,8 +656,7 @@ struct Parameters {
    *
    * @param value desired_position value.
    */
-  void
-  setDesiredPosition(const std::array<double, desired_position_length> &value);
+  void setDesiredPosition(const std::array<double, desired_position_length> &value);
 
   /**
    * @brief Desired position in world frame [x, y, z] (m)
@@ -672,8 +669,7 @@ struct Parameters {
    *
    * @param value desired_orientation value.
    */
-  void setDesiredOrientation(
-      const std::array<double, desired_orientation_length> &value);
+  void setDesiredOrientation(const std::array<double, desired_orientation_length> &value);
 
   /**
    * @brief Desired orientation as a quaternion [qw, qx, qy, qz]
@@ -742,31 +738,25 @@ struct Parameters {
  * Online parameters p for all MPC stages.
  */
 struct OnlineParameters {
-  using StageParameters = Parameters;
-  static constexpr size_t Np = MPC_NP;
+  using StageParameters           = Parameters;
+  static constexpr size_t Np      = MPC_NP;
   static constexpr size_t Nstages = MPC_N + static_cast<size_t>(1);
   std::array<double, Nstages * MPC_NP> data;
-  static const std::size_t size = Nstages * MPC_NP;
-  static constexpr size_t mass_offset = Parameters::mass_offset;
-  static constexpr size_t mass_length = Parameters::mass_length;
-  static constexpr size_t desired_position_offset =
-      Parameters::desired_position_offset;
-  static constexpr size_t desired_position_length =
-      Parameters::desired_position_length;
-  static constexpr size_t desired_orientation_offset =
-      Parameters::desired_orientation_offset;
-  static constexpr size_t desired_orientation_length =
-      Parameters::desired_orientation_length;
-  static constexpr size_t external_force_offset =
-      Parameters::external_force_offset;
-  static constexpr size_t external_force_length =
-      Parameters::external_force_length;
-  static constexpr size_t Q_offset = Parameters::Q_offset;
-  static constexpr size_t Q_length = Parameters::Q_length;
-  static constexpr size_t Qe_offset = Parameters::Qe_offset;
-  static constexpr size_t Qe_length = Parameters::Qe_length;
-  static constexpr size_t R_offset = Parameters::R_offset;
-  static constexpr size_t R_length = Parameters::R_length;
+  static const std::size_t size                      = Nstages * MPC_NP;
+  static constexpr size_t mass_offset                = Parameters::mass_offset;
+  static constexpr size_t mass_length                = Parameters::mass_length;
+  static constexpr size_t desired_position_offset    = Parameters::desired_position_offset;
+  static constexpr size_t desired_position_length    = Parameters::desired_position_length;
+  static constexpr size_t desired_orientation_offset = Parameters::desired_orientation_offset;
+  static constexpr size_t desired_orientation_length = Parameters::desired_orientation_length;
+  static constexpr size_t external_force_offset      = Parameters::external_force_offset;
+  static constexpr size_t external_force_length      = Parameters::external_force_length;
+  static constexpr size_t Q_offset                   = Parameters::Q_offset;
+  static constexpr size_t Q_length                   = Parameters::Q_length;
+  static constexpr size_t Qe_offset                  = Parameters::Qe_offset;
+  static constexpr size_t Qe_length                  = Parameters::Qe_length;
+  static constexpr size_t R_offset                   = Parameters::R_offset;
+  static constexpr size_t R_length                   = Parameters::R_length;
 
   /**
    * @brief Constructor
@@ -870,9 +860,8 @@ struct OnlineParameters {
    * @param value desired_position value.
    * @param stage stage index, or -1 to apply to all stages.
    */
-  void
-  setDesiredPosition(const std::array<double, desired_position_length> &value,
-                     const int stage = -1);
+  void setDesiredPosition(const std::array<double, desired_position_length> &value,
+                          const int stage = -1);
 
   /**
    * @brief Desired position in world frame [x, y, z] (m)
@@ -880,17 +869,15 @@ struct OnlineParameters {
    * @param stage stage index.
    * @return std::array<double, desired_position_length> desired_position value.
    */
-  std::array<double, desired_position_length>
-  getDesiredPosition(const int stage = 0) const;
+  std::array<double, desired_position_length> getDesiredPosition(const int stage = 0) const;
   /**
    * @brief Desired orientation as a quaternion [qw, qx, qy, qz]
    *
    * @param value desired_orientation value.
    * @param stage stage index, or -1 to apply to all stages.
    */
-  void setDesiredOrientation(
-      const std::array<double, desired_orientation_length> &value,
-      const int stage = -1);
+  void setDesiredOrientation(const std::array<double, desired_orientation_length> &value,
+                             const int stage = -1);
 
   /**
    * @brief Desired orientation as a quaternion [qw, qx, qy, qz]
@@ -899,8 +886,7 @@ struct OnlineParameters {
    * @return std::array<double, desired_orientation_length> desired_orientation
    * value.
    */
-  std::array<double, desired_orientation_length>
-  getDesiredOrientation(const int stage = 0) const;
+  std::array<double, desired_orientation_length> getDesiredOrientation(const int stage = 0) const;
   /**
    * @brief External force acting on the MAV in base frame [fx, fy, fz] (N)
    *
@@ -916,8 +902,7 @@ struct OnlineParameters {
    * @param stage stage index.
    * @return std::array<double, external_force_length> external_force value.
    */
-  std::array<double, external_force_length>
-  getExternalForce(const int stage = 0) const;
+  std::array<double, external_force_length> getExternalForce(const int stage = 0) const;
   /**
    * @brief Stage gains for [x, y, z, roll, pitch, yaw, vx, vy, vz]
    *
@@ -1067,12 +1052,10 @@ struct SoftStateBounds {
  */
 struct SlackWeights {
   static constexpr size_t Ns = MPC_NS;
-  std::array<double, MPC_NS>
-      Zl; // Diagonal Hessian weights for lower slack variables
-  std::array<double, MPC_NS>
-      Zu; // Diagonal Hessian weights for upper slack variables
-  std::array<double, MPC_NS> zl; // Linear weights for lower slack variables
-  std::array<double, MPC_NS> zu; // Linear weights for upper slack variables
+  std::array<double, MPC_NS> Zl;  // Diagonal Hessian weights for lower slack variables
+  std::array<double, MPC_NS> Zu;  // Diagonal Hessian weights for upper slack variables
+  std::array<double, MPC_NS> zl;  // Linear weights for lower slack variables
+  std::array<double, MPC_NS> zu;  // Linear weights for upper slack variables
 
   /**
    * @brief Constructor
@@ -1238,12 +1221,10 @@ struct SlackWeights {
  */
 struct SlackWeightsEnd {
   static constexpr size_t Ns_e = MPC_NS;
-  std::array<double, MPC_NS>
-      Zl_e; // Diagonal Hessian weights for lower slack variables
-  std::array<double, MPC_NS>
-      Zu_e; // Diagonal Hessian weights for upper slack variables
-  std::array<double, MPC_NS> zl_e; // Linear weights for lower slack variables
-  std::array<double, MPC_NS> zu_e; // Linear weights for upper slack variables
+  std::array<double, MPC_NS> Zl_e;  // Diagonal Hessian weights for lower slack variables
+  std::array<double, MPC_NS> Zu_e;  // Diagonal Hessian weights for upper slack variables
+  std::array<double, MPC_NS> zl_e;  // Linear weights for lower slack variables
+  std::array<double, MPC_NS> zu_e;  // Linear weights for upper slack variables
 
   /**
    * @brief Constructor
@@ -1594,6 +1575,6 @@ struct SoftNonlinearConstraintBounds {
   void setUsh(const int index, const double value);
 };
 
-} // namespace acados_mpc
+}  // namespace acados_mpc
 
-#endif // ACADOS_MPC_ACADOS_MPC_DATATYPE_HPP_
+#endif  // ACADOS_MPC_ACADOS_MPC_DATATYPE_HPP_

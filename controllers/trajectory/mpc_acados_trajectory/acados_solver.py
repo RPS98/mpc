@@ -26,5 +26,32 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+"""CLI entry point to generate the trajectory-tracking ``mpc_interface/``.
 
-"""Utility modules for mpc_acados_position."""
+Usage (from any directory, with ``mpc_acados_core`` and
+``mpc_acados_trajectory`` on ``PYTHONPATH``)::
+
+    python3 -m mpc_acados_trajectory.acados_solver \\
+        -c /path/to/solver_definition_mpc_trajectory.yaml \\
+        [-o /path/to/output_dir]
+
+Without ``-o``, output is written next to the YAML file.
+"""
+
+from pathlib import Path
+
+from mpc_acados_core.generate.mpc_interface_generation import run_cli
+
+from mpc_acados_trajectory import AcadosMPCSolver
+
+
+def main() -> None:
+    run_cli(
+        solver_cls=AcadosMPCSolver,
+        cpp_template_dir=Path(__file__).parent / 'cpp_interface',
+        prog='python -m mpc_acados_trajectory.acados_solver',
+    )
+
+
+if __name__ == '__main__':
+    main()

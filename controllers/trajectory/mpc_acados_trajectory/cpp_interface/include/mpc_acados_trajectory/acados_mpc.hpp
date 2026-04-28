@@ -52,11 +52,11 @@ namespace acados_mpc {
  */
 struct AcadosSolverPointers {
   mpc_solver_capsule *capsule = nullptr;
-  ocp_nlp_in *nlp_in = nullptr;
-  ocp_nlp_out *nlp_out = nullptr;
-  ocp_nlp_solver *nlp_solver = nullptr;
-  ocp_nlp_config *nlp_config = nullptr;
-  ocp_nlp_dims *nlp_dims = nullptr;
+  ocp_nlp_in *nlp_in          = nullptr;
+  ocp_nlp_out *nlp_out        = nullptr;
+  ocp_nlp_solver *nlp_solver  = nullptr;
+  ocp_nlp_config *nlp_config  = nullptr;
+  ocp_nlp_dims *nlp_dims      = nullptr;
 };
 
 /**
@@ -90,21 +90,15 @@ public:
   // Getters
   inline int getPredictionSteps() const { return MPC_N; }
 
-  inline double getPredictionTimeHorizon() const {
-    return MPC_N * *acados_pointers_.nlp_in->Ts;
-  }
+  inline double getPredictionTimeHorizon() const { return MPC_N * *acados_pointers_.nlp_in->Ts; }
 
-  inline double getPredictionTimeStep() const {
-    return *acados_pointers_.nlp_in->Ts;
-  }
+  inline double getPredictionTimeStep() const { return *acados_pointers_.nlp_in->Ts; }
 
   MPCData *getData() { return &mpc_data_; }
 
   OnlineParameters *getParameters() { return &mpc_data_.p_params; }
 
-  void setParameters(const OnlineParameters &params) {
-    mpc_data_.p_params.setParameters(params);
-  }
+  void setParameters(const OnlineParameters &params) { mpc_data_.p_params.setParameters(params); }
 
   void setParameters(const Parameters &params, const int stage = -1) {
     mpc_data_.p_params.setParameters(params, stage);
@@ -125,9 +119,7 @@ public:
     return &soft_nonlinear_constraint_bounds_;
   }
 
-  const AcadosSolverPointers *getAcadosSolverPointers() const {
-    return &acados_pointers_;
-  }
+  const AcadosSolverPointers *getAcadosSolverPointers() const { return &acados_pointers_; }
 
   void updateTimeStep(const double time_step);
   void updateTimeStep(std::array<double, MPC_N> time_steps);
@@ -162,18 +154,16 @@ private:
 
   MPCData mpc_data_ = MPCData();
 
-  Gains gains_ = Gains();
-  ActuationBounds actuation_bounds_ = ActuationBounds();
-  StateBounds state_bounds_ = StateBounds();
-  SoftStateBounds soft_state_bounds_ = SoftStateBounds();
-  SlackWeights slack_weights_ = SlackWeights();
-  SlackWeightsEnd slack_weights_end_ = SlackWeightsEnd();
-  NonlinearConstraintBounds nonlinear_constraint_bounds_ =
-      NonlinearConstraintBounds();
-  SoftNonlinearConstraintBounds soft_nonlinear_constraint_bounds_ =
-      SoftNonlinearConstraintBounds();
+  Gains gains_                                                    = Gains();
+  ActuationBounds actuation_bounds_                               = ActuationBounds();
+  StateBounds state_bounds_                                       = StateBounds();
+  SoftStateBounds soft_state_bounds_                              = SoftStateBounds();
+  SlackWeights slack_weights_                                     = SlackWeights();
+  SlackWeightsEnd slack_weights_end_                              = SlackWeightsEnd();
+  NonlinearConstraintBounds nonlinear_constraint_bounds_          = NonlinearConstraintBounds();
+  SoftNonlinearConstraintBounds soft_nonlinear_constraint_bounds_ = SoftNonlinearConstraintBounds();
 };
 
-} // namespace acados_mpc
+}  // namespace acados_mpc
 
-#endif // MPC_ACADOS_TRAJECTORY_ACADOS_MPC_HPP_
+#endif  // MPC_ACADOS_TRAJECTORY_ACADOS_MPC_HPP_

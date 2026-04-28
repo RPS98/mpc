@@ -11,10 +11,17 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # This example acts as a consumer of mpc_acados_position. It:
-#   1. Runs generate_mpc_interface.sh the first time to produce mpc_interface/
-#      (a fresh copy of the library's cpp_interface/ + the acados C code).
+#   1. On first configure, invokes the mpc_acados_position.acados_solver
+#      Python CLI to produce mpc_interface/ (a fresh copy of the library's
+#      cpp_interface/ template + the acados C code).
 #   2. add_subdirectory(mpc_interface) builds libmpc_acados_position.so.
 #   3. add_subdirectory(examples) builds the C++ run_example binary.
+#
+# Requirements: both ``mpc_acados_core`` and ``mpc_acados_position`` must be
+# importable by the Python interpreter CMake finds below (PYTHONPATH or
+# editable install).
+find_package(Python3 COMPONENTS Interpreter REQUIRED)
+
 set(MPC_INTERFACE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/mpc_interface")
 set(MPC_INTERFACE_SO
   "${MPC_INTERFACE_DIR}/mpc_generated_code/mpc_generated_code/libacados_ocp_solver_mpc.so")
@@ -22,9 +29,11 @@ set(MPC_INTERFACE_SO
 if(NOT EXISTS "${MPC_INTERFACE_SO}")
   message(STATUS
     "[mpc_acados_position_example] mpc_interface/ missing, "
-    "running generate_mpc_interface.sh (one-time, ~30s)...")
+    "generating via mpc_acados_position.acados_solver (one-time, ~30s)...")
   execute_process(
-    COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/generate_mpc_interface.sh
+    COMMAND ${Python3_EXECUTABLE} -m mpc_acados_position.acados_solver
+            -c ${CMAKE_CURRENT_SOURCE_DIR}/solver_definition_mpc_position.yaml
+            -o ${CMAKE_CURRENT_SOURCE_DIR}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     RESULT_VARIABLE _gen_result
     OUTPUT_VARIABLE _gen_output
@@ -32,7 +41,9 @@ if(NOT EXISTS "${MPC_INTERFACE_SO}")
   )
   if(NOT _gen_result EQUAL 0)
     message(FATAL_ERROR
-      "generate_mpc_interface.sh failed. Output:\n${_gen_output}")
+      "mpc_acados_position.acados_solver failed. "
+      "Ensure mpc_acados_core and mpc_acados_position are on PYTHONPATH. "
+      "Output:\n${_gen_output}")
   endif()
 endif()
 

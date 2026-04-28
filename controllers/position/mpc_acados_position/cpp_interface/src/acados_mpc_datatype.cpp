@@ -40,9 +40,9 @@
 namespace acados_mpc {
 
 #ifdef ENABLE_CHECKS
-#define CHECK_MPC_INDEX(index, max_size) checkIndex(index, max_size)
+#  define CHECK_MPC_INDEX(index, max_size) checkIndex(index, max_size)
 #else
-#define CHECK_MPC_INDEX(index, max_size) (void)0
+#  define CHECK_MPC_INDEX(index, max_size) (void)0
 #endif
 
 inline void checkIndex(const int index, const int max_size) {
@@ -53,13 +53,13 @@ inline void checkIndex(const int index, const int max_size) {
 
 State::State() {
   data.fill(0.0);
-  data[position_offset + 0] = 0.0;
-  data[position_offset + 1] = 0.0;
-  data[position_offset + 2] = 0.0;
-  data[orientation_offset + 0] = 1.0;
-  data[orientation_offset + 1] = 0.0;
-  data[orientation_offset + 2] = 0.0;
-  data[orientation_offset + 3] = 0.0;
+  data[position_offset + 0]        = 0.0;
+  data[position_offset + 1]        = 0.0;
+  data[position_offset + 2]        = 0.0;
+  data[orientation_offset + 0]     = 1.0;
+  data[orientation_offset + 1]     = 0.0;
+  data[orientation_offset + 2]     = 0.0;
+  data[orientation_offset + 3]     = 0.0;
   data[linear_velocity_offset + 0] = 0.0;
   data[linear_velocity_offset + 1] = 0.0;
   data[linear_velocity_offset + 2] = 0.0;
@@ -69,8 +69,7 @@ void State::setData(const int index, const double value) {
   CHECK_MPC_INDEX(index, size);
   data[index] = value;
 }
-void State::setPosition(
-    const std::array<double, State::position_length> &value) {
+void State::setPosition(const std::array<double, State::position_length> &value) {
   for (size_t i = 0; i < value.size(); ++i) {
     setData(static_cast<int>(position_offset + i), value[i]);
   }
@@ -84,8 +83,7 @@ std::array<double, State::position_length> State::getPosition() const {
   return value;
 }
 
-void State::setOrientation(
-    const std::array<double, State::orientation_length> &value) {
+void State::setOrientation(const std::array<double, State::orientation_length> &value) {
   for (size_t i = 0; i < value.size(); ++i) {
     setData(static_cast<int>(orientation_offset + i), value[i]);
   }
@@ -99,15 +97,13 @@ std::array<double, State::orientation_length> State::getOrientation() const {
   return value;
 }
 
-void State::setLinearVelocity(
-    const std::array<double, State::linear_velocity_length> &value) {
+void State::setLinearVelocity(const std::array<double, State::linear_velocity_length> &value) {
   for (size_t i = 0; i < value.size(); ++i) {
     setData(static_cast<int>(linear_velocity_offset + i), value[i]);
   }
 }
 
-std::array<double, State::linear_velocity_length>
-State::getLinearVelocity() const {
+std::array<double, State::linear_velocity_length> State::getLinearVelocity() const {
   std::array<double, State::linear_velocity_length> value = {};
   for (size_t i = 0; i < value.size(); ++i) {
     value[i] = data[linear_velocity_offset + i];
@@ -117,7 +113,7 @@ State::getLinearVelocity() const {
 
 Actuation::Actuation() {
   data.fill(0.0);
-  data[thrust_offset] = 0.0;
+  data[thrust_offset]               = 0.0;
   data[angular_velocity_offset + 0] = 0.0;
   data[angular_velocity_offset + 1] = 0.0;
   data[angular_velocity_offset + 2] = 0.0;
@@ -138,8 +134,7 @@ void Actuation::setAngularVelocity(
   }
 }
 
-std::array<double, Actuation::angular_velocity_length>
-Actuation::getAngularVelocity() const {
+std::array<double, Actuation::angular_velocity_length> Actuation::getAngularVelocity() const {
   std::array<double, Actuation::angular_velocity_length> value = {};
   for (size_t i = 0; i < value.size(); ++i) {
     value[i] = data[angular_velocity_offset + i];
@@ -164,8 +159,7 @@ void Reference::setData(const int index, const double value) {
   data[index] = value;
 }
 
-void Reference::setData(const int ref_index, const int value_index,
-                        const double value) {
+void Reference::setData(const int ref_index, const int value_index, const double value) {
   CHECK_MPC_INDEX(ref_index, MPC_N);
   CHECK_MPC_INDEX(value_index, MPC_NY);
   data[ref_index * MPC_NY + value_index] = value;
@@ -215,7 +209,7 @@ std::array<double, Gains::Nr> Gains::getR() const {
   std::array<double, Gains::Nr> R;
   for (size_t i = 0; i < Nr; ++i) {
     auto index = (MPC_NYN + i) * MPC_NY + (MPC_NYN + i);
-    R[i] = W[index];
+    R[i]       = W[index];
   }
   return R;
 }
@@ -262,9 +256,7 @@ void Gains::setR(const std::array<double, Gains::Nr> &R) {
   }
 }
 
-void Gains::setQEnd(const int index, const double value) {
-  setWe(index, value);
-}
+void Gains::setQEnd(const int index, const double value) { setWe(index, value); }
 
 void Gains::setQEnd(const std::array<double, Gains::Nqe> &Qe) {
   for (size_t i = 0; i < Qe.size(); ++i) {
@@ -372,39 +364,39 @@ void StateBounds::setUbx(const int index, const double value) {
 
 Parameters::Parameters() {
   data.fill(0.0);
-  data[mass_offset] = 1.0;
-  data[desired_position_offset + 0] = 0.0;
-  data[desired_position_offset + 1] = 0.0;
-  data[desired_position_offset + 2] = 0.0;
+  data[mass_offset]                    = 1.0;
+  data[desired_position_offset + 0]    = 0.0;
+  data[desired_position_offset + 1]    = 0.0;
+  data[desired_position_offset + 2]    = 0.0;
   data[desired_orientation_offset + 0] = 1.0;
   data[desired_orientation_offset + 1] = 0.0;
   data[desired_orientation_offset + 2] = 0.0;
   data[desired_orientation_offset + 3] = 0.0;
-  data[external_force_offset + 0] = 0.0;
-  data[external_force_offset + 1] = 0.0;
-  data[external_force_offset + 2] = 0.0;
-  data[Q_offset + 0] = 0.0;
-  data[Q_offset + 1] = 0.0;
-  data[Q_offset + 2] = 0.0;
-  data[Q_offset + 3] = 0.0;
-  data[Q_offset + 4] = 0.0;
-  data[Q_offset + 5] = 0.0;
-  data[Q_offset + 6] = 0.0;
-  data[Q_offset + 7] = 0.0;
-  data[Q_offset + 8] = 0.0;
-  data[Qe_offset + 0] = 0.0;
-  data[Qe_offset + 1] = 0.0;
-  data[Qe_offset + 2] = 0.0;
-  data[Qe_offset + 3] = 0.0;
-  data[Qe_offset + 4] = 0.0;
-  data[Qe_offset + 5] = 0.0;
-  data[Qe_offset + 6] = 0.0;
-  data[Qe_offset + 7] = 0.0;
-  data[Qe_offset + 8] = 0.0;
-  data[R_offset + 0] = 0.0;
-  data[R_offset + 1] = 0.0;
-  data[R_offset + 2] = 0.0;
-  data[R_offset + 3] = 0.0;
+  data[external_force_offset + 0]      = 0.0;
+  data[external_force_offset + 1]      = 0.0;
+  data[external_force_offset + 2]      = 0.0;
+  data[Q_offset + 0]                   = 0.0;
+  data[Q_offset + 1]                   = 0.0;
+  data[Q_offset + 2]                   = 0.0;
+  data[Q_offset + 3]                   = 0.0;
+  data[Q_offset + 4]                   = 0.0;
+  data[Q_offset + 5]                   = 0.0;
+  data[Q_offset + 6]                   = 0.0;
+  data[Q_offset + 7]                   = 0.0;
+  data[Q_offset + 8]                   = 0.0;
+  data[Qe_offset + 0]                  = 0.0;
+  data[Qe_offset + 1]                  = 0.0;
+  data[Qe_offset + 2]                  = 0.0;
+  data[Qe_offset + 3]                  = 0.0;
+  data[Qe_offset + 4]                  = 0.0;
+  data[Qe_offset + 5]                  = 0.0;
+  data[Qe_offset + 6]                  = 0.0;
+  data[Qe_offset + 7]                  = 0.0;
+  data[Qe_offset + 8]                  = 0.0;
+  data[R_offset + 0]                   = 0.0;
+  data[R_offset + 1]                   = 0.0;
+  data[R_offset + 2]                   = 0.0;
+  data[R_offset + 3]                   = 0.0;
 }
 
 double *Parameters::getData() { return data.data(); }
@@ -440,8 +432,7 @@ void Parameters::setDesiredPosition(
   }
 }
 
-std::array<double, Parameters::desired_position_length>
-Parameters::getDesiredPosition() const {
+std::array<double, Parameters::desired_position_length> Parameters::getDesiredPosition() const {
   std::array<double, Parameters::desired_position_length> value = {};
   for (size_t i = 0; i < value.size(); ++i) {
     value[i] = data[desired_position_offset + i];
@@ -456,8 +447,8 @@ void Parameters::setDesiredOrientation(
   }
 }
 
-std::array<double, Parameters::desired_orientation_length>
-Parameters::getDesiredOrientation() const {
+std::array<double, Parameters::desired_orientation_length> Parameters::getDesiredOrientation()
+    const {
   std::array<double, Parameters::desired_orientation_length> value = {};
   for (size_t i = 0; i < value.size(); ++i) {
     value[i] = data[desired_orientation_offset + i];
@@ -472,8 +463,7 @@ void Parameters::setExternalForce(
   }
 }
 
-std::array<double, Parameters::external_force_length>
-Parameters::getExternalForce() const {
+std::array<double, Parameters::external_force_length> Parameters::getExternalForce() const {
   std::array<double, Parameters::external_force_length> value = {};
   for (size_t i = 0; i < value.size(); ++i) {
     value[i] = data[external_force_offset + i];
@@ -543,8 +533,7 @@ const double *OnlineParameters::getData(const int stage) const {
   return &data[stage * Np];
 }
 
-OnlineParameters::StageParameters
-OnlineParameters::getParameters(const int stage) const {
+OnlineParameters::StageParameters OnlineParameters::getParameters(const int stage) const {
   CHECK_MPC_INDEX(stage, Nstages);
   StageParameters params;
   for (size_t i = 0; i < Np; ++i) {
@@ -553,8 +542,8 @@ OnlineParameters::getParameters(const int stage) const {
   return params;
 }
 
-std::array<double, OnlineParameters::Nstages * MPC_NP>
-OnlineParameters::getOnlineParameters() const {
+std::array<double, OnlineParameters::Nstages * MPC_NP> OnlineParameters::getOnlineParameters()
+    const {
   return data;
 }
 
@@ -564,8 +553,7 @@ void OnlineParameters::setParameters(const OnlineParameters &params) {
   }
 }
 
-void OnlineParameters::setParameters(const StageParameters &params,
-                                     const int stage) {
+void OnlineParameters::setParameters(const StageParameters &params, const int stage) {
   if (stage < 0) {
     for (size_t stage_index = 0; stage_index < Nstages; ++stage_index) {
       setParameters(params, static_cast<int>(stage_index));
@@ -583,8 +571,7 @@ void OnlineParameters::setData(const int index, const double value) {
   data[index] = value;
 }
 
-void OnlineParameters::setData(const int stage, const int index,
-                               const double value) {
+void OnlineParameters::setData(const int stage, const int index, const double value) {
   CHECK_MPC_INDEX(stage, Nstages);
   CHECK_MPC_INDEX(index, Np);
   data[stage * Np + index] = value;
@@ -619,8 +606,8 @@ void OnlineParameters::setDesiredPosition(
   }
 }
 
-std::array<double, OnlineParameters::desired_position_length>
-OnlineParameters::getDesiredPosition(const int stage) const {
+std::array<double, OnlineParameters::desired_position_length> OnlineParameters::getDesiredPosition(
+    const int stage) const {
   CHECK_MPC_INDEX(stage, Nstages);
   std::array<double, OnlineParameters::desired_position_length> value = {};
   for (size_t i = 0; i < value.size(); ++i) {
@@ -630,8 +617,7 @@ OnlineParameters::getDesiredPosition(const int stage) const {
 }
 
 void OnlineParameters::setDesiredOrientation(
-    const std::array<double, OnlineParameters::desired_orientation_length>
-        &value,
+    const std::array<double, OnlineParameters::desired_orientation_length> &value,
     const int stage) {
   if (stage < 0) {
     for (size_t stage_index = 0; stage_index < Nstages; ++stage_index) {
@@ -670,8 +656,8 @@ void OnlineParameters::setExternalForce(
   }
 }
 
-std::array<double, OnlineParameters::external_force_length>
-OnlineParameters::getExternalForce(const int stage) const {
+std::array<double, OnlineParameters::external_force_length> OnlineParameters::getExternalForce(
+    const int stage) const {
   CHECK_MPC_INDEX(stage, Nstages);
   std::array<double, OnlineParameters::external_force_length> value = {};
   for (size_t i = 0; i < value.size(); ++i) {
@@ -680,9 +666,8 @@ OnlineParameters::getExternalForce(const int stage) const {
   return value;
 }
 
-void OnlineParameters::setQ(
-    const std::array<double, OnlineParameters::Q_length> &value,
-    const int stage) {
+void OnlineParameters::setQ(const std::array<double, OnlineParameters::Q_length> &value,
+                            const int stage) {
   if (stage < 0) {
     for (size_t stage_index = 0; stage_index < Nstages; ++stage_index) {
       setQ(value, static_cast<int>(stage_index));
@@ -695,8 +680,7 @@ void OnlineParameters::setQ(
   }
 }
 
-std::array<double, OnlineParameters::Q_length>
-OnlineParameters::getQ(const int stage) const {
+std::array<double, OnlineParameters::Q_length> OnlineParameters::getQ(const int stage) const {
   CHECK_MPC_INDEX(stage, Nstages);
   std::array<double, OnlineParameters::Q_length> value = {};
   for (size_t i = 0; i < value.size(); ++i) {
@@ -705,9 +689,8 @@ OnlineParameters::getQ(const int stage) const {
   return value;
 }
 
-void OnlineParameters::setQe(
-    const std::array<double, OnlineParameters::Qe_length> &value,
-    const int stage) {
+void OnlineParameters::setQe(const std::array<double, OnlineParameters::Qe_length> &value,
+                             const int stage) {
   if (stage < 0) {
     for (size_t stage_index = 0; stage_index < Nstages; ++stage_index) {
       setQe(value, static_cast<int>(stage_index));
@@ -720,8 +703,7 @@ void OnlineParameters::setQe(
   }
 }
 
-std::array<double, OnlineParameters::Qe_length>
-OnlineParameters::getQe(const int stage) const {
+std::array<double, OnlineParameters::Qe_length> OnlineParameters::getQe(const int stage) const {
   CHECK_MPC_INDEX(stage, Nstages);
   std::array<double, OnlineParameters::Qe_length> value = {};
   for (size_t i = 0; i < value.size(); ++i) {
@@ -730,9 +712,8 @@ OnlineParameters::getQe(const int stage) const {
   return value;
 }
 
-void OnlineParameters::setR(
-    const std::array<double, OnlineParameters::R_length> &value,
-    const int stage) {
+void OnlineParameters::setR(const std::array<double, OnlineParameters::R_length> &value,
+                            const int stage) {
   if (stage < 0) {
     for (size_t stage_index = 0; stage_index < Nstages; ++stage_index) {
       setR(value, static_cast<int>(stage_index));
@@ -745,8 +726,7 @@ void OnlineParameters::setR(
   }
 }
 
-std::array<double, OnlineParameters::R_length>
-OnlineParameters::getR(const int stage) const {
+std::array<double, OnlineParameters::R_length> OnlineParameters::getR(const int stage) const {
   CHECK_MPC_INDEX(stage, Nstages);
   std::array<double, OnlineParameters::R_length> value = {};
   for (size_t i = 0; i < value.size(); ++i) {
@@ -764,17 +744,13 @@ double *SoftStateBounds::getLsbx() { return lsbx.data(); }
 
 const double *SoftStateBounds::getLsbx() const { return lsbx.data(); }
 
-std::array<double, MPC_NSBX> SoftStateBounds::getLsbxArray() const {
-  return lsbx;
-}
+std::array<double, MPC_NSBX> SoftStateBounds::getLsbxArray() const { return lsbx; }
 
 double *SoftStateBounds::getUsbx() { return usbx.data(); }
 
 const double *SoftStateBounds::getUsbx() const { return usbx.data(); }
 
-std::array<double, MPC_NSBX> SoftStateBounds::getUsbxArray() const {
-  return usbx;
-}
+std::array<double, MPC_NSBX> SoftStateBounds::getUsbxArray() const { return usbx; }
 
 void SoftStateBounds::setBounds(const SoftStateBounds &bounds) {
   for (size_t i = 0; i < lsbx.size(); ++i) {
@@ -1003,20 +979,15 @@ double *NonlinearConstraintBounds::getLh() { return lh.data(); }
 
 const double *NonlinearConstraintBounds::getLh() const { return lh.data(); }
 
-std::array<double, MPC_NH> NonlinearConstraintBounds::getLhArray() const {
-  return lh;
-}
+std::array<double, MPC_NH> NonlinearConstraintBounds::getLhArray() const { return lh; }
 
 double *NonlinearConstraintBounds::getUh() { return uh.data(); }
 
 const double *NonlinearConstraintBounds::getUh() const { return uh.data(); }
 
-std::array<double, MPC_NH> NonlinearConstraintBounds::getUhArray() const {
-  return uh;
-}
+std::array<double, MPC_NH> NonlinearConstraintBounds::getUhArray() const { return uh; }
 
-void NonlinearConstraintBounds::setBounds(
-    const NonlinearConstraintBounds &bounds) {
+void NonlinearConstraintBounds::setBounds(const NonlinearConstraintBounds &bounds) {
   for (size_t i = 0; i < lh.size(); ++i) {
     lh[i] = bounds.lh[i];
   }
@@ -1055,26 +1026,17 @@ SoftNonlinearConstraintBounds::SoftNonlinearConstraintBounds() {
 
 double *SoftNonlinearConstraintBounds::getLsh() { return lsh.data(); }
 
-const double *SoftNonlinearConstraintBounds::getLsh() const {
-  return lsh.data();
-}
+const double *SoftNonlinearConstraintBounds::getLsh() const { return lsh.data(); }
 
-std::array<double, MPC_NSH> SoftNonlinearConstraintBounds::getLshArray() const {
-  return lsh;
-}
+std::array<double, MPC_NSH> SoftNonlinearConstraintBounds::getLshArray() const { return lsh; }
 
 double *SoftNonlinearConstraintBounds::getUsh() { return ush.data(); }
 
-const double *SoftNonlinearConstraintBounds::getUsh() const {
-  return ush.data();
-}
+const double *SoftNonlinearConstraintBounds::getUsh() const { return ush.data(); }
 
-std::array<double, MPC_NSH> SoftNonlinearConstraintBounds::getUshArray() const {
-  return ush;
-}
+std::array<double, MPC_NSH> SoftNonlinearConstraintBounds::getUshArray() const { return ush; }
 
-void SoftNonlinearConstraintBounds::setBounds(
-    const SoftNonlinearConstraintBounds &bounds) {
+void SoftNonlinearConstraintBounds::setBounds(const SoftNonlinearConstraintBounds &bounds) {
   for (size_t i = 0; i < lsh.size(); ++i) {
     lsh[i] = bounds.lsh[i];
   }
@@ -1084,30 +1046,26 @@ void SoftNonlinearConstraintBounds::setBounds(
   }
 }
 
-void SoftNonlinearConstraintBounds::setLsh(
-    const std::array<double, MPC_NSH> &lsh) {
+void SoftNonlinearConstraintBounds::setLsh(const std::array<double, MPC_NSH> &lsh) {
   for (size_t i = 0; i < lsh.size(); ++i) {
     setLsh(static_cast<int>(i), lsh[i]);
   }
 }
 
-void SoftNonlinearConstraintBounds::setLsh(const int index,
-                                           const double value) {
+void SoftNonlinearConstraintBounds::setLsh(const int index, const double value) {
   CHECK_MPC_INDEX(index, MPC_NSH);
   lsh[index] = value;
 }
 
-void SoftNonlinearConstraintBounds::setUsh(
-    const std::array<double, MPC_NSH> &ush) {
+void SoftNonlinearConstraintBounds::setUsh(const std::array<double, MPC_NSH> &ush) {
   for (size_t i = 0; i < ush.size(); ++i) {
     setUsh(static_cast<int>(i), ush[i]);
   }
 }
 
-void SoftNonlinearConstraintBounds::setUsh(const int index,
-                                           const double value) {
+void SoftNonlinearConstraintBounds::setUsh(const int index, const double value) {
   CHECK_MPC_INDEX(index, MPC_NSH);
   ush[index] = value;
 }
 
-} // namespace acados_mpc
+}  // namespace acados_mpc

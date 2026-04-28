@@ -136,8 +136,14 @@ class MPCConfig:
 @dataclass
 class SolverConfig:
     """Solver configuration parameters."""
-    
+
     export_dir: str = ''
+    # Optional override for ``acados_model.name``. When non-empty it is applied
+    # by ``AcadosMPCSolverBase`` before code generation, so the exported
+    # artefacts (``libacados_ocp_solver_<name>.so``, ``acados_solver_<name>.h``,
+    # ``<name>_model/``, C symbols ``<name>_acados_*``) are namespaced per
+    # variant. Leave empty to keep the name hardcoded in ``drone_model.py``.
+    model_name: str = ''
     generate_c_code: bool = True
     verbose: bool = True
     cost_type: str = 'NONLINEAR_LS'
@@ -145,12 +151,19 @@ class SolverConfig:
     nlp_solver_type: str = 'SQP_RTI'
     hessian_approx: str = 'GAUSS_NEWTON'
     integrator_type: str = 'ERK'
-    
+    # Optional Hessian regularization. Empty string keeps the acados default
+    # (``NO_REGULARIZE``). Valid non-empty values per acados_template:
+    # ``PROJECT``, ``PROJECT_REDUC_HESS``, ``MIRROR``, ``CONVEXIFY``,
+    # ``NO_REGULARIZE``. Useful for ill-conditioned problems (e.g. MPCC with
+    # large startup transients or sharp barrier costs) where HPIPM otherwise
+    # returns ``ACADOS_MINSTEP``.
+    regularize_method: str = ''
+
     @staticmethod
     def from_dict(data: dict) -> 'SolverConfig':
         """
         Create SolverConfig from dictionary.
-        
+
         :param data: Dictionary with solver configuration
         :type data: dict
         :return: SolverConfig instance
@@ -158,13 +171,15 @@ class SolverConfig:
         """
         return SolverConfig(
             export_dir=data.get('export_dir', ''),
+            model_name=data.get('model_name', ''),
             generate_c_code=data.get('generate_c_code', False),
             verbose=data.get('verbose', True),
             cost_type=data.get('cost_type', 'NONLINEAR_LS'),
             qp_solver=data.get('qp_solver', 'PARTIAL_CONDENSING_HPIPM'),
             nlp_solver_type=data.get('nlp_solver_type', 'SQP_RTI'),
             hessian_approx=data.get('hessian_approx', 'GAUSS_NEWTON'),
-            integrator_type=data.get('integrator_type', 'ERK')
+            integrator_type=data.get('integrator_type', 'ERK'),
+            regularize_method=data.get('regularize_method', '')
         )
 
 

@@ -38,8 +38,8 @@ controllers/position/
 │       └── tests/                             (generated)
 ├── mpc_acados_position_example/               ← CONSUMER PROJECT
 │   ├── CMakeLists.txt                         (entry point C++ build)
-│   ├── generate_mpc_interface.sh              (builds mpc_interface/ from cpp_interface/ + acados-C)
-│   ├── solver_definition_mpc_position.yaml    (input to generate_mpc_interface.sh)
+│   ├── generate_mpc_interface.sh              (thin wrapper around the Python CLI)
+│   ├── solver_definition_mpc_position.yaml    (input to the Python CLI)
 │   ├── mpc_interface/                         (generated, gitignored)
 │   │   ├── CMakeLists.txt, include/, src/, tests/
 │   │   └── mpc_generated_code/mpc_generated_code/
@@ -60,8 +60,8 @@ controllers/position/
 acados-generated C code in a sibling directory named `mpc_generated_code/`.
 A consumer is expected to copy `cpp_interface/` somewhere writable, drop the
 acados artifacts next to it, and `add_subdirectory(<the_copy>)`. That is
-exactly what `mpc_acados_position_example/generate_mpc_interface.sh` does
-to produce `mpc_interface/`.
+exactly what the `mpc_acados_position.acados_solver` Python CLI does to
+produce `mpc_interface/` (invokable from any directory; see workflow below).
 
 ---
 
@@ -71,10 +71,14 @@ to produce `mpc_interface/`.
    ```bash
    export ACADOS_SOURCE_DIR=/path/to/acados
    ```
-2. **mpc_acados_core** — install or put on `PYTHONPATH`:
+2. **mpc_acados_core** and **mpc_acados_position** — install or put on `PYTHONPATH`:
    ```bash
-   pip install -e /path/to/mpc_acados_core_repo
-   # or: export PYTHONPATH=/path/to/mpc_acados_core_repo:$PYTHONPATH
+   # Option A: editable install
+   pip install -e /path/to/mpc
+   pip install -e /path/to/mpc/controllers/position
+
+   # Option B: PYTHONPATH export (e.g., in .bashrc or before running CMake/CLI)
+   export PYTHONPATH=/path/to/mpc:/path/to/mpc/controllers/position:$PYTHONPATH
    ```
 3. Python packages: `numpy`, `casadi`, `acados_template`, `pyyaml`,
    `jinja2`, `matplotlib`, `tqdm`.
@@ -117,20 +121,40 @@ cmake -S . -B build
 cmake --build build -j
 ```
 
-The very first CMake configure calls `generate_mpc_interface.sh`
-automatically. That script:
+The very first CMake configure invokes the Python CLI automatically:
 
-1. Copies `../mpc_acados_position/cpp_interface/` to
-   `mpc_acados_position_example/mpc_interface/`.
-2. Runs acados (via the Python API) with
+```bash
+python3 -m mpc_acados_position.acados_solver \
+  -c .../solver_definition_mpc_position.yaml \
+  -o .../mpc_acados_position_example
+```
+
+The CLI:
+
+1. Locates the `cpp_interface/` template inside the installed
+   `mpc_acados_position` package (no relative paths).
+2. Copies it to `mpc_acados_position_example/mpc_interface/`.
+3. Runs acados (via the Python API) with
    `solver_definition_mpc_position.yaml`, writing the C solver to
    `mpc_interface/mpc_generated_code/mpc_generated_code/`.
 
 After that the CMake graph is just
 `add_subdirectory(mpc_interface) + add_subdirectory(examples)`.
 
-To force a fresh `mpc_interface/` (e.g. after editing the solver definition),
-delete it and re-run CMake, or invoke `./generate_mpc_interface.sh` by hand.
+Equivalent invocations from any directory:
+
+```bash
+# Directly via the Python CLI (output defaults to YAML parent dir)
+python3 -m mpc_acados_position.acados_solver \
+  -c /abs/path/.../solver_definition_mpc_position.yaml
+
+# Via the thin shell wrapper (output goes next to the script)
+bash /abs/path/.../mpc_acados_position_example/generate_mpc_interface.sh
+```
+
+To force a fresh `mpc_interface/` (e.g. after editing the solver
+definition), delete it and re-run CMake, or rerun the CLI / shell wrapper
+by hand.
 
 ### 4. Run the examples
 
@@ -151,13 +175,19 @@ Both produce `simulator_logs/mpc_log.csv` and open a plot.
 `mpc_acados_position_example/` is intentionally laid out as a minimal
 downstream consumer. To integrate the controller in another project:
 
-1. Copy `mpc_acados_position_example/` into your repo.
-2. Adjust `LIB_CPP_DIR` in `generate_mpc_interface.sh` so it points at
-   your local copy of `mpc_acados_position/cpp_interface/`.
-3. Adjust the `MPC_ACADOS_CORE_DIR` default in `CMakeLists.txt` (or pass
-   it with `-DMPC_ACADOS_CORE_DIR=...`).
-4. Run `./generate_mpc_interface.sh` to populate `mpc_interface/`.
-5. `add_subdirectory(mpc_interface)` from your own CMakeLists.
+1. Make sure `mpc_acados_core` and `mpc_acados_position` are importable
+   (editable install or `PYTHONPATH`).
+2. Copy `solver_definition_mpc_position.yaml` into your repo (or author
+   your own with the same schema).
+3. Run the CLI from anywhere:
+   ```bash
+   python3 -m mpc_acados_position.acados_solver \
+     -c /path/to/your/solver_definition_mpc_position.yaml \
+     -o /path/in/your/repo/where/to/put/mpc_interface
+   ```
+4. Set `MPC_ACADOS_CORE_DIR` in your CMakeLists (or pass
+   `-DMPC_ACADOS_CORE_DIR=<path-to-mpc_acados_core/cpp_interface>` on the
+   configure line) and do `add_subdirectory(mpc_interface)`.
 
 ---
 
@@ -177,7 +207,8 @@ downstream consumer. To integrate the controller in another project:
 | `mpc_acados_position/cpp_interface/src/*.cpp`                     | generated    | C++ sources.                                 |
 | `mpc_acados_position/cpp_interface/tests/*`                       | generated    | Gtest skeleton.                              |
 | `mpc_acados_position_example/CMakeLists.txt`                      | yes          | Example C++ entry point.                     |
-| `mpc_acados_position_example/generate_mpc_interface.sh`           | yes          | Builds `mpc_interface/`.                     |
+| `mpc_acados_position/acados_solver.py`                            | yes          | Python CLI entry point (`-m mpc_acados_position.acados_solver`). |
+| `mpc_acados_position_example/generate_mpc_interface.sh`           | yes          | Thin wrapper around the Python CLI.          |
 | `mpc_acados_position_example/solver_definition_mpc_position.yaml` | yes          | Acados solver config.                        |
 | `mpc_acados_position_example/examples/*`                          | yes          | Python + C++ run scripts and their configs. |
 | `mpc_acados_position_example/run_{py,cpp}_example.sh`             | yes          | Convenience wrappers.                        |
