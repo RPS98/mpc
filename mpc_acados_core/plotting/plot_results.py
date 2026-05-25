@@ -469,7 +469,7 @@ def print_metrics(metrics: dict, label: str = '',
               f'{rt_min:.3f}–{rt_max:.3f} s (range)  '
               f'[{lower:.0f}%→{upper:.0f}% of d0]')
     else:
-        print(f'  Rise time          : N/A')
+        print('  Rise time          : N/A')
 
     print(f'  Jerk energy        : {_fmt(metrics["jerk_energy"], ".3f")} (m/s³)²·s')
     print(f'  Accel energy       : {_fmt(metrics["accel_energy"], ".3f")} (m/s²)²·s')
@@ -682,11 +682,23 @@ def plot_trajectory_3d(data: dict, axs,
     axs.set_zlabel('z (m)')
     axs.set_title('3D Trajectory')
     axs.legend(fontsize=7)
-    all_vals = np.concatenate([x_vals, y_vals, z_vals])
-    max_range = max(abs(float(np.min(all_vals))), abs(float(np.max(all_vals))), 0.5)
-    axs.set_xlim(-max_range, max_range)
-    axs.set_ylim(-max_range, max_range)
-    axs.set_zlim(0.0, max_range)
+    # Centre each axis on its own bounding box with a small margin
+    def _centred_lims(vals: np.ndarray, pad_frac: float = 0.05,
+                      min_half_range: float = 0.5,
+                      ) -> tuple[float, float, float]:
+        cmin = float(np.min(vals))
+        cmax = float(np.max(vals))
+        span = max(cmax - cmin, 2.0 * min_half_range)
+        pad = pad_frac * span
+        return cmin - pad, cmax + pad, span + 2.0 * pad
+
+    x_lo, x_hi, x_span = _centred_lims(x_vals)
+    y_lo, y_hi, y_span = _centred_lims(y_vals)
+    z_lo, z_hi, z_span = _centred_lims(z_vals)
+    axs.set_xlim(x_lo, x_hi)
+    axs.set_ylim(y_lo, y_hi)
+    axs.set_zlim(max(0.0, z_lo), z_hi)
+    axs.set_box_aspect((x_span, y_span, z_span))
 
 
 # ---------------------------------------------------------------------------
