@@ -57,4 +57,44 @@ if(NOT DEFINED MPC_ACADOS_CORE_DIR)
 endif()
 
 add_subdirectory(mpc_interface)
+
+# --- Fetch dynamic_trajectory_generator if needed ------------------------
+# Both run_example.py and run_example.cpp consume DynamicTrajectory. When
+# this directory is configured standalone, fetch the upstream repo into
+# thirdparty/dynamic_trajectory_generator/ at configure time, build the
+# C++ library (linked into the cpp binary) and the pybind module (imported
+# by the Python driver). Consumers that already vendor DTG can disable
+# the fetch with -DMPC_FETCH_DYNAMIC_TRAJECTORY_GENERATOR=OFF.
+option(MPC_FETCH_DYNAMIC_TRAJECTORY_GENERATOR
+       "Fetch + build dynamic_trajectory_generator for the trajectory example" ON)
+
+if(MPC_FETCH_DYNAMIC_TRAJECTORY_GENERATOR)
+  include(FetchContent)
+  set(_DTG_LOCAL "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/dynamic_trajectory_generator")
+  FetchContent_Declare(
+    dynamic_trajectory_generator
+    GIT_REPOSITORY https://github.com/miferco97/dynamic_trajectory_generator.git
+    GIT_TAG        5c49297                              # pinned (already validated)
+    GIT_SHALLOW    FALSE                                 # SHA pin requires full history
+    SOURCE_DIR     ${_DTG_LOCAL}
+  )
+  FetchContent_MakeAvailable(dynamic_trajectory_generator)
+
+  # Build the pybind binding (NOT included from DTG's top CMakeLists).
+  add_subdirectory(${dynamic_trajectory_generator_SOURCE_DIR}/pybind
+                   ${CMAKE_BINARY_DIR}/dtg_pybind)
+
+  # Stage the pure-Python wrapper next to the build dir so the runner
+  # script can add a single PYTHONPATH entry that exposes both the
+  # wrapper and the freshly-compiled .so.
+  set(_DTG_PY_SRC "${dynamic_trajectory_generator_SOURCE_DIR}/pybind/python/dynamic_trajectory_generator_py")
+  set(_DTG_PY_DST "${CMAKE_BINARY_DIR}/python/dynamic_trajectory_generator_py")
+  file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/python")
+  if(EXISTS "${_DTG_PY_DST}" OR IS_SYMLINK "${_DTG_PY_DST}")
+    file(REMOVE_RECURSE "${_DTG_PY_DST}")
+  endif()
+  execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
+                  "${_DTG_PY_SRC}" "${_DTG_PY_DST}")
+endif()
+
 add_subdirectory(examples)

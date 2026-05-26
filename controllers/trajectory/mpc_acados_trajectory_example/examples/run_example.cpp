@@ -4,12 +4,13 @@
 /**
  * @file run_example.cpp
  *
- * Trajectory-tracking MPC example using progressive per-stage references.
+ * Trajectory-tracking MPC example using DynamicTrajectory per-stage references.
  *
- * This standalone smoke test exercises the full 9-parameter trajectory
- * controller (desired position + velocity + acceleration + orientation) by
- * interpolating linearly between waypoints. A richer runner that uses
- * ``dynamic_trajectory_generator`` lives in the upstream mpc_examples repo.
+ * Standalone smoke test for the ``mpc_acados_trajectory`` controller: closed
+ * loop tracking of a minimum-jerk polynomial trajectory produced by the
+ * ``dynamic_trajectory_generator`` library against the Acados sim solver
+ * (no motor dynamics). DTG is fetched automatically by the example's
+ * top-level CMakeLists.txt; no system install is required.
  */
 
 #include <algorithm>
@@ -24,6 +25,9 @@
 
 #include <Eigen/Dense>
 
+#include "dynamic_trajectory_generator/dynamic_trajectory.hpp"
+#include "dynamic_trajectory_generator/dynamic_waypoint.hpp"
+
 #include "mpc_acados_core/logging/csv_logger.hpp"
 #include "mpc_acados_trajectory/acados_mpc.hpp"
 #include "mpc_acados_trajectory/acados_mpc_yaml.hpp"
@@ -35,11 +39,10 @@ namespace mpc_acados_trajectory_examples {
 
 using mpc_acados_core::logging::computeMean;
 using mpc_acados_core::logging::CsvLogger;
-using mpc_acados_core::logging::getDesiredOrientation;
 using mpc_acados_core::logging::printProgress;
 
 constexpr double kHoverTime                = 2.0;
-constexpr double kWaypointReachedTolerance = 0.1;
+constexpr double kMinHorizontalSpeedForYaw = 0.3;
 
 struct ExampleArgs {
   std::string config_path     = "examples/simulation_config.yaml";
@@ -78,39 +81,91 @@ int simulatorStep(acados_mpc::MPCSimSolver& simulator, acados_mpc::MPCData* mpc_
   return status;
 }
 
-void setTrajectoryReferences(acados_mpc::MPCData* mpc_data,
-                             const Eigen::Vector3d& current_position,
-                             const Eigen::Vector3d& goal_position,
-                             const Eigen::Quaterniond& desired_orientation,
-                             const double v_ref,
-                             const double dt_horizon,
-                             const int prediction_steps) {
-  const Eigen::Vector3d delta      = goal_position - current_position;
-  const double distance            = delta.norm();
-  const Eigen::Vector3d zero_accel = Eigen::Vector3d::Zero();
+/// Build the DynamicWaypoint deque consumed by
+/// `dynamic_traj_generator::DynamicTrajectory::generateTrajectory` from a
+/// sequence of plain Eigen waypoints. IDs are auto-numbered so the deque
+/// preserves the YAML ordering.
+dynamic_traj_generator::DynamicWaypoint::Deque buildDynamicWaypoints(
+    const std::vector<Eigen::Vector3d>& waypoints) {
+  dynamic_traj_generator::DynamicWaypoint::Deque deque;
+  for (std::size_t i = 0; i < waypoints.size(); ++i) {
+    dynamic_traj_generator::DynamicWaypoint wp;
+    wp.resetWaypoint(waypoints[i]);
+    wp.setName("wp_" + std::to_string(i));
+    deque.emplace_back(std::move(wp));
+  }
+  return deque;
+}
 
-  if (distance < 1e-9) {
-    mpc_data->p_params.setDesiredPosition(
-        {goal_position.x(), goal_position.y(), goal_position.z()});
-    mpc_data->p_params.setDesiredVelocity({0.0, 0.0, 0.0});
-    mpc_data->p_params.setDesiredAcceleration({zero_accel.x(), zero_accel.y(), zero_accel.z()});
-  } else {
-    const Eigen::Vector3d direction    = delta / distance;
-    const Eigen::Vector3d velocity_ref = direction * v_ref;
-    for (int stage = 0; stage <= prediction_steps; ++stage) {
-      const double s_k                     = std::min((stage + 1) * v_ref * dt_horizon, distance);
-      const Eigen::Vector3d stage_position = current_position + s_k * direction;
-      mpc_data->p_params.setDesiredPosition(
-          {stage_position.x(), stage_position.y(), stage_position.z()}, stage);
-      mpc_data->p_params.setDesiredVelocity({velocity_ref.x(), velocity_ref.y(), velocity_ref.z()},
-                                            stage);
-      mpc_data->p_params.setDesiredAcceleration({zero_accel.x(), zero_accel.y(), zero_accel.z()},
-                                                stage);
+/// Quaternion that aligns the body +X axis with @p velocity (path-facing).
+/// Falls back to the @p current orientation when the horizontal speed is
+/// below ``kMinHorizontalSpeedForYaw`` so the yaw reference does not jitter
+/// at start / stop transitions. Matches `compute_path_facing` in the Python
+/// driver.
+Eigen::Quaterniond computePathFacing(const Eigen::Vector3d& velocity,
+                                     const Eigen::Quaterniond& current) {
+  if (velocity.head<2>().norm() < kMinHorizontalSpeedForYaw) {
+    return current;
+  }
+  const double yaw = std::atan2(velocity.y(), velocity.x());
+  return Eigen::Quaterniond(Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ()));
+}
+
+/// Per-stage reference filling from DynamicTrajectory. Mirrors the Python
+/// helper `set_trajectory_references`: samples the trajectory at
+/// ``t_now + k*dt_horizon`` (clamped to [t_min, t_max]) for every stage
+/// k = 0..N. Past t_max the references freeze at the last known sample so
+/// the drone hovers instead of extrapolating.
+void setTrajectoryReferencesFromDtg(acados_mpc::MPCData* mpc_data,
+                                    dynamic_traj_generator::DynamicTrajectory& trajectory,
+                                    const Eigen::Quaterniond& current_orientation,
+                                    const double t_now,
+                                    const double dt_horizon,
+                                    const int prediction_steps,
+                                    const double t_min,
+                                    const double t_max,
+                                    const bool path_facing,
+                                    Eigen::Vector3d& last_position,
+                                    Eigen::Quaterniond& last_orientation) {
+  const bool hover = t_now > t_max;
+
+  dynamic_traj_generator::References refs;
+  for (int stage = 0; stage <= prediction_steps; ++stage) {
+    Eigen::Vector3d p_k;
+    Eigen::Vector3d v_k = Eigen::Vector3d::Zero();
+    Eigen::Vector3d a_k = Eigen::Vector3d::Zero();
+
+    if (hover) {
+      p_k = last_position;
+    } else {
+      const double t_eval = std::min(std::max(t_now + stage * dt_horizon, t_min), t_max);
+      if (!trajectory.evaluateTrajectory(static_cast<float>(t_eval), refs)) {
+        // Optimiser still warming up — fall back to last known sample.
+        p_k = last_position;
+      } else {
+        p_k = refs.position;
+        v_k = refs.velocity;
+        a_k = refs.acceleration;
+      }
+    }
+
+    Eigen::Quaterniond q_k = current_orientation;
+    if (path_facing && !hover) {
+      q_k = computePathFacing(v_k, current_orientation);
+    }
+
+    mpc_data->p_params.setDesiredPosition({p_k.x(), p_k.y(), p_k.z()}, stage);
+    mpc_data->p_params.setDesiredVelocity({v_k.x(), v_k.y(), v_k.z()}, stage);
+    mpc_data->p_params.setDesiredAcceleration({a_k.x(), a_k.y(), a_k.z()}, stage);
+    mpc_data->p_params.setDesiredOrientation({q_k.w(), q_k.x(), q_k.y(), q_k.z()}, stage);
+
+    if (stage == 0) {
+      if (!hover) {
+        last_position = p_k;
+      }
+      last_orientation = q_k;
     }
   }
-
-  mpc_data->p_params.setDesiredOrientation({desired_orientation.w(), desired_orientation.x(),
-                                            desired_orientation.y(), desired_orientation.z()});
 }
 
 ExampleArgs parseArguments(int argc, char** argv) {
@@ -136,23 +191,37 @@ void testMpcController(acados_mpc::MPC& mpc,
                        acados_mpc::MPCSimSolver& simulator,
                        const YamlSimConfig& sim_config,
                        CsvLogger& logger) {
-  if (sim_config.waypoints.empty()) {
-    throw std::invalid_argument("simulation_config.yaml must have at least one waypoint.");
+  if (sim_config.waypoints.size() < 2U) {
+    throw std::invalid_argument(
+        "simulation_config.yaml must have at least two waypoints (DTG requires "
+        "an origin + at least one target).");
   }
 
   acados_mpc::MPCData* mpc_data = mpc.getData();
   const int prediction_steps    = mpc.getPredictionSteps();
   const double dt               = mpc.getPredictionTimeStep();
   const double dt_horizon       = dt;
+  const double v_max            = sim_config.max_speed;
+  const bool path_facing        = sim_config.path_facing;
 
-  const double total_time = sim_config.sim_time + kHoverTime;
-  const auto& waypoints   = sim_config.waypoints;
-  std::size_t pos_index   = 0;
-  const double v_max      = sim_config.max_speed;
+  // ---- Build the DynamicTrajectory (one-shot, blocks until optimiser ready)
+  dynamic_traj_generator::DynamicTrajectory trajectory;
+  trajectory.setSpeed(v_max);
+  trajectory.generateTrajectory(buildDynamicWaypoints(sim_config.waypoints),
+                                /*force=*/true);
+
+  const double t_min = static_cast<double>(trajectory.getMinTime());
+  const double t_max = static_cast<double>(trajectory.getMaxTime());
+  const double total_time = t_max + kHoverTime;
+
+  // Initial reference at t=0 (frozen at the first waypoint until the
+  // optimiser has produced a sample).
+  Eigen::Vector3d last_position    = sim_config.waypoints.front();
+  Eigen::Quaterniond last_orientation = Eigen::Quaterniond::Identity();
 
   const Eigen::Matrix<double, 4, 1> zero_motor = Eigen::Matrix<double, 4, 1>::Zero();
   logger.save(0.0, Eigen::Vector3d::Zero(), Eigen::Quaterniond::Identity(), Eigen::Vector3d::Zero(),
-              Eigen::Vector3d::Zero(), waypoints[0], Eigen::Quaterniond::Identity(), 0.0,
+              Eigen::Vector3d::Zero(), last_position, last_orientation, 0.0,
               Eigen::Vector3d::Zero(), zero_motor, 0.0, 0, false, v_max);
 
   std::vector<double> mpc_times;
@@ -164,22 +233,21 @@ void testMpcController(acados_mpc::MPC& mpc,
   total_times.reserve(reserve);
 
   std::cout << "Starting MPC simulation..." << std::endl;
+  std::cout << "Trajectory time window: [" << t_min << ", " << t_max << "] s" << std::endl;
+  std::cout << "Hover time after trajectory: " << kHoverTime << " s" << std::endl;
   std::cout << "Total time: " << total_time << " s" << std::endl;
-  std::cout << "Time step: " << dt << " s" << std::endl;
-  std::cout << "Prediction steps: " << prediction_steps << std::endl;
+  std::cout << "MPC dt: " << dt << " s  |  Prediction steps: " << prediction_steps
+            << "  |  Horizon dt: " << dt_horizon << " s" << std::endl;
 
   double t = 0.0;
   while (t < total_time + 1e-9) {
     t += dt;
     const auto iter_start = std::chrono::high_resolution_clock::now();
 
-    const Eigen::Vector3d current_position       = getStatePosition(*mpc_data);
     const Eigen::Quaterniond current_orientation = getStateOrientation(*mpc_data);
-    const Eigen::Vector3d desired_position       = waypoints[pos_index];
-    const Eigen::Quaterniond desired_orientation = getDesiredOrientation(
-        desired_position, current_position, current_orientation, sim_config.path_facing);
-    setTrajectoryReferences(mpc_data, current_position, desired_position, desired_orientation,
-                            v_max, dt_horizon, prediction_steps);
+    setTrajectoryReferencesFromDtg(mpc_data, trajectory, current_orientation, t, dt_horizon,
+                                   prediction_steps, t_min, t_max, path_facing,
+                                   last_position, last_orientation);
 
     const auto mpc_start = std::chrono::high_resolution_clock::now();
     const int mpc_status = mpc.solve();
@@ -193,13 +261,6 @@ void testMpcController(acados_mpc::MPC& mpc,
     simulatorStep(simulator, mpc_data);
     const auto sim_end = std::chrono::high_resolution_clock::now();
 
-    const double error = (getStatePosition(*mpc_data) - desired_position).norm();
-    const bool hover_active =
-        (pos_index == waypoints.size() - 1U) && (error < kWaypointReachedTolerance);
-    if (error < kWaypointReachedTolerance && pos_index < waypoints.size() - 1U) {
-      ++pos_index;
-    }
-
     const std::chrono::duration<double> mpc_duration   = mpc_end - mpc_start;
     const std::chrono::duration<double> sim_duration   = sim_end - sim_start;
     const std::chrono::duration<double> total_duration = sim_end - iter_start;
@@ -207,12 +268,13 @@ void testMpcController(acados_mpc::MPC& mpc,
     sim_times.push_back(sim_duration.count());
     total_times.push_back(total_duration.count());
 
+    const bool hover_active = (t > t_max);
     const double controller_solve_time_us = mpc_duration.count() * 1e6;
     logger.save(t, getStatePosition(*mpc_data), getStateOrientation(*mpc_data),
-                getStateVelocity(*mpc_data), Eigen::Vector3d::Zero(), desired_position,
-                desired_orientation, mpc_data->actuation.getThrust(),
+                getStateVelocity(*mpc_data), Eigen::Vector3d::Zero(), last_position,
+                last_orientation, mpc_data->actuation.getThrust(),
                 getActuationAngularVelocity(*mpc_data), zero_motor, controller_solve_time_us,
-                static_cast<int>(pos_index), hover_active, v_max);
+                0, hover_active, v_max);
 
     printProgress(t / total_time);
   }

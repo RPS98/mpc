@@ -36,12 +36,12 @@ add_subdirectory(mpc_acados_core/cpp_interface)
 # ---------------------------------------------------------------------------
 # Pure-Python mirror
 # ---------------------------------------------------------------------------
-# When built as part of the top-level mpc_examples tree, ``PYBIND_PY_MIRROR_ROOT``
-# points to the centralized directory where all compiled .so modules and
-# pure-Python packages are gathered so a single PYTHONPATH entry exposes
-# everything. Since mpc_acados_core / mpc_acados_position / mpc_acados_trajectory
-# are pure-Python, we expose them via symlinks — live edits to the source tree
-# are immediately visible through the mirror without re-building.
+# When a consumer project sets ``PYBIND_PY_MIRROR_ROOT`` to a directory it
+# uses to aggregate compiled .so modules and pure-Python packages (so a single
+# PYTHONPATH entry exposes everything), we mirror the three packages of this
+# repo there via symlinks. Since mpc_acados_core / mpc_acados_position /
+# mpc_acados_trajectory are pure-Python, symlinks let live edits to the source
+# tree show up through the mirror without re-building.
 if(DEFINED PYBIND_PY_MIRROR_ROOT)
   file(MAKE_DIRECTORY "${PYBIND_PY_MIRROR_ROOT}")
 

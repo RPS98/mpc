@@ -42,9 +42,15 @@ mpc_acados_trajectory_example/
    /path/to/controllers/trajectory`). If you cloned this repo, run first
    `controllers/trajectory/generate_datatypes.sh` to generate the library.
 4. Python: `numpy`, `casadi`, `acados_template`, `pyyaml`, `jinja2`,
-   `matplotlib`, `tqdm`. The Python example also needs
-   `dynamic_trajectory_generator_py`.
-5. C++ toolchain: CMake 3.16+, C++17, Eigen3, yaml-cpp.
+   `matplotlib`, `tqdm`. `dynamic_trajectory_generator_py` is **fetched
+   and built automatically** by `build.sh` (via CMake `FetchContent` —
+   pinned to a known-good upstream SHA). The library lands in
+   `thirdparty/dynamic_trajectory_generator/` (gitignored) and the
+   compiled `.so` in `build/dtg_pybind/`. Disable with
+   `-DMPC_FETCH_DYNAMIC_TRAJECTORY_GENERATOR=OFF` if a consumer project
+   already vendors it.
+5. C++ toolchain: CMake 3.16+, C++17, Eigen3, yaml-cpp, `libnlopt-dev`
+   (transitive dependency of the fetched dynamic_trajectory_generator).
 
 ---
 

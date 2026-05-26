@@ -32,8 +32,7 @@
 
 This is a standalone smoke test for the ``mpc_acados_position`` controller:
 closed-loop tracking of a sequence of waypoints using only the Acados sim
-solver (no motor dynamics). For a full drone-simulation runner, see
-``mpc_examples/examples/mpc_controller/run_example.py``.
+solver (no motor dynamics).
 """
 
 __authors__ = 'Rafael Perez-Segui'

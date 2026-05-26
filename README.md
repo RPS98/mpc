@@ -72,12 +72,10 @@ export PYTHONPATH="${MPC_ROOT}/controllers/position:$PYTHONPATH"
 export PYTHONPATH="${MPC_ROOT}/controllers/trajectory:$PYTHONPATH"
 ```
 
-When this submodule is driven from a parent CMake project (e.g.
-[mpc_examples](https://github.com/RPS98/mpc_examples)) that defines
-`PYBIND_PY_MIRROR_ROOT`, the root `CMakeLists.txt` automatically creates
-symbolic links from that directory to the three packages, so a single
-`PYTHONPATH` entry (`build/python/`) exposes all of them with no `pip install`
-step.
+When a consumer CMake project defines `PYBIND_PY_MIRROR_ROOT`, the root
+`CMakeLists.txt` automatically creates symbolic links from that directory to
+the three packages, so a single `PYTHONPATH` entry (typically `build/python/`)
+exposes all of them with no `pip install` step.
 
 ---
 

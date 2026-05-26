@@ -10,6 +10,7 @@ target_include_directories(mpc_acados_trajectory_run_example PRIVATE
 target_link_libraries(mpc_acados_trajectory_run_example
   PRIVATE
     mpc_acados_trajectory::mpc_acados_trajectory
+    dynamic_trajectory_generator                # fetched by the parent CMakeLists
     Eigen3::Eigen
     yaml-cpp
 )
