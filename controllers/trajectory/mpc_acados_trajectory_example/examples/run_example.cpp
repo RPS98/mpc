@@ -81,20 +81,21 @@ int simulatorStep(acados_mpc::MPCSimSolver& simulator, acados_mpc::MPCData* mpc_
   return status;
 }
 
-/// Build the DynamicWaypoint deque consumed by
-/// `dynamic_traj_generator::DynamicTrajectory::generateTrajectory` from a
-/// sequence of plain Eigen waypoints. IDs are auto-numbered so the deque
-/// preserves the YAML ordering.
-dynamic_traj_generator::DynamicWaypoint::Deque buildDynamicWaypoints(
+/// Build the DynamicWaypoint vector consumed by
+/// `dynamic_traj_generator::DynamicTrajectory::setWaypoints` from a sequence
+/// of plain Eigen waypoints. IDs are auto-numbered so the vector preserves
+/// the YAML ordering.
+dynamic_traj_generator::DynamicWaypoint::Vector buildDynamicWaypoints(
     const std::vector<Eigen::Vector3d>& waypoints) {
-  dynamic_traj_generator::DynamicWaypoint::Deque deque;
+  dynamic_traj_generator::DynamicWaypoint::Vector result;
+  result.reserve(waypoints.size());
   for (std::size_t i = 0; i < waypoints.size(); ++i) {
     dynamic_traj_generator::DynamicWaypoint wp;
     wp.resetWaypoint(waypoints[i]);
     wp.setName("wp_" + std::to_string(i));
-    deque.emplace_back(std::move(wp));
+    result.emplace_back(std::move(wp));
   }
-  return deque;
+  return result;
 }
 
 /// Quaternion that aligns the body +X axis with @p velocity (path-facing).
@@ -204,14 +205,18 @@ void testMpcController(acados_mpc::MPC& mpc,
   const double v_max            = sim_config.max_speed;
   const bool path_facing        = sim_config.path_facing;
 
-  // ---- Build the DynamicTrajectory (one-shot, blocks until optimiser ready)
+  // ---- Build the DynamicTrajectory (canonical setWaypoints flow).
+  // Order taken from the validated mav_examples adapter:
+  //   setSpeed -> updateVehiclePosition -> setWaypoints. The first
+  //   getMinTime/getMaxTime call blocks until the optimiser publishes.
   dynamic_traj_generator::DynamicTrajectory trajectory;
   trajectory.setSpeed(v_max);
-  trajectory.generateTrajectory(buildDynamicWaypoints(sim_config.waypoints),
-                                /*force=*/true);
+  const Eigen::Vector3d initial_position = sim_config.waypoints.front();
+  trajectory.updateVehiclePosition(initial_position);
+  trajectory.setWaypoints(buildDynamicWaypoints(sim_config.waypoints));
 
-  const double t_min = static_cast<double>(trajectory.getMinTime());
-  const double t_max = static_cast<double>(trajectory.getMaxTime());
+  const double t_min = trajectory.getMinTime();
+  const double t_max = trajectory.getMaxTime();
   const double total_time = t_max + kHoverTime;
 
   // Initial reference at t=0 (frozen at the first waypoint until the
