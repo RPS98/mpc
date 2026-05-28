@@ -19,6 +19,8 @@ namespace mpc_acados_trajectory_examples {
 struct YamlSimConfig {
   double sim_time  = 0.0;
   double max_speed = 0.0;
+  // Initial vehicle pose
+  Eigen::Vector3d initial_position = Eigen::Vector3d::Zero();
   std::vector<Eigen::Vector3d> waypoints;
   bool path_facing = false;
   std::string solver_definition_path;
@@ -53,6 +55,10 @@ inline void readSimYaml(const std::string& file_path, YamlSimConfig& config) {
   config.sim_time    = sim_cfg["sim_time"].as<double>();
   config.max_speed   = sim_cfg["max_speed"].as<double>();
   config.path_facing = sim_cfg["path_facing"].as<bool>();
+  if (sim_cfg["initial_position"]) {
+    config.initial_position =
+        detail::waypointFromNode(sim_cfg["initial_position"], "sim_config.initial_position");
+  }
   if (controller_cfg) {
     if (controller_cfg["solver_definition_path"]) {
       config.solver_definition_path = controller_cfg["solver_definition_path"].as<std::string>();

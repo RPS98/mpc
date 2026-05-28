@@ -1,6 +1,7 @@
 sim_config:
   sim_time: 30.0 # seconds
   max_speed: 1.0 # m/s
+  initial_position: [0.0, 0.0, 0.0]
   waypoints:
     - [0.0, 0.0, 2.0]
     - [2.0, 0.0, 2.0]

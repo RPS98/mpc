@@ -192,10 +192,10 @@ void testMpcController(acados_mpc::MPC& mpc,
                        acados_mpc::MPCSimSolver& simulator,
                        const YamlSimConfig& sim_config,
                        CsvLogger& logger) {
-  if (sim_config.waypoints.size() < 2U) {
+  if (sim_config.waypoints.empty()) {
     throw std::invalid_argument(
-        "simulation_config.yaml must have at least two waypoints (DTG requires "
-        "an origin + at least one target).");
+        "simulation_config.yaml must list at least one target waypoint "
+        "(sim_config.initial_position is the start; waypoints are the targets).");
   }
 
   acados_mpc::MPCData* mpc_data = mpc.getData();
@@ -211,22 +211,34 @@ void testMpcController(acados_mpc::MPC& mpc,
   //   getMinTime/getMaxTime call blocks until the optimiser publishes.
   dynamic_traj_generator::DynamicTrajectory trajectory;
   trajectory.setSpeed(v_max);
-  const Eigen::Vector3d initial_position = sim_config.waypoints.front();
+  const Eigen::Vector3d & initial_position = sim_config.initial_position;
   trajectory.updateVehiclePosition(initial_position);
-  trajectory.setWaypoints(buildDynamicWaypoints(sim_config.waypoints));
+  std::vector<Eigen::Vector3d> knots;
+  knots.reserve(1U + sim_config.waypoints.size());
+  knots.push_back(initial_position);
+  knots.insert(knots.end(), sim_config.waypoints.begin(), sim_config.waypoints.end());
+  trajectory.setWaypoints(buildDynamicWaypoints(knots));
+
+  // Start the drone at the configured initial pose so the closed loop
+  // begins matched to the trajectory's anchor point.
+  mpc_data->state.setData(0, initial_position.x());
+  mpc_data->state.setData(1, initial_position.y());
+  mpc_data->state.setData(2, initial_position.z());
 
   const double t_min = trajectory.getMinTime();
   const double t_max = trajectory.getMaxTime();
   const double total_time = t_max + kHoverTime;
 
-  // Initial reference at t=0 (frozen at the first waypoint until the
+  // Initial reference at t=0 (frozen at the initial position until the
   // optimiser has produced a sample).
-  Eigen::Vector3d last_position    = sim_config.waypoints.front();
+  Eigen::Vector3d last_position    = initial_position;
   Eigen::Quaterniond last_orientation = Eigen::Quaterniond::Identity();
 
   const Eigen::Matrix<double, 4, 1> zero_motor = Eigen::Matrix<double, 4, 1>::Zero();
-  logger.save(0.0, Eigen::Vector3d::Zero(), Eigen::Quaterniond::Identity(), Eigen::Vector3d::Zero(),
-              Eigen::Vector3d::Zero(), last_position, last_orientation, 0.0,
+  // First log entry at t=0
+  logger.save(0.0, getStatePosition(*mpc_data), getStateOrientation(*mpc_data),
+              getStateVelocity(*mpc_data), Eigen::Vector3d::Zero(),
+              last_position, last_orientation, 0.0,
               Eigen::Vector3d::Zero(), zero_motor, 0.0, 0, false, v_max);
 
   std::vector<double> mpc_times;

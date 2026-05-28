@@ -100,13 +100,16 @@ def set_trajectory_references(
     stage0_vel = np.zeros(3, dtype=float)
     stage0_ori = np.asarray(mpc_data.state.orientation, dtype=float).copy()
 
+    t_cap = t_max - dt_horizon
     for k in range(N + 1):
         if hover:
             p_k = last_pos
             v_k = np.zeros(3, dtype=float)
             a_k = np.zeros(3, dtype=float)
         else:
-            t_eval = float(np.clip(t_now + k * dt_horizon, t_min, t_max))
+            t_eval = t_now + k * dt_horizon
+            if t_eval > t_cap:
+                t_eval = t_cap
             ref = traj.evaluate(t_eval)
             p_k = np.asarray(ref.position, dtype=float)
             v_k = np.asarray(ref.velocity, dtype=float)
@@ -172,19 +175,25 @@ def test_mpc_controller(
     v_max = float(sim_cfg.max_speed)
     path_facing = bool(sim_cfg.path_facing)
 
+    initial_position = np.asarray(sim_cfg.initial_position, dtype=float)
     waypoints = np.asarray(sim_cfg.waypoints, dtype=float)
     last_pos = waypoints[-1].astype(float).copy()
     last_vel = np.zeros(3, dtype=float)
     last_acc = np.zeros(3, dtype=float)
 
+    # Start the drone at the configured initial pose
+    _x0 = np.asarray(mpc_data.state.vector, dtype=float).copy()
+    _x0[0:3] = initial_position
+    mpc_data.state.vector = _x0
+
     # First log entry at t=0.
     logger.save(
         0.0,
+        np.asarray(mpc_data.state.position, dtype=float),
+        np.asarray(mpc_data.state.orientation, dtype=float),
+        np.asarray(mpc_data.state.linear_velocity, dtype=float),
         ZERO_VEC3,
-        np.array([1.0, 0.0, 0.0, 0.0], dtype=float),
-        ZERO_VEC3,
-        ZERO_VEC3,
-        waypoints[0],
+        initial_position,
         np.array([1.0, 0.0, 0.0, 0.0], dtype=float),
         0.0,
         ZERO_VEC3,
@@ -218,7 +227,12 @@ def test_mpc_controller(
 
         # Solve MPC.
         mpc_start = time.perf_counter()
-        mpc_status = mpc.solve()
+        try:
+            mpc_status = mpc.solve()
+        except Exception as exc:
+            print(f'\nMPC solver fatal at time {t:.3f}s ({exc}); '
+                  'truncating run, CSV will hold rows up to here.')
+            break
         mpc_end = time.perf_counter()
         if mpc_status != 0:
             print(f'\nMPC solver failed with status {mpc_status} at time {t:.3f}s')
@@ -308,17 +322,22 @@ def main() -> None:
     )
     integrator = sim_builder.acados_integrator
 
+    initial_position = np.asarray(yaml_data.sim_config.initial_position, dtype=float)
     waypoints = np.asarray(yaml_data.sim_config.waypoints, dtype=float)
     max_speed = float(yaml_data.sim_config.max_speed)
 
     trajectory = DynamicTrajectory()
     trajectory.set_path_facing(False)
-    trajectory.set_current_position(np.zeros(3, dtype=float))
+    # DTG
+    trajectory.set_current_position(initial_position)
     trajectory.set_current_yaw(0.0)
     trajectory.set_max_velocity(max_speed)
-    trajectory.generate_trajectory([waypoints[i] for i in range(len(waypoints))])
-    print(f'Trajectory generated with {len(waypoints)} waypoints at '
-          f'{max_speed} m/s (max_time = {trajectory.max_time:.4f} s).')
+    knots = [initial_position.tolist()] + [waypoints[i].tolist()
+                                            for i in range(len(waypoints))]
+    trajectory.generate_trajectory(knots)
+    print(f'Trajectory generated: initial_position={initial_position.tolist()}, '
+          f'{len(waypoints)} target waypoints at {max_speed} m/s '
+          f'(max_time = {trajectory.max_time:.4f} s).')
 
     logger = CsvLogger(args.file_name)
     test_mpc_controller(mpc, integrator, yaml_data, logger, trajectory)
