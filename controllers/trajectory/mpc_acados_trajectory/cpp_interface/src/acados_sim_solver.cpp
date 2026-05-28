@@ -45,7 +45,7 @@ void MPCSimSolver::initializeSolver() {
   sim_out_ = mpc_acados_get_sim_out(capsule_);
 }
 
-int MPCSimSolver::solve(MPCData *data) {
+int MPCSimSolver::solve(MPCData* data) {
   for (int i = 0; i < MPC_NX; i++) {
     sim_in_->x[i] = data->state.data[i];
   }

@@ -56,6 +56,16 @@ void MPC::initializeSolver() {
 }
 
 void MPC::setSolverState() {
+  // Seed the primal state guess once
+  if (!guess_initialized_) {
+    for (int stage = 0; stage <= {{ model_name.upper() }}_N; ++stage) {
+      ocp_nlp_out_set(acados_pointers_.nlp_config, acados_pointers_.nlp_dims,
+                      acados_pointers_.nlp_out, acados_pointers_.nlp_in, stage, "x",
+                      mpc_data_.state.data.data());
+    }
+    guess_initialized_ = true;
+  }
+
   status_ = ocp_nlp_constraints_model_set(
       acados_pointers_.nlp_config, acados_pointers_.nlp_dims,
       acados_pointers_.nlp_in, acados_pointers_.nlp_out, 0, "lbx",

@@ -186,8 +186,15 @@ class AcadosMPCSolverBase:
         constraints = ocp.constraints
         constraints_def = solver_definition.mpc.constraints
 
-        # Initial state
-        constraints.x0 = state.vector
+        # Initial state.
+        if constraints_def.idxbx_0.shape[0] > 0:
+            idxbx_0 = constraints_def.idxbx_0.astype(int)
+            constraints.idxbx_0 = idxbx_0
+            constraints.lbx_0 = state.vector[idxbx_0]
+            constraints.ubx_0 = state.vector[idxbx_0]
+            constraints.idxbxe_0 = idxbx_0
+        else:
+            constraints.x0 = state.vector
 
         # Hard constraints on inputs
         if constraints_def.idxbu.shape[0] > 0:

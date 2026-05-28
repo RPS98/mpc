@@ -60,7 +60,7 @@ public:
    * @brief Advance the integrator one step using the state and actuation of
    * ``data``. Writes the resulting state back to ``data``.
    */
-  int solve(MPCData *data);
+  int solve(MPCData* data);
 
 private:
   void initializeSolver();
@@ -72,9 +72,9 @@ private:
   }
 
 private:
-  mpc_sim_solver_capsule *capsule_ = nullptr;
-  sim_in *sim_in_                  = nullptr;
-  sim_out *sim_out_                = nullptr;
+  mpc_sim_solver_capsule* capsule_ = nullptr;
+  sim_in* sim_in_                  = nullptr;
+  sim_out* sim_out_                = nullptr;
 
   int status_ = 0;
 };

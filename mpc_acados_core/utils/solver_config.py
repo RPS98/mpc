@@ -66,6 +66,10 @@ class ConstraintsDefinition:
     # Bounds on u (defines J_bu)
     idxbu: np.ndarray = np.array([])  # Indices of bounds on u at intermediate shooting nodes (0 to N-1)
 
+    # Initial-state equality (node 0). When empty, the full state vector is
+    # fixed to x(k) (acados ``constraints.x0``).
+    idxbx_0: np.ndarray = np.array([])  # Indices of the initial-state equality at node 0
+
     # Bounds on x (defines J_bx and J_bx_e)
     idxbx: np.ndarray = np.array([])  # Indices of bounds on x at shooting nodes (1 to N)
 
@@ -96,6 +100,7 @@ class ConstraintsDefinition:
         """
         return ConstraintsDefinition(
             idxbu=np.array(constraints_dict.get('idxbu', [])),
+            idxbx_0=np.array(constraints_dict.get('idxbx_0', [])),
             idxbx=np.array(constraints_dict.get('idxbx', [])),
             idxsbx=np.array(constraints_dict.get('idxsbx', [])),
             lsbx=np.array(constraints_dict.get('lsbx', [])),

@@ -214,6 +214,11 @@ class MPCBase:
         self.u_size = self.acados_ocp_solver.get(0, 'u').shape[0]
         self.p_size = self.acados_ocp_solver.get(0, 'p').shape[0]
 
+        # Initial-state equality indices at node 0.
+        self._idxbx_0 = np.array(
+            ocp_json["constraints"].get("idxbx_0", list(range(self.x_size))),
+            dtype=int)
+
         self.idxbu_size = len(ocp_json["constraints"]["idxbu"])
         self.idxbx_size = len(ocp_json["constraints"]["idxbx"])
         self.idxsbx_size = len(ocp_json["constraints"]["idxsbx"])
@@ -241,6 +246,10 @@ class MPCBase:
 
         # Internal variables
         self._status: int = 0
+        # Lazy one-time initialization of the primal state guess.
+        self._guess_initialized: bool = False
+        
+        # MPC data
         self._mpc_data = self.MPCData(
             mpc_n=self.N,
             mpc_ny=self.w_size,
@@ -309,8 +318,9 @@ class MPCBase:
             raise ValueError(
                 f"Size mismatch: x has shape {x.shape}, "
                 f"but expected size is ({self.x_size},).")
-        self.acados_ocp_solver.set(0, 'lbx', x)
-        self.acados_ocp_solver.set(0, 'ubx', x)
+        x0 = x[self._idxbx_0]
+        self.acados_ocp_solver.set(0, 'lbx', x0)
+        self.acados_ocp_solver.set(0, 'ubx', x0)
 
     def _set_solver_reference(self) -> None:
         """Set the reference of the MPC solver."""
@@ -346,8 +356,18 @@ class MPCBase:
                     f"but expected size is ({self.p_size},).")
             self._status = self.acados_ocp_solver.set(stage_i, 'p', p)
 
+    def _initialize_guess_if_needed(self) -> None:
+        """Seed the primal state guess for every stage once (valid quaternion)."""
+        if self._guess_initialized:
+            return
+        x = self._mpc_data.state.vector
+        for stage_i in range(self.N + 1):
+            self.acados_ocp_solver.set(stage_i, 'x', x)
+        self._guess_initialized = True
+
     def solve(self) -> int:
         """Solve the MPC problem."""
+        self._initialize_guess_if_needed()
         self._set_solver_state()
         self._set_solver_reference()
         self._set_solver_reference_end()

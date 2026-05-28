@@ -158,6 +158,8 @@ private:
   AcadosSolverPointers acados_pointers_;
 
   int status_ = 0;
+  // Initial guess for state
+  bool guess_initialized_ = false;
   std::array<double, {{ model_name.upper() }}_N> prediction_time_steps_{};
 
   MPCData mpc_data_ = MPCData();

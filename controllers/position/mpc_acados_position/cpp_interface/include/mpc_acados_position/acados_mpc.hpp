@@ -51,12 +51,12 @@ namespace acados_mpc {
  * Data structure to hold the acados solver pointers.
  */
 struct AcadosSolverPointers {
-  mpc_solver_capsule *capsule = nullptr;
-  ocp_nlp_in *nlp_in          = nullptr;
-  ocp_nlp_out *nlp_out        = nullptr;
-  ocp_nlp_solver *nlp_solver  = nullptr;
-  ocp_nlp_config *nlp_config  = nullptr;
-  ocp_nlp_dims *nlp_dims      = nullptr;
+  mpc_solver_capsule* capsule = nullptr;
+  ocp_nlp_in* nlp_in          = nullptr;
+  ocp_nlp_out* nlp_out        = nullptr;
+  ocp_nlp_solver* nlp_solver  = nullptr;
+  ocp_nlp_config* nlp_config  = nullptr;
+  ocp_nlp_dims* nlp_dims      = nullptr;
 };
 
 /**
@@ -94,32 +94,32 @@ public:
 
   inline double getPredictionTimeStep() const { return *acados_pointers_.nlp_in->Ts; }
 
-  MPCData *getData() { return &mpc_data_; }
+  MPCData* getData() { return &mpc_data_; }
 
-  OnlineParameters *getParameters() { return &mpc_data_.p_params; }
+  OnlineParameters* getParameters() { return &mpc_data_.p_params; }
 
-  void setParameters(const OnlineParameters &params) { mpc_data_.p_params.setParameters(params); }
+  void setParameters(const OnlineParameters& params) { mpc_data_.p_params.setParameters(params); }
 
-  void setParameters(const Parameters &params, const int stage = -1) {
+  void setParameters(const Parameters& params, const int stage = -1) {
     mpc_data_.p_params.setParameters(params, stage);
   }
 
-  Gains *getGains() { return &gains_; }
-  ActuationBounds *getActuationBounds() { return &actuation_bounds_; }
-  StateBounds *getStateBounds() { return &state_bounds_; }
-  SoftStateBounds *getSoftStateBounds() { return &soft_state_bounds_; }
-  SlackWeights *getSlackWeights() { return &slack_weights_; }
-  SlackWeightsEnd *getSlackWeightsEnd() { return &slack_weights_end_; }
+  Gains* getGains() { return &gains_; }
+  ActuationBounds* getActuationBounds() { return &actuation_bounds_; }
+  StateBounds* getStateBounds() { return &state_bounds_; }
+  SoftStateBounds* getSoftStateBounds() { return &soft_state_bounds_; }
+  SlackWeights* getSlackWeights() { return &slack_weights_; }
+  SlackWeightsEnd* getSlackWeightsEnd() { return &slack_weights_end_; }
 
-  NonlinearConstraintBounds *getNonlinearConstraintBounds() {
+  NonlinearConstraintBounds* getNonlinearConstraintBounds() {
     return &nonlinear_constraint_bounds_;
   }
 
-  SoftNonlinearConstraintBounds *getSoftNonlinearConstraintBounds() {
+  SoftNonlinearConstraintBounds* getSoftNonlinearConstraintBounds() {
     return &soft_nonlinear_constraint_bounds_;
   }
 
-  const AcadosSolverPointers *getAcadosSolverPointers() const { return &acados_pointers_; }
+  const AcadosSolverPointers* getAcadosSolverPointers() const { return &acados_pointers_; }
 
   void updateTimeStep(const double time_step);
   void updateTimeStep(std::array<double, MPC_N> time_steps);
@@ -150,6 +150,8 @@ private:
   AcadosSolverPointers acados_pointers_;
 
   int status_ = 0;
+  // Initial guess for state
+  bool guess_initialized_ = false;
   std::array<double, MPC_N> prediction_time_steps_{};
 
   MPCData mpc_data_ = MPCData();

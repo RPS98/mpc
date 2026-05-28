@@ -10,8 +10,7 @@
 //      notice, this list of conditions and the following disclaimer in the
 //      documentation and/or other materials provided with the distribution.
 //
-//    * Neither the name of the Universidad Politécnica de Madrid nor the names
-//    of its
+//    * Neither the name of the Universidad Politécnica de Madrid nor the names of its
 //      contributors may be used to endorse or promote products derived from
 //      this software without specific prior written permission.
 //
@@ -117,7 +116,7 @@ struct MpcYamlConfig {
 namespace detail {
 
 template <std::size_t N>
-std::array<double, N> vectorToArray(const std::vector<double> &values, const std::string &name) {
+std::array<double, N> vectorToArray(const std::vector<double>& values, const std::string& name) {
   if (values.size() != N) {
     throw std::invalid_argument(name + " must have " + std::to_string(N) + " elements.");
   }
@@ -127,7 +126,7 @@ std::array<double, N> vectorToArray(const std::vector<double> &values, const std
 }
 
 template <std::size_t N>
-std::array<double, N> yamlArrayRequired(const YAML::Node &node, const std::string &name) {
+std::array<double, N> yamlArrayRequired(const YAML::Node& node, const std::string& name) {
   if (!node || node.IsNull()) {
     throw std::invalid_argument("Missing required YAML entry: " + name);
   }
@@ -135,7 +134,7 @@ std::array<double, N> yamlArrayRequired(const YAML::Node &node, const std::strin
 }
 
 template <std::size_t N>
-std::vector<double> yamlVectorOptional(const YAML::Node &node, const std::string &name) {
+std::vector<double> yamlVectorOptional(const YAML::Node& node, const std::string& name) {
   if (!node || node.IsNull()) {
     return {};
   }
@@ -169,10 +168,9 @@ std::vector<double> yamlVectorOptional(const YAML::Node &node, const std::string
  *
  * @param file_path Path to the YAML file.
  * @param config    Output configuration struct.
- * @throws std::invalid_argument if the file does not exist or a required field
- * is missing.
+ * @throws std::invalid_argument if the file does not exist or a required field is missing.
  */
-inline void readMpcYaml(const std::string &file_path, MpcYamlConfig &config) {
+inline void readMpcYaml(const std::string& file_path, MpcYamlConfig& config) {
   std::ifstream file(file_path.c_str());
   if (!file.good()) {
     const std::string absolute_path = std::filesystem::absolute(file_path).string();
@@ -251,34 +249,31 @@ inline void readMpcYaml(const std::string &file_path, MpcYamlConfig &config) {
  * @brief Configure an MPC instance from a YAML file.
  *
  * @details
- * This helper is the entry point to apply runtime MPC tuning from
- * `mpc_config.yaml`. It performs all required steps in one call:
+ * This helper is the entry point to apply runtime MPC tuning from `mpc_config.yaml`.
+ * It performs all required steps in one call:
  * 1. Parse the YAML file with readMpcYaml().
  * 2. Apply online parameters to mpc.getParameters().
  * 3. Apply configured bounds and slack weights.
- * 4. Call all required update*() methods so values are pushed to the acados
- * solver.
+ * 4. Call all required update*() methods so values are pushed to the acados solver.
  *
  * YAML requirements:
  * - Required fields: `mpc.constraints.lbu`, `mpc.constraints.ubu`.
- * - Optional fields: all online parameters and remaining constraint/slack
- * entries.
+ * - Optional fields: all online parameters and remaining constraint/slack entries.
  *
  * Optional-field behavior:
  * - If omitted, the current value already stored inside `mpc` is preserved.
  * - If provided, vector sizes must match the generated model/solver dimensions.
  *
- * @note Dynamic references (e.g. desired_position, desired_orientation) are
- * only initial values and are usually overwritten by the control loop at
- * runtime.
+ * @note Dynamic references (e.g. desired_position, desired_orientation) are only
+ *       initial values and are usually overwritten by the control loop at runtime.
  *
  * @param mpc       Initialized MPC instance to configure.
  * @param file_path Path to the YAML configuration file.
  *
- * @throws std::invalid_argument If the YAML file does not exist, a required key
- * is missing, or any provided vector has an invalid size.
+ * @throws std::invalid_argument If the YAML file does not exist, a required key is
+ *         missing, or any provided vector has an invalid size.
  */
-inline void configureMpcFromYaml(MPC &mpc, const std::string &file_path) {
+inline void configureMpcFromYaml(MPC& mpc, const std::string& file_path) {
   MpcYamlConfig config;
   readMpcYaml(file_path, config);
 
