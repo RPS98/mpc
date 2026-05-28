@@ -211,7 +211,7 @@ void testMpcController(acados_mpc::MPC& mpc,
   //   getMinTime/getMaxTime call blocks until the optimiser publishes.
   dynamic_traj_generator::DynamicTrajectory trajectory;
   trajectory.setSpeed(v_max);
-  const Eigen::Vector3d & initial_position = sim_config.initial_position;
+  const Eigen::Vector3d& initial_position = sim_config.initial_position;
   trajectory.updateVehiclePosition(initial_position);
   std::vector<Eigen::Vector3d> knots;
   knots.reserve(1U + sim_config.waypoints.size());
@@ -225,21 +225,20 @@ void testMpcController(acados_mpc::MPC& mpc,
   mpc_data->state.setData(1, initial_position.y());
   mpc_data->state.setData(2, initial_position.z());
 
-  const double t_min = trajectory.getMinTime();
-  const double t_max = trajectory.getMaxTime();
+  const double t_min      = trajectory.getMinTime();
+  const double t_max      = trajectory.getMaxTime();
   const double total_time = t_max + kHoverTime;
 
   // Initial reference at t=0 (frozen at the initial position until the
   // optimiser has produced a sample).
-  Eigen::Vector3d last_position    = initial_position;
+  Eigen::Vector3d last_position       = initial_position;
   Eigen::Quaterniond last_orientation = Eigen::Quaterniond::Identity();
 
   const Eigen::Matrix<double, 4, 1> zero_motor = Eigen::Matrix<double, 4, 1>::Zero();
   // First log entry at t=0
   logger.save(0.0, getStatePosition(*mpc_data), getStateOrientation(*mpc_data),
-              getStateVelocity(*mpc_data), Eigen::Vector3d::Zero(),
-              last_position, last_orientation, 0.0,
-              Eigen::Vector3d::Zero(), zero_motor, 0.0, 0, false, v_max);
+              getStateVelocity(*mpc_data), Eigen::Vector3d::Zero(), last_position, last_orientation,
+              0.0, Eigen::Vector3d::Zero(), zero_motor, 0.0, 0, false, v_max);
 
   std::vector<double> mpc_times;
   std::vector<double> sim_times;
@@ -263,8 +262,8 @@ void testMpcController(acados_mpc::MPC& mpc,
 
     const Eigen::Quaterniond current_orientation = getStateOrientation(*mpc_data);
     setTrajectoryReferencesFromDtg(mpc_data, trajectory, current_orientation, t, dt_horizon,
-                                   prediction_steps, t_min, t_max, path_facing,
-                                   last_position, last_orientation);
+                                   prediction_steps, t_min, t_max, path_facing, last_position,
+                                   last_orientation);
 
     const auto mpc_start = std::chrono::high_resolution_clock::now();
     const int mpc_status = mpc.solve();
@@ -285,13 +284,13 @@ void testMpcController(acados_mpc::MPC& mpc,
     sim_times.push_back(sim_duration.count());
     total_times.push_back(total_duration.count());
 
-    const bool hover_active = (t > t_max);
+    const bool hover_active               = (t > t_max);
     const double controller_solve_time_us = mpc_duration.count() * 1e6;
     logger.save(t, getStatePosition(*mpc_data), getStateOrientation(*mpc_data),
                 getStateVelocity(*mpc_data), Eigen::Vector3d::Zero(), last_position,
                 last_orientation, mpc_data->actuation.getThrust(),
-                getActuationAngularVelocity(*mpc_data), zero_motor, controller_solve_time_us,
-                0, hover_active, v_max);
+                getActuationAngularVelocity(*mpc_data), zero_motor, controller_solve_time_us, 0,
+                hover_active, v_max);
 
     printProgress(t / total_time);
   }
