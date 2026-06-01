@@ -73,9 +73,8 @@ if(MPC_FETCH_DYNAMIC_TRAJECTORY_GENERATOR)
   set(_DTG_LOCAL "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/dynamic_trajectory_generator")
   FetchContent_Declare(
     dynamic_trajectory_generator
-    GIT_REPOSITORY https://github.com/miferco97/dynamic_trajectory_generator.git
-    GIT_TAG        5c49297                              # pinned (already validated)
-    GIT_SHALLOW    FALSE                                 # SHA pin requires full history
+    GIT_REPOSITORY https://github.com/cvar-upm/dynamic_trajectory_generator.git
+    GIT_TAG        master
     SOURCE_DIR     ${_DTG_LOCAL}
   )
   FetchContent_MakeAvailable(dynamic_trajectory_generator)
