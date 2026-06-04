@@ -46,6 +46,8 @@
 
 namespace acados_mpc {
 
+
+
 TEST(acadosMpc, testAcadosMpc) {
   EXPECT_NO_THROW(MPC());
   auto mpc = MPC();
@@ -94,11 +96,9 @@ TEST(acadosMpc, testAcadosDatatypes) {
   EXPECT_EQ(State::linear_velocity_offset, 7u);
   EXPECT_EQ(State::linear_velocity_length, 3u);
   auto state = State();
-  EXPECT_NO_THROW(state.setPosition(std::array<double, State::position_length>{1.0, 2.0, 3.0}));
-  EXPECT_NO_THROW(
-      state.setOrientation(std::array<double, State::orientation_length>{1.0, 2.0, 3.0, 4.0}));
-  EXPECT_NO_THROW(
-      state.setLinearVelocity(std::array<double, State::linear_velocity_length>{1.0, 2.0, 3.0}));
+  EXPECT_NO_THROW(state.setPosition(std::array<double, State::position_length>{ 1.0, 2.0, 3.0 }));
+  EXPECT_NO_THROW(state.setOrientation(std::array<double, State::orientation_length>{ 1.0, 2.0, 3.0, 4.0 }));
+  EXPECT_NO_THROW(state.setLinearVelocity(std::array<double, State::linear_velocity_length>{ 1.0, 2.0, 3.0 }));
   auto state_position = state.getPosition();
   EXPECT_DOUBLE_EQ(state_position[0], 1.0);
   EXPECT_DOUBLE_EQ(state.data[State::position_offset + 0], 1.0);
@@ -132,8 +132,7 @@ TEST(acadosMpc, testAcadosDatatypes) {
   EXPECT_EQ(Actuation::angular_velocity_length, 3u);
   auto actuation = Actuation();
   EXPECT_NO_THROW(actuation.setThrust(1.0));
-  EXPECT_NO_THROW(actuation.setAngularVelocity(
-      std::array<double, Actuation::angular_velocity_length>{1.0, 2.0, 3.0}));
+  EXPECT_NO_THROW(actuation.setAngularVelocity(std::array<double, Actuation::angular_velocity_length>{ 1.0, 2.0, 3.0 }));
   auto actuation_thrust = actuation.getThrust();
   EXPECT_DOUBLE_EQ(actuation_thrust, 1.0);
   EXPECT_DOUBLE_EQ(actuation.data[Actuation::thrust_offset], 1.0);
@@ -187,31 +186,35 @@ TEST(acadosMpc, testAcadosDatatypes) {
   EXPECT_EQ(Parameters::mass_length, 1u);
   EXPECT_EQ(Parameters::desired_position_offset, 1u);
   EXPECT_EQ(Parameters::desired_position_length, 3u);
-  EXPECT_EQ(Parameters::desired_orientation_offset, 4u);
+  EXPECT_EQ(Parameters::desired_velocity_offset, 4u);
+  EXPECT_EQ(Parameters::desired_velocity_length, 3u);
+  EXPECT_EQ(Parameters::desired_orientation_offset, 7u);
   EXPECT_EQ(Parameters::desired_orientation_length, 4u);
-  EXPECT_EQ(Parameters::external_force_offset, 8u);
+  EXPECT_EQ(Parameters::external_force_offset, 11u);
   EXPECT_EQ(Parameters::external_force_length, 3u);
-  EXPECT_EQ(Parameters::Q_offset, 11u);
+  EXPECT_EQ(Parameters::Q_offset, 14u);
   EXPECT_EQ(Parameters::Q_length, 9u);
-  EXPECT_EQ(Parameters::Qe_offset, 20u);
+  EXPECT_EQ(Parameters::Qe_offset, 23u);
   EXPECT_EQ(Parameters::Qe_length, 9u);
-  EXPECT_EQ(Parameters::R_offset, 29u);
+  EXPECT_EQ(Parameters::R_offset, 32u);
   EXPECT_EQ(Parameters::R_length, 4u);
+  EXPECT_EQ(Parameters::p_anchor_offset, 36u);
+  EXPECT_EQ(Parameters::p_anchor_length, 3u);
+  EXPECT_EQ(Parameters::w_cte_offset, 39u);
+  EXPECT_EQ(Parameters::w_cte_length, 1u);
   auto p_params = Parameters();
   EXPECT_NO_THROW(p_params.getData());
   EXPECT_NO_THROW(p_params.getParameters());
   EXPECT_NO_THROW(p_params.setMass(1.0));
-  EXPECT_NO_THROW(p_params.setDesiredPosition(
-      std::array<double, Parameters::desired_position_length>{1.0, 2.0, 3.0}));
-  EXPECT_NO_THROW(p_params.setDesiredOrientation(
-      std::array<double, Parameters::desired_orientation_length>{1.0, 2.0, 3.0, 4.0}));
-  EXPECT_NO_THROW(p_params.setExternalForce(
-      std::array<double, Parameters::external_force_length>{1.0, 2.0, 3.0}));
-  EXPECT_NO_THROW(p_params.setQ(
-      std::array<double, Parameters::Q_length>{1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0}));
-  EXPECT_NO_THROW(p_params.setQe(
-      std::array<double, Parameters::Qe_length>{1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0}));
-  EXPECT_NO_THROW(p_params.setR(std::array<double, Parameters::R_length>{1.0, 2.0, 3.0, 4.0}));
+  EXPECT_NO_THROW(p_params.setDesiredPosition(std::array<double, Parameters::desired_position_length>{ 1.0, 2.0, 3.0 }));
+  EXPECT_NO_THROW(p_params.setDesiredVelocity(std::array<double, Parameters::desired_velocity_length>{ 1.0, 2.0, 3.0 }));
+  EXPECT_NO_THROW(p_params.setDesiredOrientation(std::array<double, Parameters::desired_orientation_length>{ 1.0, 2.0, 3.0, 4.0 }));
+  EXPECT_NO_THROW(p_params.setExternalForce(std::array<double, Parameters::external_force_length>{ 1.0, 2.0, 3.0 }));
+  EXPECT_NO_THROW(p_params.setQ(std::array<double, Parameters::Q_length>{ 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0 }));
+  EXPECT_NO_THROW(p_params.setQe(std::array<double, Parameters::Qe_length>{ 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0 }));
+  EXPECT_NO_THROW(p_params.setR(std::array<double, Parameters::R_length>{ 1.0, 2.0, 3.0, 4.0 }));
+  EXPECT_NO_THROW(p_params.setPAnchor(std::array<double, Parameters::p_anchor_length>{ 1.0, 2.0, 3.0 }));
+  EXPECT_NO_THROW(p_params.setWCte(1.0));
   auto parameters_mass = p_params.getMass();
   EXPECT_DOUBLE_EQ(parameters_mass, 1.0);
   EXPECT_DOUBLE_EQ(p_params.getData()[Parameters::mass_offset], 1.0);
@@ -222,6 +225,13 @@ TEST(acadosMpc, testAcadosDatatypes) {
   EXPECT_DOUBLE_EQ(p_params.getData()[Parameters::desired_position_offset + 1], 2.0);
   EXPECT_DOUBLE_EQ(parameters_desired_position[2], 3.0);
   EXPECT_DOUBLE_EQ(p_params.getData()[Parameters::desired_position_offset + 2], 3.0);
+  auto parameters_desired_velocity = p_params.getDesiredVelocity();
+  EXPECT_DOUBLE_EQ(parameters_desired_velocity[0], 1.0);
+  EXPECT_DOUBLE_EQ(p_params.getData()[Parameters::desired_velocity_offset + 0], 1.0);
+  EXPECT_DOUBLE_EQ(parameters_desired_velocity[1], 2.0);
+  EXPECT_DOUBLE_EQ(p_params.getData()[Parameters::desired_velocity_offset + 1], 2.0);
+  EXPECT_DOUBLE_EQ(parameters_desired_velocity[2], 3.0);
+  EXPECT_DOUBLE_EQ(p_params.getData()[Parameters::desired_velocity_offset + 2], 3.0);
   auto parameters_desired_orientation = p_params.getDesiredOrientation();
   EXPECT_DOUBLE_EQ(parameters_desired_orientation[0], 1.0);
   EXPECT_DOUBLE_EQ(p_params.getData()[Parameters::desired_orientation_offset + 0], 1.0);
@@ -285,6 +295,16 @@ TEST(acadosMpc, testAcadosDatatypes) {
   EXPECT_DOUBLE_EQ(p_params.getData()[Parameters::R_offset + 2], 3.0);
   EXPECT_DOUBLE_EQ(parameters_R[3], 4.0);
   EXPECT_DOUBLE_EQ(p_params.getData()[Parameters::R_offset + 3], 4.0);
+  auto parameters_p_anchor = p_params.getPAnchor();
+  EXPECT_DOUBLE_EQ(parameters_p_anchor[0], 1.0);
+  EXPECT_DOUBLE_EQ(p_params.getData()[Parameters::p_anchor_offset + 0], 1.0);
+  EXPECT_DOUBLE_EQ(parameters_p_anchor[1], 2.0);
+  EXPECT_DOUBLE_EQ(p_params.getData()[Parameters::p_anchor_offset + 1], 2.0);
+  EXPECT_DOUBLE_EQ(parameters_p_anchor[2], 3.0);
+  EXPECT_DOUBLE_EQ(p_params.getData()[Parameters::p_anchor_offset + 2], 3.0);
+  auto parameters_w_cte = p_params.getWCte();
+  EXPECT_DOUBLE_EQ(parameters_w_cte, 1.0);
+  EXPECT_DOUBLE_EQ(p_params.getData()[Parameters::w_cte_offset], 1.0);
   EXPECT_NO_THROW(p_params.setData(0, 0.0));
   EXPECT_DOUBLE_EQ(p_params.getData()[0], 0.0);
 
@@ -314,7 +334,7 @@ TEST(acadosMpc, testAcadosDatatypes) {
 TEST(acadosMpc, testAcadosSimSolver) {
   EXPECT_NO_THROW(MPCSimSolver());
   auto sim_solver = MPCSimSolver();
-  auto mpc_data   = MPCData();
+  auto mpc_data = MPCData();
   EXPECT_NO_THROW(sim_solver.solve(&mpc_data));
 }
 }  // namespace acados_mpc
@@ -323,3 +343,4 @@ int main(int argc, char* argv[]) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
+

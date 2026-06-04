@@ -14,8 +14,11 @@ dynamics:
 parameters:
   mass: 1.0 # Mass of the MAV (kg)
   desired_position: [0.0, 0.0, 0.0] # Desired position in world frame [x, y, z] (m)
+  desired_velocity: [0.0, 0.0, 0.0] # Desired linear velocity in world frame [vx, vy, vz] (m/s)
   desired_orientation: [1.0, 0.0, 0.0, 0.0] # Desired orientation as a quaternion [qw, qx, qy, qz]
   external_force: [0.0, 0.0, 0.0] # External force acting on the MAV in base frame [fx, fy, fz] (N)
   Q: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # Stage gains for [x, y, z, roll, pitch, yaw, vx, vy, vz]
   Qe: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # Terminal gains for [x, y, z, roll, pitch, yaw, vx, vy, vz]
   R: [0.0, 0.0, 0.0, 0.0] # Stage gains for control inputs [thrust, wx, wy, wz]
+  p_anchor: [0.0, 0.0, 0.0] # CTE cost anchor: line origin between p_anchor and desired_position [x, y, z] (m)
+  w_cte: 0.0 # CTE cost weight; penalises lateral distance from the anchor->ref line (0 = disabled)

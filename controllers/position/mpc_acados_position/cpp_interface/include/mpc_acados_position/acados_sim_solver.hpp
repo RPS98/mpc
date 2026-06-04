@@ -73,8 +73,8 @@ private:
 
 private:
   mpc_sim_solver_capsule* capsule_ = nullptr;
-  sim_in* sim_in_                  = nullptr;
-  sim_out* sim_out_                = nullptr;
+  sim_in* sim_in_ = nullptr;
+  sim_out* sim_out_ = nullptr;
 
   int status_ = 0;
 };
@@ -82,3 +82,4 @@ private:
 }  // namespace acados_mpc
 
 #endif  // MPC_ACADOS_POSITION_ACADOS_SIM_SOLVER_HPP_
+

@@ -47,19 +47,21 @@
 #include <stdexcept>
 #include <string>
 
-namespace acados_mpc {
+namespace acados_mpc
+{
 
 /**
  * @brief State x
  */
-struct State {
+struct State
+{
   static constexpr size_t Nx = MPC_NX;
   std::array<double, MPC_NX> data;
-  static const std::size_t size                  = MPC_NX;
-  static constexpr size_t position_offset        = 0;
-  static constexpr size_t position_length        = 3;
-  static constexpr size_t orientation_offset     = 3;
-  static constexpr size_t orientation_length     = 4;
+  static const std::size_t size = MPC_NX;
+  static constexpr size_t position_offset = 0;
+  static constexpr size_t position_length = 3;
+  static constexpr size_t orientation_offset = 3;
+  static constexpr size_t orientation_length = 4;
   static constexpr size_t linear_velocity_offset = 7;
   static constexpr size_t linear_velocity_length = 3;
 
@@ -80,7 +82,7 @@ struct State {
    *
    * @param value position value.
    */
-  void setPosition(const std::array<double, position_length>& value);
+  void setPosition(const std::array<double, position_length> & value);
 
   /**
    * @brief Position in world frame [x, y, z] (m)
@@ -93,7 +95,7 @@ struct State {
    *
    * @param value orientation value.
    */
-  void setOrientation(const std::array<double, orientation_length>& value);
+  void setOrientation(const std::array<double, orientation_length> & value);
 
   /**
    * @brief Orientation of the body frame in world frame as a quaternion [qw, qx, qy, qz]
@@ -106,7 +108,7 @@ struct State {
    *
    * @param value linear_velocity value.
    */
-  void setLinearVelocity(const std::array<double, linear_velocity_length>& value);
+  void setLinearVelocity(const std::array<double, linear_velocity_length> & value);
 
   /**
    * @brief Linear velocity in world frame [vx, vy, vz] (m/s)
@@ -119,12 +121,13 @@ struct State {
 /**
  * @brief Actuation u
  */
-struct Actuation {
+struct Actuation
+{
   static constexpr size_t Nu = MPC_NU;
   std::array<double, MPC_NU> data;
-  static const std::size_t size                   = MPC_NU;
-  static constexpr size_t thrust_offset           = 0;
-  static constexpr size_t thrust_length           = 1;
+  static const std::size_t size = MPC_NU;
+  static constexpr size_t thrust_offset = 0;
+  static constexpr size_t thrust_length = 1;
   static constexpr size_t angular_velocity_offset = 1;
   static constexpr size_t angular_velocity_length = 3;
 
@@ -158,7 +161,7 @@ struct Actuation {
    *
    * @param value angular_velocity value.
    */
-  void setAngularVelocity(const std::array<double, angular_velocity_length>& value);
+  void setAngularVelocity(const std::array<double, angular_velocity_length> & value);
 
   /**
    * @brief Angular velocity in body frame [wx, wy, wz] (rad/s)
@@ -171,7 +174,8 @@ struct Actuation {
 /**
  * @brief Reference yref
  */
-struct Reference {
+struct Reference
+{
   static constexpr size_t Nyref = MPC_NY;
   std::array<double, MPC_N * MPC_NY> data;
   static const std::size_t size = MPC_N * MPC_NY;
@@ -187,7 +191,7 @@ struct Reference {
    * @param index index of the stage.
    * @return double* data.
    */
-  double* getData(const int index);
+  double * getData(const int index);
 
   /**
    * @brief Get the data at index
@@ -195,7 +199,7 @@ struct Reference {
    * @param index index of the stage.
    * @return const double* data.
    */
-  const double* getData(const int index) const;
+  const double * getData(const int index) const;
 
   /**
    * @brief Set the data at index
@@ -215,7 +219,8 @@ struct Reference {
   void setData(const int ref_index, const int value_index, const double value);
 };
 
-struct ReferenceEnd {
+struct ReferenceEnd
+{
   std::array<double, MPC_NYN> data;
   static const std::size_t size = MPC_NYN;
 
@@ -229,14 +234,14 @@ struct ReferenceEnd {
    *
    * @return double* data.
    */
-  double* getData();
+  double * getData();
 
   /**
    * @brief Get the data
    *
    * @return const double* data.
    */
-  const double* getData() const;
+  const double * getData() const;
 
   /**
    * @brief Set the data at index
@@ -252,10 +257,11 @@ struct ReferenceEnd {
  *
  * Gains Q, R and Qe for the MPC.
  */
-struct Gains {
-  static constexpr size_t Nq  = MPC_NYN;
+struct Gains
+{
+  static constexpr size_t Nq = MPC_NYN;
   static constexpr size_t Nqe = MPC_NYN;
-  static constexpr size_t Nr  = (MPC_NY - MPC_NYN);
+  static constexpr size_t Nr = (MPC_NY - MPC_NYN);
   std::array<double, MPC_NY * MPC_NY> W;
   std::array<double, MPC_NYN * MPC_NYN> We;
 
@@ -269,28 +275,28 @@ struct Gains {
    *
    * @return double* W.
    */
-  double* getW();
+  double * getW();
 
   /**
    * @brief Get the W matrix
    *
    * @return const double* W.
    */
-  const double* getW() const;
+  const double * getW() const;
 
   /**
    * @brief Get the We matrix
    *
    * @return double* We.
    */
-  double* getWe();
+  double * getWe();
 
   /**
    * @brief Get the We matrix
    *
    * @return const double* We.
    */
-  const double* getWe() const;
+  const double * getWe() const;
 
   /**
    * @brief Get the Q matrix
@@ -335,7 +341,7 @@ struct Gains {
    * @param index index of the diagonal.
    * @param value value.
    */
-  void setGains(const Gains& gains);
+  void setGains(const Gains & gains);
 
   /**
    * @brief Set the Q matrix at index
@@ -350,7 +356,7 @@ struct Gains {
    *
    * @param Q std::array<double, Gains::Nq> Q.
    */
-  void setQ(const std::array<double, Gains::Nq>& Q);
+  void setQ(const std::array<double, Gains::Nq> & Q);
 
   /**
    * @brief Set the R matrix at index
@@ -365,7 +371,7 @@ struct Gains {
    *
    * @param R std::array<double, Gains::Nr> R.
    */
-  void setR(const std::array<double, Gains::Nr>& R);
+  void setR(const std::array<double, Gains::Nr> & R);
 
   /**
    * @brief Set the Qe matrix at index
@@ -380,7 +386,7 @@ struct Gains {
    *
    * @param Qe std::array<double, Gains::Nqe> Qe.
    */
-  void setQEnd(const std::array<double, Gains::Nqe>& Qe);
+  void setQEnd(const std::array<double, Gains::Nqe> & Qe);
 };
 
 /**
@@ -388,7 +394,8 @@ struct Gains {
  *
  * ActuationBounds lbu and ubu for the MPC.
  */
-struct ActuationBounds {
+struct ActuationBounds
+{
   static constexpr size_t Nu = MPC_NU;
   std::array<double, MPC_NU> lbu;
   std::array<double, MPC_NU> ubu;
@@ -403,14 +410,14 @@ struct ActuationBounds {
    *
    * @return double* lbu.
    */
-  double* getLbu();
+  double * getLbu();
 
   /**
    * @brief Get the lbu array
    *
    * @return const double* lbu.
    */
-  const double* getLbu() const;
+  const double * getLbu() const;
 
   /**
    * @brief Get the lbu array
@@ -424,14 +431,14 @@ struct ActuationBounds {
    *
    * @return double* ubu.
    */
-  double* getUbu();
+  double * getUbu();
 
   /**
    * @brief Get the ubu array
    *
    * @return const double* ubu.
    */
-  const double* getUbu() const;
+  const double * getUbu() const;
 
   /**
    * @brief Get the ubu array
@@ -445,14 +452,14 @@ struct ActuationBounds {
    *
    * @param bounds bounds.
    */
-  void setBounds(const ActuationBounds& bounds);
+  void setBounds(const ActuationBounds & bounds);
 
   /**
    * @brief Set the lbu
    *
    * @param lbu lbu.
    */
-  void setLbu(const std::array<double, MPC_NU>& lbu);
+  void setLbu(const std::array<double, MPC_NU> & lbu);
 
   /**
    * @brief Set the lbu at index
@@ -467,7 +474,7 @@ struct ActuationBounds {
    *
    * @param ubu ubu.
    */
-  void setUbu(const std::array<double, MPC_NU>& ubu);
+  void setUbu(const std::array<double, MPC_NU> & ubu);
 
   /**
    * @brief Set the ubu at index
@@ -483,7 +490,8 @@ struct ActuationBounds {
  *
  * StateBounds lbx and ubx for the MPC.
  */
-struct StateBounds {
+struct StateBounds
+{
   static constexpr size_t Nx = MPC_NBX;
   std::array<double, MPC_NBX> lbx;
   std::array<double, MPC_NBX> ubx;
@@ -498,14 +506,14 @@ struct StateBounds {
    *
    * @return double* lbx.
    */
-  double* getLbx();
+  double * getLbx();
 
   /**
    * @brief Get the lbx array
    *
    * @return const double* lbx.
    */
-  const double* getLbx() const;
+  const double * getLbx() const;
 
   /**
    * @brief Get the lbx array
@@ -519,14 +527,14 @@ struct StateBounds {
    *
    * @return double* ubx.
    */
-  double* getUbx();
+  double * getUbx();
 
   /**
    * @brief Get the ubx array
    *
    * @return const double* ubx.
    */
-  const double* getUbx() const;
+  const double * getUbx() const;
 
   /**
    * @brief Get the ubx array
@@ -540,14 +548,14 @@ struct StateBounds {
    *
    * @param bounds bounds.
    */
-  void setBounds(const StateBounds& bounds);
+  void setBounds(const StateBounds & bounds);
 
   /**
    * @brief Set the lbx
    *
    * @param lbx lbx.
    */
-  void setLbx(const std::array<double, MPC_NBX>& lbx);
+  void setLbx(const std::array<double, MPC_NBX> & lbx);
 
   /**
    * @brief Set the lbx at index
@@ -562,7 +570,7 @@ struct StateBounds {
    *
    * @param ubx ubx.
    */
-  void setUbx(const std::array<double, MPC_NBX>& ubx);
+  void setUbx(const std::array<double, MPC_NBX> & ubx);
 
   /**
    * @brief Set the ubx at index
@@ -578,24 +586,31 @@ struct StateBounds {
  *
  * Online parameters p for one MPC stage.
  */
-struct Parameters {
+struct Parameters
+{
   static constexpr size_t Np = MPC_NP;
   std::array<double, MPC_NP> data;
-  static const std::size_t size                      = MPC_NP;
-  static constexpr size_t mass_offset                = 0;
-  static constexpr size_t mass_length                = 1;
-  static constexpr size_t desired_position_offset    = 1;
-  static constexpr size_t desired_position_length    = 3;
-  static constexpr size_t desired_orientation_offset = 4;
+  static const std::size_t size = MPC_NP;
+  static constexpr size_t mass_offset = 0;
+  static constexpr size_t mass_length = 1;
+  static constexpr size_t desired_position_offset = 1;
+  static constexpr size_t desired_position_length = 3;
+  static constexpr size_t desired_velocity_offset = 4;
+  static constexpr size_t desired_velocity_length = 3;
+  static constexpr size_t desired_orientation_offset = 7;
   static constexpr size_t desired_orientation_length = 4;
-  static constexpr size_t external_force_offset      = 8;
-  static constexpr size_t external_force_length      = 3;
-  static constexpr size_t Q_offset                   = 11;
-  static constexpr size_t Q_length                   = 9;
-  static constexpr size_t Qe_offset                  = 20;
-  static constexpr size_t Qe_length                  = 9;
-  static constexpr size_t R_offset                   = 29;
-  static constexpr size_t R_length                   = 4;
+  static constexpr size_t external_force_offset = 11;
+  static constexpr size_t external_force_length = 3;
+  static constexpr size_t Q_offset = 14;
+  static constexpr size_t Q_length = 9;
+  static constexpr size_t Qe_offset = 23;
+  static constexpr size_t Qe_length = 9;
+  static constexpr size_t R_offset = 32;
+  static constexpr size_t R_length = 4;
+  static constexpr size_t p_anchor_offset = 36;
+  static constexpr size_t p_anchor_length = 3;
+  static constexpr size_t w_cte_offset = 39;
+  static constexpr size_t w_cte_length = 1;
 
   /**
    * @brief Constructor
@@ -607,14 +622,14 @@ struct Parameters {
    *
    * @return double* data.
    */
-  double* getData();
+  double * getData();
 
   /**
    * @brief Get the data
    *
    * @return const double* data.
    */
-  const double* getData() const;
+  const double * getData() const;
 
   /**
    * @brief Get the stage parameters
@@ -628,7 +643,7 @@ struct Parameters {
    *
    * @param params parameters to copy.
    */
-  void setParameters(const Parameters& params);
+  void setParameters(const Parameters & params);
 
   /**
    * @brief Set the data at index
@@ -655,7 +670,7 @@ struct Parameters {
    *
    * @param value desired_position value.
    */
-  void setDesiredPosition(const std::array<double, desired_position_length>& value);
+  void setDesiredPosition(const std::array<double, desired_position_length> & value);
 
   /**
    * @brief Desired position in world frame [x, y, z] (m)
@@ -664,11 +679,24 @@ struct Parameters {
    */
   std::array<double, desired_position_length> getDesiredPosition() const;
   /**
+   * @brief Desired linear velocity in world frame [vx, vy, vz] (m/s)
+   *
+   * @param value desired_velocity value.
+   */
+  void setDesiredVelocity(const std::array<double, desired_velocity_length> & value);
+
+  /**
+   * @brief Desired linear velocity in world frame [vx, vy, vz] (m/s)
+   *
+   * @return std::array<double, desired_velocity_length> desired_velocity value.
+   */
+  std::array<double, desired_velocity_length> getDesiredVelocity() const;
+  /**
    * @brief Desired orientation as a quaternion [qw, qx, qy, qz]
    *
    * @param value desired_orientation value.
    */
-  void setDesiredOrientation(const std::array<double, desired_orientation_length>& value);
+  void setDesiredOrientation(const std::array<double, desired_orientation_length> & value);
 
   /**
    * @brief Desired orientation as a quaternion [qw, qx, qy, qz]
@@ -681,7 +709,7 @@ struct Parameters {
    *
    * @param value external_force value.
    */
-  void setExternalForce(const std::array<double, external_force_length>& value);
+  void setExternalForce(const std::array<double, external_force_length> & value);
 
   /**
    * @brief External force acting on the MAV in base frame [fx, fy, fz] (N)
@@ -694,7 +722,7 @@ struct Parameters {
    *
    * @param value Q value.
    */
-  void setQ(const std::array<double, Q_length>& value);
+  void setQ(const std::array<double, Q_length> & value);
 
   /**
    * @brief Stage gains for [x, y, z, roll, pitch, yaw, vx, vy, vz]
@@ -707,7 +735,7 @@ struct Parameters {
    *
    * @param value Qe value.
    */
-  void setQe(const std::array<double, Qe_length>& value);
+  void setQe(const std::array<double, Qe_length> & value);
 
   /**
    * @brief Terminal gains for [x, y, z, roll, pitch, yaw, vx, vy, vz]
@@ -720,7 +748,7 @@ struct Parameters {
    *
    * @param value R value.
    */
-  void setR(const std::array<double, R_length>& value);
+  void setR(const std::array<double, R_length> & value);
 
   /**
    * @brief Stage gains for control inputs [thrust, wx, wy, wz]
@@ -728,6 +756,32 @@ struct Parameters {
    * @return std::array<double, R_length> R value.
    */
   std::array<double, R_length> getR() const;
+  /**
+   * @brief CTE cost anchor: line origin between p_anchor and desired_position [x, y, z] (m)
+   *
+   * @param value p_anchor value.
+   */
+  void setPAnchor(const std::array<double, p_anchor_length> & value);
+
+  /**
+   * @brief CTE cost anchor: line origin between p_anchor and desired_position [x, y, z] (m)
+   *
+   * @return std::array<double, p_anchor_length> p_anchor value.
+   */
+  std::array<double, p_anchor_length> getPAnchor() const;
+  /**
+   * @brief CTE cost weight; penalises lateral distance from the anchor->ref line (0 = disabled)
+   *
+   * @param value w_cte value.
+   */
+  void setWCte(const double value);
+
+  /**
+   * @brief CTE cost weight; penalises lateral distance from the anchor->ref line (0 = disabled)
+   *
+   * @return double w_cte value.
+   */
+  double getWCte() const;
 };
 
 /**
@@ -735,26 +789,33 @@ struct Parameters {
  *
  * Online parameters p for all MPC stages.
  */
-struct OnlineParameters {
-  using StageParameters           = Parameters;
-  static constexpr size_t Np      = MPC_NP;
+struct OnlineParameters
+{
+  using StageParameters = Parameters;
+  static constexpr size_t Np = MPC_NP;
   static constexpr size_t Nstages = MPC_N + static_cast<size_t>(1);
   std::array<double, Nstages * MPC_NP> data;
-  static const std::size_t size                      = Nstages * MPC_NP;
-  static constexpr size_t mass_offset                = Parameters::mass_offset;
-  static constexpr size_t mass_length                = Parameters::mass_length;
-  static constexpr size_t desired_position_offset    = Parameters::desired_position_offset;
-  static constexpr size_t desired_position_length    = Parameters::desired_position_length;
+  static const std::size_t size = Nstages * MPC_NP;
+  static constexpr size_t mass_offset = Parameters::mass_offset;
+  static constexpr size_t mass_length = Parameters::mass_length;
+  static constexpr size_t desired_position_offset = Parameters::desired_position_offset;
+  static constexpr size_t desired_position_length = Parameters::desired_position_length;
+  static constexpr size_t desired_velocity_offset = Parameters::desired_velocity_offset;
+  static constexpr size_t desired_velocity_length = Parameters::desired_velocity_length;
   static constexpr size_t desired_orientation_offset = Parameters::desired_orientation_offset;
   static constexpr size_t desired_orientation_length = Parameters::desired_orientation_length;
-  static constexpr size_t external_force_offset      = Parameters::external_force_offset;
-  static constexpr size_t external_force_length      = Parameters::external_force_length;
-  static constexpr size_t Q_offset                   = Parameters::Q_offset;
-  static constexpr size_t Q_length                   = Parameters::Q_length;
-  static constexpr size_t Qe_offset                  = Parameters::Qe_offset;
-  static constexpr size_t Qe_length                  = Parameters::Qe_length;
-  static constexpr size_t R_offset                   = Parameters::R_offset;
-  static constexpr size_t R_length                   = Parameters::R_length;
+  static constexpr size_t external_force_offset = Parameters::external_force_offset;
+  static constexpr size_t external_force_length = Parameters::external_force_length;
+  static constexpr size_t Q_offset = Parameters::Q_offset;
+  static constexpr size_t Q_length = Parameters::Q_length;
+  static constexpr size_t Qe_offset = Parameters::Qe_offset;
+  static constexpr size_t Qe_length = Parameters::Qe_length;
+  static constexpr size_t R_offset = Parameters::R_offset;
+  static constexpr size_t R_length = Parameters::R_length;
+  static constexpr size_t p_anchor_offset = Parameters::p_anchor_offset;
+  static constexpr size_t p_anchor_length = Parameters::p_anchor_length;
+  static constexpr size_t w_cte_offset = Parameters::w_cte_offset;
+  static constexpr size_t w_cte_length = Parameters::w_cte_length;
 
   /**
    * @brief Constructor
@@ -766,14 +827,14 @@ struct OnlineParameters {
    *
    * @return double* data.
    */
-  double* getData();
+  double * getData();
 
   /**
    * @brief Get the flattened data
    *
    * @return const double* data.
    */
-  const double* getData() const;
+  const double * getData() const;
 
   /**
    * @brief Get the data of one stage
@@ -781,7 +842,7 @@ struct OnlineParameters {
    * @param stage stage index.
    * @return double* data.
    */
-  double* getData(const int stage);
+  double * getData(const int stage);
 
   /**
    * @brief Get the data of one stage
@@ -789,7 +850,7 @@ struct OnlineParameters {
    * @param stage stage index.
    * @return const double* data.
    */
-  const double* getData(const int stage) const;
+  const double * getData(const int stage) const;
 
   /**
    * @brief Get the parameters of one stage
@@ -811,7 +872,7 @@ struct OnlineParameters {
    *
    * @param params online parameters to copy.
    */
-  void setParameters(const OnlineParameters& params);
+  void setParameters(const OnlineParameters & params);
 
   /**
    * @brief Set the parameters of one stage or all stages.
@@ -819,7 +880,7 @@ struct OnlineParameters {
    * @param params stage parameters.
    * @param stage stage index, or -1 to apply to all stages.
    */
-  void setParameters(const StageParameters& params, const int stage = -1);
+  void setParameters(const StageParameters & params, const int stage = -1);
 
   /**
    * @brief Set flattened data at index
@@ -858,8 +919,7 @@ struct OnlineParameters {
    * @param value desired_position value.
    * @param stage stage index, or -1 to apply to all stages.
    */
-  void setDesiredPosition(const std::array<double, desired_position_length>& value,
-                          const int stage = -1);
+  void setDesiredPosition(const std::array<double, desired_position_length> & value, const int stage = -1);
 
   /**
    * @brief Desired position in world frame [x, y, z] (m)
@@ -869,13 +929,27 @@ struct OnlineParameters {
    */
   std::array<double, desired_position_length> getDesiredPosition(const int stage = 0) const;
   /**
+   * @brief Desired linear velocity in world frame [vx, vy, vz] (m/s)
+   *
+   * @param value desired_velocity value.
+   * @param stage stage index, or -1 to apply to all stages.
+   */
+  void setDesiredVelocity(const std::array<double, desired_velocity_length> & value, const int stage = -1);
+
+  /**
+   * @brief Desired linear velocity in world frame [vx, vy, vz] (m/s)
+   *
+   * @param stage stage index.
+   * @return std::array<double, desired_velocity_length> desired_velocity value.
+   */
+  std::array<double, desired_velocity_length> getDesiredVelocity(const int stage = 0) const;
+  /**
    * @brief Desired orientation as a quaternion [qw, qx, qy, qz]
    *
    * @param value desired_orientation value.
    * @param stage stage index, or -1 to apply to all stages.
    */
-  void setDesiredOrientation(const std::array<double, desired_orientation_length>& value,
-                             const int stage = -1);
+  void setDesiredOrientation(const std::array<double, desired_orientation_length> & value, const int stage = -1);
 
   /**
    * @brief Desired orientation as a quaternion [qw, qx, qy, qz]
@@ -890,8 +964,7 @@ struct OnlineParameters {
    * @param value external_force value.
    * @param stage stage index, or -1 to apply to all stages.
    */
-  void setExternalForce(const std::array<double, external_force_length>& value,
-                        const int stage = -1);
+  void setExternalForce(const std::array<double, external_force_length> & value, const int stage = -1);
 
   /**
    * @brief External force acting on the MAV in base frame [fx, fy, fz] (N)
@@ -906,7 +979,7 @@ struct OnlineParameters {
    * @param value Q value.
    * @param stage stage index, or -1 to apply to all stages.
    */
-  void setQ(const std::array<double, Q_length>& value, const int stage = -1);
+  void setQ(const std::array<double, Q_length> & value, const int stage = -1);
 
   /**
    * @brief Stage gains for [x, y, z, roll, pitch, yaw, vx, vy, vz]
@@ -921,7 +994,7 @@ struct OnlineParameters {
    * @param value Qe value.
    * @param stage stage index, or -1 to apply to all stages.
    */
-  void setQe(const std::array<double, Qe_length>& value, const int stage = -1);
+  void setQe(const std::array<double, Qe_length> & value, const int stage = -1);
 
   /**
    * @brief Terminal gains for [x, y, z, roll, pitch, yaw, vx, vy, vz]
@@ -936,7 +1009,7 @@ struct OnlineParameters {
    * @param value R value.
    * @param stage stage index, or -1 to apply to all stages.
    */
-  void setR(const std::array<double, R_length>& value, const int stage = -1);
+  void setR(const std::array<double, R_length> & value, const int stage = -1);
 
   /**
    * @brief Stage gains for control inputs [thrust, wx, wy, wz]
@@ -945,6 +1018,36 @@ struct OnlineParameters {
    * @return std::array<double, R_length> R value.
    */
   std::array<double, R_length> getR(const int stage = 0) const;
+  /**
+   * @brief CTE cost anchor: line origin between p_anchor and desired_position [x, y, z] (m)
+   *
+   * @param value p_anchor value.
+   * @param stage stage index, or -1 to apply to all stages.
+   */
+  void setPAnchor(const std::array<double, p_anchor_length> & value, const int stage = -1);
+
+  /**
+   * @brief CTE cost anchor: line origin between p_anchor and desired_position [x, y, z] (m)
+   *
+   * @param stage stage index.
+   * @return std::array<double, p_anchor_length> p_anchor value.
+   */
+  std::array<double, p_anchor_length> getPAnchor(const int stage = 0) const;
+  /**
+   * @brief CTE cost weight; penalises lateral distance from the anchor->ref line (0 = disabled)
+   *
+   * @param value w_cte value.
+   * @param stage stage index, or -1 to apply to all stages.
+   */
+  void setWCte(const double value, const int stage = -1);
+
+  /**
+   * @brief CTE cost weight; penalises lateral distance from the anchor->ref line (0 = disabled)
+   *
+   * @param stage stage index.
+   * @return double w_cte value.
+   */
+  double getWCte(const int stage = 0) const;
 };
 
 /**
@@ -952,7 +1055,8 @@ struct OnlineParameters {
  *
  * Soft state bounds lsbx and usbx for the MPC.
  */
-struct SoftStateBounds {
+struct SoftStateBounds
+{
   static constexpr size_t Nsbx = MPC_NSBX;
   std::array<double, MPC_NSBX> lsbx;
   std::array<double, MPC_NSBX> usbx;
@@ -967,14 +1071,14 @@ struct SoftStateBounds {
    *
    * @return double* lsbx.
    */
-  double* getLsbx();
+  double * getLsbx();
 
   /**
    * @brief Get the lsbx array
    *
    * @return const double* lsbx.
    */
-  const double* getLsbx() const;
+  const double * getLsbx() const;
 
   /**
    * @brief Get the lsbx array
@@ -988,14 +1092,14 @@ struct SoftStateBounds {
    *
    * @return double* usbx.
    */
-  double* getUsbx();
+  double * getUsbx();
 
   /**
    * @brief Get the usbx array
    *
    * @return const double* usbx.
    */
-  const double* getUsbx() const;
+  const double * getUsbx() const;
 
   /**
    * @brief Get the usbx array
@@ -1009,14 +1113,14 @@ struct SoftStateBounds {
    *
    * @param bounds bounds.
    */
-  void setBounds(const SoftStateBounds& bounds);
+  void setBounds(const SoftStateBounds & bounds);
 
   /**
    * @brief Set the lsbx
    *
    * @param lsbx lsbx.
    */
-  void setLsbx(const std::array<double, MPC_NSBX>& lsbx);
+  void setLsbx(const std::array<double, MPC_NSBX> & lsbx);
 
   /**
    * @brief Set the lsbx at index
@@ -1031,7 +1135,7 @@ struct SoftStateBounds {
    *
    * @param usbx usbx.
    */
-  void setUsbx(const std::array<double, MPC_NSBX>& usbx);
+  void setUsbx(const std::array<double, MPC_NSBX> & usbx);
 
   /**
    * @brief Set the usbx at index
@@ -1047,7 +1151,8 @@ struct SoftStateBounds {
  *
  * Slack weights Zl, Zu, zl, zu for the MPC soft constraints.
  */
-struct SlackWeights {
+struct SlackWeights
+{
   static constexpr size_t Ns = MPC_NS;
   std::array<double, MPC_NS> Zl;  // Diagonal Hessian weights for lower slack variables
   std::array<double, MPC_NS> Zu;  // Diagonal Hessian weights for upper slack variables
@@ -1064,14 +1169,14 @@ struct SlackWeights {
    *
    * @return double* Zl.
    */
-  double* getZl();
+  double * getZl();
 
   /**
    * @brief Get the Zl array
    *
    * @return const double* Zl.
    */
-  const double* getZl() const;
+  const double * getZl() const;
 
   /**
    * @brief Get the Zl array
@@ -1085,14 +1190,14 @@ struct SlackWeights {
    *
    * @return double* Zu.
    */
-  double* getZu();
+  double * getZu();
 
   /**
    * @brief Get the Zu array
    *
    * @return const double* Zu.
    */
-  const double* getZu() const;
+  const double * getZu() const;
 
   /**
    * @brief Get the Zu array
@@ -1106,14 +1211,14 @@ struct SlackWeights {
    *
    * @return double* zl.
    */
-  double* getzl();
+  double * getzl();
 
   /**
    * @brief Get the zl array
    *
    * @return const double* zl.
    */
-  const double* getzl() const;
+  const double * getzl() const;
 
   /**
    * @brief Get the zl array
@@ -1127,14 +1232,14 @@ struct SlackWeights {
    *
    * @return double* zu.
    */
-  double* getzu();
+  double * getzu();
 
   /**
    * @brief Get the zu array
    *
    * @return const double* zu.
    */
-  const double* getzu() const;
+  const double * getzu() const;
 
   /**
    * @brief Get the zu array
@@ -1148,14 +1253,14 @@ struct SlackWeights {
    *
    * @param weights weights.
    */
-  void setWeights(const SlackWeights& weights);
+  void setWeights(const SlackWeights & weights);
 
   /**
    * @brief Set the Zl
    *
    * @param Zl Zl.
    */
-  void setZl(const std::array<double, MPC_NS>& Zl);
+  void setZl(const std::array<double, MPC_NS> & Zl);
 
   /**
    * @brief Set the Zl at index
@@ -1170,7 +1275,7 @@ struct SlackWeights {
    *
    * @param Zu Zu.
    */
-  void setZu(const std::array<double, MPC_NS>& Zu);
+  void setZu(const std::array<double, MPC_NS> & Zu);
 
   /**
    * @brief Set the Zu at index
@@ -1185,7 +1290,7 @@ struct SlackWeights {
    *
    * @param zl zl.
    */
-  void setzl(const std::array<double, MPC_NS>& zl);
+  void setzl(const std::array<double, MPC_NS> & zl);
 
   /**
    * @brief Set the zl at index
@@ -1200,7 +1305,7 @@ struct SlackWeights {
    *
    * @param zu zu.
    */
-  void setzu(const std::array<double, MPC_NS>& zu);
+  void setzu(const std::array<double, MPC_NS> & zu);
 
   /**
    * @brief Set the zu at index
@@ -1216,7 +1321,8 @@ struct SlackWeights {
  *
  * Slack weights Zl_e, Zu_e, zl_e, zu_e for the terminal MPC soft constraints.
  */
-struct SlackWeightsEnd {
+struct SlackWeightsEnd
+{
   static constexpr size_t Ns_e = MPC_NS;
   std::array<double, MPC_NS> Zl_e;  // Diagonal Hessian weights for lower slack variables
   std::array<double, MPC_NS> Zu_e;  // Diagonal Hessian weights for upper slack variables
@@ -1233,14 +1339,14 @@ struct SlackWeightsEnd {
    *
    * @return double* Zl_e.
    */
-  double* getZlE();
+  double * getZlE();
 
   /**
    * @brief Get the Zl_e array
    *
    * @return const double* Zl_e.
    */
-  const double* getZlE() const;
+  const double * getZlE() const;
 
   /**
    * @brief Get the Zl_e array
@@ -1254,14 +1360,14 @@ struct SlackWeightsEnd {
    *
    * @return double* Zu_e.
    */
-  double* getZuE();
+  double * getZuE();
 
   /**
    * @brief Get the Zu_e array
    *
    * @return const double* Zu_e.
    */
-  const double* getZuE() const;
+  const double * getZuE() const;
 
   /**
    * @brief Get the Zu_e array
@@ -1275,14 +1381,14 @@ struct SlackWeightsEnd {
    *
    * @return double* zl_e.
    */
-  double* getzlE();
+  double * getzlE();
 
   /**
    * @brief Get the zl_e array
    *
    * @return const double* zl_e.
    */
-  const double* getzlE() const;
+  const double * getzlE() const;
 
   /**
    * @brief Get the zl_e array
@@ -1296,14 +1402,14 @@ struct SlackWeightsEnd {
    *
    * @return double* zu_e.
    */
-  double* getzuE();
+  double * getzuE();
 
   /**
    * @brief Get the zu_e array
    *
    * @return const double* zu_e.
    */
-  const double* getzuE() const;
+  const double * getzuE() const;
 
   /**
    * @brief Get the zu_e array
@@ -1317,14 +1423,14 @@ struct SlackWeightsEnd {
    *
    * @param weights weights.
    */
-  void setWeights(const SlackWeightsEnd& weights);
+  void setWeights(const SlackWeightsEnd & weights);
 
   /**
    * @brief Set the Zl_e
    *
    * @param Zl_e Zl_e.
    */
-  void setZlE(const std::array<double, MPC_NS>& Zl_e);
+  void setZlE(const std::array<double, MPC_NS> & Zl_e);
 
   /**
    * @brief Set the Zl_e at index
@@ -1339,7 +1445,7 @@ struct SlackWeightsEnd {
    *
    * @param Zu_e Zu_e.
    */
-  void setZuE(const std::array<double, MPC_NS>& Zu_e);
+  void setZuE(const std::array<double, MPC_NS> & Zu_e);
 
   /**
    * @brief Set the Zu_e at index
@@ -1354,7 +1460,7 @@ struct SlackWeightsEnd {
    *
    * @param zl_e zl_e.
    */
-  void setzlE(const std::array<double, MPC_NS>& zl_e);
+  void setzlE(const std::array<double, MPC_NS> & zl_e);
 
   /**
    * @brief Set the zl_e at index
@@ -1369,7 +1475,7 @@ struct SlackWeightsEnd {
    *
    * @param zu_e zu_e.
    */
-  void setzuE(const std::array<double, MPC_NS>& zu_e);
+  void setzuE(const std::array<double, MPC_NS> & zu_e);
 
   /**
    * @brief Set the zu_e at index
@@ -1386,7 +1492,8 @@ struct SlackWeightsEnd {
  * Lower and upper bounds lh and uh for nonlinear constraints h(x,u) at intermediate
  * shooting nodes (1 to N-1) and at the terminal node (N).
  */
-struct NonlinearConstraintBounds {
+struct NonlinearConstraintBounds
+{
   static constexpr size_t Nh = MPC_NH;
   std::array<double, MPC_NH> lh;
   std::array<double, MPC_NH> uh;
@@ -1401,14 +1508,14 @@ struct NonlinearConstraintBounds {
    *
    * @return double* lh.
    */
-  double* getLh();
+  double * getLh();
 
   /**
    * @brief Get the lh array
    *
    * @return const double* lh.
    */
-  const double* getLh() const;
+  const double * getLh() const;
 
   /**
    * @brief Get the lh array
@@ -1422,14 +1529,14 @@ struct NonlinearConstraintBounds {
    *
    * @return double* uh.
    */
-  double* getUh();
+  double * getUh();
 
   /**
    * @brief Get the uh array
    *
    * @return const double* uh.
    */
-  const double* getUh() const;
+  const double * getUh() const;
 
   /**
    * @brief Get the uh array
@@ -1443,14 +1550,14 @@ struct NonlinearConstraintBounds {
    *
    * @param bounds bounds.
    */
-  void setBounds(const NonlinearConstraintBounds& bounds);
+  void setBounds(const NonlinearConstraintBounds & bounds);
 
   /**
    * @brief Set the lh
    *
    * @param lh lh.
    */
-  void setLh(const std::array<double, MPC_NH>& lh);
+  void setLh(const std::array<double, MPC_NH> & lh);
 
   /**
    * @brief Set the lh at index
@@ -1465,7 +1572,7 @@ struct NonlinearConstraintBounds {
    *
    * @param uh uh.
    */
-  void setUh(const std::array<double, MPC_NH>& uh);
+  void setUh(const std::array<double, MPC_NH> & uh);
 
   /**
    * @brief Set the uh at index
@@ -1482,7 +1589,8 @@ struct NonlinearConstraintBounds {
  * Lower and upper bounds lsh and ush for soft nonlinear constraints at
  * intermediate shooting nodes (1 to N-1) and at the terminal node (N).
  */
-struct SoftNonlinearConstraintBounds {
+struct SoftNonlinearConstraintBounds
+{
   static constexpr size_t Nsh = MPC_NSH;
   std::array<double, MPC_NSH> lsh;
   std::array<double, MPC_NSH> ush;
@@ -1497,14 +1605,14 @@ struct SoftNonlinearConstraintBounds {
    *
    * @return double* lsh.
    */
-  double* getLsh();
+  double * getLsh();
 
   /**
    * @brief Get the lsh array
    *
    * @return const double* lsh.
    */
-  const double* getLsh() const;
+  const double * getLsh() const;
 
   /**
    * @brief Get the lsh array
@@ -1518,14 +1626,14 @@ struct SoftNonlinearConstraintBounds {
    *
    * @return double* ush.
    */
-  double* getUsh();
+  double * getUsh();
 
   /**
    * @brief Get the ush array
    *
    * @return const double* ush.
    */
-  const double* getUsh() const;
+  const double * getUsh() const;
 
   /**
    * @brief Get the ush array
@@ -1539,14 +1647,14 @@ struct SoftNonlinearConstraintBounds {
    *
    * @param bounds bounds.
    */
-  void setBounds(const SoftNonlinearConstraintBounds& bounds);
+  void setBounds(const SoftNonlinearConstraintBounds & bounds);
 
   /**
    * @brief Set the lsh
    *
    * @param lsh lsh.
    */
-  void setLsh(const std::array<double, MPC_NSH>& lsh);
+  void setLsh(const std::array<double, MPC_NSH> & lsh);
 
   /**
    * @brief Set the lsh at index
@@ -1561,7 +1669,7 @@ struct SoftNonlinearConstraintBounds {
    *
    * @param ush ush.
    */
-  void setUsh(const std::array<double, MPC_NSH>& ush);
+  void setUsh(const std::array<double, MPC_NSH> & ush);
 
   /**
    * @brief Set the ush at index
@@ -1575,3 +1683,4 @@ struct SoftNonlinearConstraintBounds {
 }  // namespace acados_mpc
 
 #endif  // ACADOS_MPC_ACADOS_MPC_DATATYPE_HPP_
+

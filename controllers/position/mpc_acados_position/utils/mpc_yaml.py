@@ -55,11 +55,14 @@ class MpcYamlConfig:
     def __init__(self) -> None:
         self.mass: Optional[np.ndarray] = None
         self.desired_position: Optional[np.ndarray] = None
+        self.desired_velocity: Optional[np.ndarray] = None
         self.desired_orientation: Optional[np.ndarray] = None
         self.external_force: Optional[np.ndarray] = None
         self.Q: Optional[np.ndarray] = None
         self.Qe: Optional[np.ndarray] = None
         self.R: Optional[np.ndarray] = None
+        self.p_anchor: Optional[np.ndarray] = None
+        self.w_cte: Optional[np.ndarray] = None
 
         self.lbu: Optional[np.ndarray] = None
         self.ubu: Optional[np.ndarray] = None
@@ -191,6 +194,11 @@ def read_mpc_yaml(file_path: str) -> MpcYamlConfig:
         'desired_position',
         OnlineParameters.desired_position_length,
         'mpc.parameters.desired_position')
+    config.desired_velocity = _yaml_array_optional_sized(
+        parameters_cfg,
+        'desired_velocity',
+        OnlineParameters.desired_velocity_length,
+        'mpc.parameters.desired_velocity')
     config.desired_orientation = _yaml_array_optional_sized(
         parameters_cfg,
         'desired_orientation',
@@ -216,6 +224,16 @@ def read_mpc_yaml(file_path: str) -> MpcYamlConfig:
         'R',
         OnlineParameters.R_length,
         'mpc.parameters.R')
+    config.p_anchor = _yaml_array_optional_sized(
+        parameters_cfg,
+        'p_anchor',
+        OnlineParameters.p_anchor_length,
+        'mpc.parameters.p_anchor')
+    config.w_cte = _yaml_array_optional_sized(
+        parameters_cfg,
+        'w_cte',
+        OnlineParameters.w_cte_length,
+        'mpc.parameters.w_cte')
 
     config.lbu = _yaml_array_required(constraints_cfg, 'lbu', 'mpc.constraints.lbu')
     config.ubu = _yaml_array_required(constraints_cfg, 'ubu', 'mpc.constraints.ubu')
@@ -291,6 +309,8 @@ def configure_mpc_from_yaml(mpc, file_path: str) -> None:
         parameters.set_mass(config.mass)
     if config.desired_position is not None:
         parameters.set_desired_position(config.desired_position)
+    if config.desired_velocity is not None:
+        parameters.set_desired_velocity(config.desired_velocity)
     if config.desired_orientation is not None:
         parameters.set_desired_orientation(config.desired_orientation)
     if config.external_force is not None:
@@ -301,6 +321,10 @@ def configure_mpc_from_yaml(mpc, file_path: str) -> None:
         parameters.set_Qe(config.Qe)
     if config.R is not None:
         parameters.set_R(config.R)
+    if config.p_anchor is not None:
+        parameters.set_p_anchor(config.p_anchor)
+    if config.w_cte is not None:
+        parameters.set_w_cte(config.w_cte)
 
     # Actuation bounds (required)
     if config.lbu is None or config.ubu is None:

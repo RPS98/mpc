@@ -38,10 +38,10 @@ MPCSimSolver::~MPCSimSolver() {}
 
 void MPCSimSolver::initializeSolver() {
   capsule_ = mpc_acados_sim_solver_create_capsule();
-  status_  = mpc_acados_sim_create(capsule_);
+  status_ = mpc_acados_sim_create(capsule_);
   validateStatus(status_);
 
-  sim_in_  = mpc_acados_get_sim_in(capsule_);
+  sim_in_ = mpc_acados_get_sim_in(capsule_);
   sim_out_ = mpc_acados_get_sim_out(capsule_);
 }
 
@@ -54,7 +54,8 @@ int MPCSimSolver::solve(MPCData* data) {
     sim_in_->u[i] = data->actuation.data[i];
   }
 
-  status_ = mpc_acados_sim_update_params(capsule_, data->p_params.getData(0), OnlineParameters::Np);
+  status_ = mpc_acados_sim_update_params(
+      capsule_, data->p_params.getData(0), OnlineParameters::Np);
   validateStatus(status_);
 
   status_ = mpc_acados_sim_solve(capsule_);
@@ -68,3 +69,4 @@ int MPCSimSolver::solve(MPCData* data) {
 }
 
 }  // namespace acados_mpc
+

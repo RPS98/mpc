@@ -48,38 +48,50 @@ class _ParametersDef:
     _names: ClassVar[List[str]] = [
         'mass',
         'desired_position',
+        'desired_velocity',
         'desired_orientation',
         'external_force',
         'Q',
         'Qe',
-        'R'
+        'R',
+        'p_anchor',
+        'w_cte'
     ]
     _names_sx: ClassVar[List[str]] = [
         'sx_mass',
         'sx_desired_position',
+        'sx_desired_velocity',
         'sx_desired_orientation',
         'sx_external_force',
         'sx_Q',
         'sx_Qe',
-        'sx_R'
+        'sx_R',
+        'sx_p_anchor',
+        'sx_w_cte'
     ]
     _sizes: ClassVar[List[int]] = [
         1,
+        3,
         3,
         4,
         3,
         9,
         9,
-        4
+        4,
+        3,
+        1
     ]
 
     mass: Union[ca.SX, ca.DM]
     desired_position: Union[ca.SX, ca.DM]
+    desired_velocity: Union[ca.SX, ca.DM]
     desired_orientation: Union[ca.SX, ca.DM]
     external_force: Union[ca.SX, ca.DM]
     Q: Union[ca.SX, ca.DM]
     Qe: Union[ca.SX, ca.DM]
     R: Union[ca.SX, ca.DM]
+    p_anchor: Union[ca.SX, ca.DM]
+    w_cte: Union[ca.SX, ca.DM]
 
 
 class CaParameters(_ParametersDef, VectorBase):
@@ -90,6 +102,8 @@ class CaParameters(_ParametersDef, VectorBase):
     :type mass: ca.SX
     :param desired_position: Desired position in world frame [x, y, z] (m)
     :type desired_position: ca.SX
+    :param desired_velocity: Desired linear velocity in world frame [vx, vy, vz] (m/s)
+    :type desired_velocity: ca.SX
     :param desired_orientation: Desired orientation as a quaternion [qw, qx, qy, qz]
     :type desired_orientation: ca.SX
     :param external_force: External force acting on the MAV in base frame [fx, fy, fz] (N)
@@ -100,6 +114,10 @@ class CaParameters(_ParametersDef, VectorBase):
     :type Qe: ca.SX
     :param R: Stage gains for control inputs [thrust, wx, wy, wz]
     :type R: ca.SX
+    :param p_anchor: CTE cost anchor: line origin between p_anchor and desired_position [x, y, z] (m)
+    :type p_anchor: ca.SX
+    :param w_cte: CTE cost weight; penalises lateral distance from the anchor->ref line (0 = disabled)
+    :type w_cte: ca.SX
     """
 
     _type = 'ca.SX'
@@ -114,11 +132,14 @@ class Parameters(_ParametersDef, VectorBase):
             self,
             mass: np.array = np.array(1.0),
             desired_position: np.array = np.array([0.0, 0.0, 0.0]),
+            desired_velocity: np.array = np.array([0.0, 0.0, 0.0]),
             desired_orientation: np.array = np.array([1.0, 0.0, 0.0, 0.0]),
             external_force: np.array = np.array([0.0, 0.0, 0.0]),
             Q: np.array = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
             Qe: np.array = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-            R: np.array = np.array([0.0, 0.0, 0.0, 0.0])):
+            R: np.array = np.array([0.0, 0.0, 0.0, 0.0]),
+            p_anchor: np.array = np.array([0.0, 0.0, 0.0]),
+            w_cte: np.array = np.array(0.0)):
         """
         Parameters for the UAV Model.
 
@@ -126,6 +147,8 @@ class Parameters(_ParametersDef, VectorBase):
         :type mass: np.array
         :param desired_position: Desired position in world frame [x, y, z] (m)
         :type desired_position: np.array
+        :param desired_velocity: Desired linear velocity in world frame [vx, vy, vz] (m/s)
+        :type desired_velocity: np.array
         :param desired_orientation: Desired orientation as a quaternion [qw, qx, qy, qz]
         :type desired_orientation: np.array
         :param external_force: External force acting on the MAV in base frame [fx, fy, fz] (N)
@@ -136,15 +159,22 @@ class Parameters(_ParametersDef, VectorBase):
         :type Qe: np.array
         :param R: Stage gains for control inputs [thrust, wx, wy, wz]
         :type R: np.array
+        :param p_anchor: CTE cost anchor: line origin between p_anchor and desired_position [x, y, z] (m)
+        :type p_anchor: np.array
+        :param w_cte: CTE cost weight; penalises lateral distance from the anchor->ref line (0 = disabled)
+        :type w_cte: np.array
         """
         super().__init__()
         self.mass = mass
         self.desired_position = desired_position
+        self.desired_velocity = desired_velocity
         self.desired_orientation = desired_orientation
         self.external_force = external_force
         self.Q = Q
         self.Qe = Qe
         self.R = R
+        self.p_anchor = p_anchor
+        self.w_cte = w_cte
 
 
 class OnlineParameters:
@@ -153,33 +183,42 @@ class OnlineParameters:
     _names: ClassVar[List[str]] = _ParametersDef._names
     _names_sx: ClassVar[List[str]] = _ParametersDef._names_sx
     _sizes: ClassVar[List[int]] = _ParametersDef._sizes
-    Np: ClassVar[int] = 33
+    Np: ClassVar[int] = 40
 
     mass_offset: ClassVar[int] = 0
     mass_length: ClassVar[int] = 1
     desired_position_offset: ClassVar[int] = 1
     desired_position_length: ClassVar[int] = 3
-    desired_orientation_offset: ClassVar[int] = 4
+    desired_velocity_offset: ClassVar[int] = 4
+    desired_velocity_length: ClassVar[int] = 3
+    desired_orientation_offset: ClassVar[int] = 7
     desired_orientation_length: ClassVar[int] = 4
-    external_force_offset: ClassVar[int] = 8
+    external_force_offset: ClassVar[int] = 11
     external_force_length: ClassVar[int] = 3
-    Q_offset: ClassVar[int] = 11
+    Q_offset: ClassVar[int] = 14
     Q_length: ClassVar[int] = 9
-    Qe_offset: ClassVar[int] = 20
+    Qe_offset: ClassVar[int] = 23
     Qe_length: ClassVar[int] = 9
-    R_offset: ClassVar[int] = 29
+    R_offset: ClassVar[int] = 32
     R_length: ClassVar[int] = 4
+    p_anchor_offset: ClassVar[int] = 36
+    p_anchor_length: ClassVar[int] = 3
+    w_cte_offset: ClassVar[int] = 39
+    w_cte_length: ClassVar[int] = 1
 
     def __init__(
             self,
             num_stages: int = 1,
             mass: np.array = np.array(1.0),
             desired_position: np.array = np.array([0.0, 0.0, 0.0]),
+            desired_velocity: np.array = np.array([0.0, 0.0, 0.0]),
             desired_orientation: np.array = np.array([1.0, 0.0, 0.0, 0.0]),
             external_force: np.array = np.array([0.0, 0.0, 0.0]),
             Q: np.array = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
             Qe: np.array = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-            R: np.array = np.array([0.0, 0.0, 0.0, 0.0])):
+            R: np.array = np.array([0.0, 0.0, 0.0, 0.0]),
+            p_anchor: np.array = np.array([0.0, 0.0, 0.0]),
+            w_cte: np.array = np.array(0.0)):
         """
         Parameters for all MPC stages.
 
@@ -190,6 +229,8 @@ class OnlineParameters:
         :type mass: np.array
         :param desired_position: Desired position in world frame [x, y, z] (m)
         :type desired_position: np.array
+        :param desired_velocity: Desired linear velocity in world frame [vx, vy, vz] (m/s)
+        :type desired_velocity: np.array
         :param desired_orientation: Desired orientation as a quaternion [qw, qx, qy, qz]
         :type desired_orientation: np.array
         :param external_force: External force acting on the MAV in base frame [fx, fy, fz] (N)
@@ -200,6 +241,10 @@ class OnlineParameters:
         :type Qe: np.array
         :param R: Stage gains for control inputs [thrust, wx, wy, wz]
         :type R: np.array
+        :param p_anchor: CTE cost anchor: line origin between p_anchor and desired_position [x, y, z] (m)
+        :type p_anchor: np.array
+        :param w_cte: CTE cost weight; penalises lateral distance from the anchor->ref line (0 = disabled)
+        :type w_cte: np.array
         """
         if num_stages < 1:
             raise ValueError('num_stages must be greater than zero')
@@ -207,11 +252,14 @@ class OnlineParameters:
         stage_parameters = Parameters(
             mass=mass,
             desired_position=desired_position,
+            desired_velocity=desired_velocity,
             desired_orientation=desired_orientation,
             external_force=external_force,
             Q=Q,
             Qe=Qe,
-            R=R
+            R=R,
+            p_anchor=p_anchor,
+            w_cte=w_cte
         )
         self.data = np.tile(stage_parameters.vector, (self.num_stages, 1))
 
@@ -344,6 +392,28 @@ class OnlineParameters:
         end = start + self.desired_position_length
         return self.data[stage, start:end].copy()
 
+    def set_desired_velocity(self, value: np.array, stage: int = -1) -> None:
+        """Set desired_velocity for one stage or all stages."""
+        vector_value = np.atleast_1d(value).astype(float)
+        if vector_value.shape != (self.desired_velocity_length,):
+            raise ValueError(
+                f"Size mismatch: desired_velocity has shape {vector_value.shape}, "
+                f"but expected ({self.desired_velocity_length},).")
+        start = self.desired_velocity_offset
+        end = start + self.desired_velocity_length
+        if stage == -1:
+            self.data[:, start:end] = vector_value
+            return
+        self._check_stage(stage)
+        self.data[stage, start:end] = vector_value
+
+    def get_desired_velocity(self, stage: int = 0):
+        """Get desired_velocity for one stage."""
+        self._check_stage(stage)
+        start = self.desired_velocity_offset
+        end = start + self.desired_velocity_length
+        return self.data[stage, start:end].copy()
+
     def set_desired_orientation(self, value: np.array, stage: int = -1) -> None:
         """Set desired_orientation for one stage or all stages."""
         vector_value = np.atleast_1d(value).astype(float)
@@ -454,6 +524,42 @@ class OnlineParameters:
         end = start + self.R_length
         return self.data[stage, start:end].copy()
 
+    def set_p_anchor(self, value: np.array, stage: int = -1) -> None:
+        """Set p_anchor for one stage or all stages."""
+        vector_value = np.atleast_1d(value).astype(float)
+        if vector_value.shape != (self.p_anchor_length,):
+            raise ValueError(
+                f"Size mismatch: p_anchor has shape {vector_value.shape}, "
+                f"but expected ({self.p_anchor_length},).")
+        start = self.p_anchor_offset
+        end = start + self.p_anchor_length
+        if stage == -1:
+            self.data[:, start:end] = vector_value
+            return
+        self._check_stage(stage)
+        self.data[stage, start:end] = vector_value
+
+    def get_p_anchor(self, stage: int = 0):
+        """Get p_anchor for one stage."""
+        self._check_stage(stage)
+        start = self.p_anchor_offset
+        end = start + self.p_anchor_length
+        return self.data[stage, start:end].copy()
+
+    def set_w_cte(self, value: np.array, stage: int = -1) -> None:
+        """Set w_cte for one stage or all stages."""
+        scalar_value = float(np.asarray(value, dtype=float).reshape(()))
+        if stage == -1:
+            self.data[:, self.w_cte_offset] = scalar_value
+            return
+        self._check_stage(stage)
+        self.data[stage, self.w_cte_offset] = scalar_value
+
+    def get_w_cte(self, stage: int = 0):
+        """Get w_cte for one stage."""
+        self._check_stage(stage)
+        return float(self.data[stage, self.w_cte_offset])
+
 if __name__ == '__main__':
     # Test the Parameters class
     parameters = Parameters()
@@ -462,11 +568,14 @@ if __name__ == '__main__':
     print('Vector:', parameters.vector)
     print('mass:', parameters.mass)
     print('desired_position:', parameters.desired_position)
+    print('desired_velocity:', parameters.desired_velocity)
     print('desired_orientation:', parameters.desired_orientation)
     print('external_force:', parameters.external_force)
     print('Q:', parameters.Q)
     print('Qe:', parameters.Qe)
     print('R:', parameters.R)
+    print('p_anchor:', parameters.p_anchor)
+    print('w_cte:', parameters.w_cte)
     print(parameters)
 
     online_parameters = OnlineParameters(num_stages=2)

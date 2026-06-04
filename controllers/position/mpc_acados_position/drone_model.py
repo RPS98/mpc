@@ -120,7 +120,7 @@ class DroneModel(CaDynamics, DroneModelBase):
         error_position = self._x.position - self._p.desired_position
         error_attitude = q_utils.quaternion_error(
             self._x.orientation, self._p.desired_orientation)
-        error_velocity = self._x.linear_velocity
+        error_velocity = self._x.linear_velocity - self._p.desired_velocity
 
         hover_actuation = ca.vertcat(self._p.mass * gravity, ca.SX.zeros(3))
         error_u = self._u.vector - hover_actuation
@@ -150,22 +150,63 @@ class DroneModel(CaDynamics, DroneModelBase):
 
         cost_actuation = self._compute_quadratic_cost(error_u, gains_actuation)
 
+        # Cross-track-error (CTE) cost using Frenet-frame
+        d_ref = self._p.desired_position - self._p.p_anchor
+        _t_hat, n_hat, b_hat = DroneModel.frenet_like_frame_from_tangent(d_ref)
+        e = self._x.position - self._p.p_anchor
+        e_b = ca.dot(e, b_hat)
+        e_n = ca.dot(e, n_hat)
+        cost_cte = self._p.w_cte * (e_b * e_b + e_n * e_n)
+
         self._cost_expr_ext = (
             cost_position_state
             + cost_attitude_state
             + cost_velocity_state
             + cost_actuation
+            + cost_cte
         )
         self._cost_expr_ext_e = (
             cost_position_state_e
             + cost_attitude_state_e
             + cost_velocity_state_e
+            + cost_cte
         )
 
         # NONLINEAR CONSTRAINT: Speed limit
         self._con_h_expr = ca.vertcat(
             ca.dot(self._x.linear_velocity, self._x.linear_velocity),
         )
+
+    @staticmethod
+    def normalize_vector3D(v: ca.SX, eps: float = 1e-9) -> ca.SX:
+        """Return ``v / max(||v||, eps)`` to avoid division by zero."""
+        return v / ca.fmax(ca.norm_2(v), eps)
+
+    @staticmethod
+    def frenet_like_frame_from_tangent(
+            tangent: ca.SX, eps: float = 1e-9) -> tuple:
+        """
+        Build a robust orthonormal frame ``(t_hat, n_hat, b_hat)`` from a tangent.
+
+        ``up`` defaults to world z; switches to world y when the tangent
+        is near-vertical (|tangent · z| > 0.95) so ``b_hat`` does not
+        collapse during vertical reference changes.
+        """
+        dp_safe = ca.if_else(
+            ca.norm_2(tangent) > 1e-6,
+            tangent,
+            ca.vertcat(1.0, 0.0, 0.0),
+        )
+        t_hat = DroneModel.normalize_vector3D(dp_safe)
+        up1 = ca.vertcat(0.0, 0.0, 1.0)
+        up2 = ca.vertcat(0.0, 1.0, 0.0)
+        sigma = ca.if_else(ca.fabs(ca.dot(t_hat, up1)) > 0.95, 1.0, 0.0)
+        up = (1.0 - sigma) * up1 + sigma * up2
+        b = ca.cross(t_hat, up)
+        b_hat = DroneModel.normalize_vector3D(b, eps)
+        n = ca.cross(b_hat, t_hat)
+        n_hat = DroneModel.normalize_vector3D(n, eps)
+        return t_hat, n_hat, b_hat
 
 
 def get_acados_model() -> tuple[AcadosModel, DroneModel]:
