@@ -36,7 +36,7 @@ if(NOT DEFINED ENV{ACADOS_SOURCE_DIR})
   FetchContent_Declare(
     acados
     GIT_REPOSITORY https://github.com/acados/acados.git
-    GIT_TAG v0.5.0
+    GIT_TAG v0.5.4
   )
   # FetchContent_MakeAvailable(acados) # We need the make install
   FetchContent_Populate(acados)
