@@ -68,7 +68,7 @@ TEST(acadosMpc, testAcadosMpc) {
   auto online_params = OnlineParameters();
   if constexpr (OnlineParameters::size > 0) {
     EXPECT_NO_THROW(online_params.setData(0, 1.5));
-    EXPECT_EQ(OnlineParameters::Nstages, static_cast<size_t>(MPC_N + 1));
+    EXPECT_EQ(OnlineParameters::Nstages, static_cast<size_t>({{ model_name.upper() }}_N + 1));
     EXPECT_NO_THROW(mpc.setParameters(online_params));
     EXPECT_DOUBLE_EQ(mpc.getParameters()->getData()[0], 1.5);
   } else {
@@ -149,11 +149,19 @@ TEST(acadosMpc, testAcadosDatatypes) {
   EXPECT_NO_THROW(gains.getQ());
   EXPECT_NO_THROW(gains.getQEnd());
   EXPECT_NO_THROW(gains.getR());
-  EXPECT_NO_THROW(gains.setW(0, 0.0));
-  EXPECT_NO_THROW(gains.setWe(0, 0.0));
-  EXPECT_NO_THROW(gains.setQ(0, 0.0));
-  EXPECT_NO_THROW(gains.setR(0, 0.0));
-  EXPECT_NO_THROW(gains.setQEnd(0, 0.0));
+  if constexpr (Reference::Nyref > 0) {
+    EXPECT_NO_THROW(gains.setW(0, 0.0));
+  }
+  if constexpr (Gains::Nq > 0) {
+    EXPECT_NO_THROW(gains.setQ(0, 0.0));
+  }
+  if constexpr (Gains::Nr > 0) {
+    EXPECT_NO_THROW(gains.setR(0, 0.0));
+  }
+  if constexpr (Gains::Nqe > 0) {
+    EXPECT_NO_THROW(gains.setWe(0, 0.0));
+    EXPECT_NO_THROW(gains.setQEnd(0, 0.0));
+  }
 
   EXPECT_NO_THROW(ActuationBounds());
   auto actuation_bounds = ActuationBounds();

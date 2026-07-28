@@ -95,7 +95,6 @@ import yaml
 
 from mpc_acados_core.generate.utils.read_config import YamlConfig, generate_file
 
-
 CORE_PACKAGE = 'mpc_acados_core'
 DEFAULT_CPP_NAMESPACE = 'acados_mpc'
 DEFAULT_MODEL_NAME = 'mpc'
@@ -188,7 +187,7 @@ def generate_python_datatypes(
 def _write_model_definition_init(output_dir: str, controller_package: str) -> None:
     """Write ``model_definition/__init__.py`` with re-exports of every section."""
     lines = [
-        '"""Generated datatypes for {pkg}.'.format(pkg=controller_package),
+        f'"""Generated datatypes for {controller_package}.',
         '',
         'This sub-package is produced by',
         '``mpc_acados_core.generate.model_definition_generation`` from the',
@@ -260,6 +259,7 @@ def generate_cpp_datatypes(
         config_data: YamlConfig,
         controller_root: str,
         controller_package: str,
+        model_name: str = DEFAULT_MODEL_NAME,
         core_package: str = CORE_PACKAGE) -> None:
     """Generate C++ datatype files into <pkg>/cpp_interface/{include,src,tests}."""
     context = dict(
@@ -267,6 +267,7 @@ def generate_cpp_datatypes(
         actuation_parameters=_get_cpp_parameters(config_data, 'actuation'),
         online_parameters=_get_cpp_parameters(config_data, 'parameters'),
         controller_package=controller_package,
+        model_name=model_name,
         core_package=core_package,
     )
 
@@ -362,6 +363,7 @@ def generate_cpp_yaml_header(
 def generate_cpp_interface_cmakelists(
         controller_root: str,
         controller_package: str,
+        model_name: str = DEFAULT_MODEL_NAME,
         core_package: str = CORE_PACKAGE) -> None:
     """Generate ``<pkg>/cpp_interface/CMakeLists.txt``.
 
@@ -374,6 +376,7 @@ def generate_cpp_interface_cmakelists(
         controller_package=controller_package,
         core_package=core_package,
     )
+    context['model_name'] = model_name
     output_path = os.path.join(
         _cpp_interface_dir(controller_root, controller_package),
         'CMakeLists.txt')
@@ -434,6 +437,9 @@ def generate_controller(
 
     config_data = YamlConfig(str(config_file))
 
+    model_name = str(
+        config_data.yaml_data.get('model_name') or DEFAULT_MODEL_NAME).strip()
+
     lib_dir = controller_root / package_name
     output_py_dir = lib_dir / 'model_definition'
 
@@ -446,6 +452,7 @@ def generate_controller(
         config_data,
         str(controller_root),
         controller_package=package_name,
+        model_name=model_name,
     )
     generate_cpp_yaml_header(
         config_data,
@@ -455,6 +462,7 @@ def generate_controller(
     generate_cpp_wrappers(
         str(controller_root),
         controller_package=package_name,
+        model_name=model_name,
     )
     generate_python_yaml_module(
         config_data,
@@ -464,6 +472,7 @@ def generate_controller(
     generate_cpp_interface_cmakelists(
         str(controller_root),
         controller_package=package_name,
+        model_name=model_name,
     )
 
     cpp_interface_dir = lib_dir / 'cpp_interface'

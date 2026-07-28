@@ -4,7 +4,7 @@
 #
 # This CMakeLists.txt is a template: it is NOT buildable in isolation. It
 # expects the acados-generated C code to live in a sibling directory
-# ``./mpc_generated_code/``. A consumer project is expected to copy this
+# ``./{{ model_name }}_generated_code/``. A consumer project is expected to copy this
 # ``cpp_interface/`` next to the acados artifacts (typically as
 # ``mpc_interface/`` via ``generate_mpc_interface.sh``) and then do
 # ``add_subdirectory(mpc_interface)`` from its own CMakeLists.txt.
@@ -32,13 +32,13 @@ if(NOT TARGET {{ core_package }}::{{ core_package }})
   add_subdirectory(${MPC_ACADOS_CORE_DIR} {{ core_package }}_build)
 endif()
 
-# acados writes its C code under ${export_dir}/mpc_generated_code/mpc_generated_code
+# acados writes its C code under ${export_dir}/{{ model_name }}_generated_code/{{ model_name }}_generated_code
 # (the outer folder is the export_dir set in the solver yaml, the inner one
 # is appended by acados itself during template rendering).
-set(GEN_CODE_PARENT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/mpc_generated_code")
-set(GEN_CODE_DIR        "${GEN_CODE_PARENT_DIR}/mpc_generated_code")
+set(GEN_CODE_PARENT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/{{ model_name }}_generated_code")
+set(GEN_CODE_DIR        "${GEN_CODE_PARENT_DIR}/{{ model_name }}_generated_code")
 
-if(NOT EXISTS "${GEN_CODE_DIR}/libacados_ocp_solver_mpc.so")
+if(NOT EXISTS "${GEN_CODE_DIR}/libacados_ocp_solver_{{ model_name }}.so")
   message(FATAL_ERROR
     "{{ controller_package }}: acados C code not found under\n"
     "    ${GEN_CODE_DIR}\n"
@@ -62,8 +62,8 @@ target_include_directories({{ controller_package }} PUBLIC
 target_link_libraries({{ controller_package }}
   PUBLIC
     {{ core_package }}::{{ core_package }}
-    ${GEN_CODE_DIR}/libacados_ocp_solver_mpc.so
-    ${GEN_CODE_DIR}/libacados_sim_solver_mpc.so
+    ${GEN_CODE_DIR}/libacados_ocp_solver_{{ model_name }}.so
+    ${GEN_CODE_DIR}/libacados_sim_solver_{{ model_name }}.so
 )
 
 target_compile_features({{ controller_package }} PUBLIC cxx_std_17)

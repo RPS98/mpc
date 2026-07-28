@@ -120,7 +120,7 @@ Actuation::Actuation()
 
 void Actuation::setData(const int index, const double value)
 {
-  CHECK_MPC_INDEX(index, MPC_NU);
+  CHECK_MPC_INDEX(index, {{ model_name.upper() }}_NU);
   data[index] = value;
 }
 
@@ -158,14 +158,14 @@ Reference::Reference() {data.fill(0.0);}
 
 double * Reference::getData(const int index)
 {
-  CHECK_MPC_INDEX(index, MPC_N);
-  return &data[index * MPC_NY];
+  CHECK_MPC_INDEX(index, {{ model_name.upper() }}_N);
+  return &data[index * {{ model_name.upper() }}_NY];
 }
 
 const double * Reference::getData(const int index) const
 {
-  CHECK_MPC_INDEX(index, MPC_N);
-  return &data[index * MPC_NY];
+  CHECK_MPC_INDEX(index, {{ model_name.upper() }}_N);
+  return &data[index * {{ model_name.upper() }}_NY];
 }
 
 void Reference::setData(const int index, const double value)
@@ -176,9 +176,9 @@ void Reference::setData(const int index, const double value)
 
 void Reference::setData(const int ref_index, const int value_index, const double value)
 {
-  CHECK_MPC_INDEX(ref_index, MPC_N);
-  CHECK_MPC_INDEX(value_index, MPC_NY);
-  data[ref_index * MPC_NY + value_index] = value;
+  CHECK_MPC_INDEX(ref_index, {{ model_name.upper() }}_N);
+  CHECK_MPC_INDEX(value_index, {{ model_name.upper() }}_NY);
+  data[ref_index * {{ model_name.upper() }}_NY + value_index] = value;
 }
 
 ReferenceEnd::ReferenceEnd() {data.fill(0.0);}
@@ -212,7 +212,7 @@ std::array<double, Gains::Nq> Gains::getQ() const
 {
   std::array<double, Gains::Nq> Q;
   for (size_t i = 0; i < Nq; ++i) {
-    Q[i] = W[i * MPC_NY + i];
+    Q[i] = W[i * {{ model_name.upper() }}_NY + i];
   }
   return Q;
 }
@@ -221,7 +221,7 @@ std::array<double, Gains::Nqe> Gains::getQEnd() const
 {
   std::array<double, Gains::Nqe> Qe;
   for (size_t i = 0; i < Nqe; ++i) {
-    Qe[i] = We[i * MPC_NYN + i];
+    Qe[i] = We[i * {{ model_name.upper() }}_NYN + i];
   }
   return Qe;
 }
@@ -230,7 +230,7 @@ std::array<double, Gains::Nr> Gains::getR() const
 {
   std::array<double, Gains::Nr> R;
   for (size_t i = 0; i < Nr; ++i) {
-    auto index = (MPC_NYN + i) * MPC_NY + (MPC_NYN + i);
+    auto index = ({{ model_name.upper() }}_NYN + i) * {{ model_name.upper() }}_NY + ({{ model_name.upper() }}_NYN + i);
     R[i] = W[index];
   }
   return R;
@@ -238,14 +238,14 @@ std::array<double, Gains::Nr> Gains::getR() const
 
 void Gains::setW(const int index, const double value)
 {
-  CHECK_MPC_INDEX(index, MPC_NY);
-  W[index * MPC_NY + index] = value;
+  CHECK_MPC_INDEX(index, {{ model_name.upper() }}_NY);
+  W[index * {{ model_name.upper() }}_NY + index] = value;
 }
 
 void Gains::setWe(const int index, const double value)
 {
-  CHECK_MPC_INDEX(index, MPC_NYN);
-  We[index * MPC_NYN + index] = value;
+  CHECK_MPC_INDEX(index, {{ model_name.upper() }}_NYN);
+  We[index * {{ model_name.upper() }}_NYN + index] = value;
 }
 
 void Gains::setGains(const Gains & gains)
@@ -275,7 +275,7 @@ void Gains::setQ(const std::array<double, Gains::Nq> & Q)
 void Gains::setR(const int index, const double value)
 {
   CHECK_MPC_INDEX(index, Gains::Nr);
-  setW(MPC_NYN + index, value);
+  setW({{ model_name.upper() }}_NYN + index, value);
 }
 
 void Gains::setR(const std::array<double, Gains::Nr> & R)
@@ -304,13 +304,13 @@ double * ActuationBounds::getLbu() {return lbu.data();}
 
 const double * ActuationBounds::getLbu() const {return lbu.data();}
 
-std::array<double, MPC_NU> ActuationBounds::getLbuArray() const {return lbu;}
+std::array<double, {{ model_name.upper() }}_NU> ActuationBounds::getLbuArray() const {return lbu;}
 
 double * ActuationBounds::getUbu() {return ubu.data();}
 
 const double * ActuationBounds::getUbu() const {return ubu.data();}
 
-std::array<double, MPC_NU> ActuationBounds::getUbuArray() const {return ubu;}
+std::array<double, {{ model_name.upper() }}_NU> ActuationBounds::getUbuArray() const {return ubu;}
 
 void ActuationBounds::setBounds(const ActuationBounds & bounds)
 {
@@ -323,7 +323,7 @@ void ActuationBounds::setBounds(const ActuationBounds & bounds)
   }
 }
 
-void ActuationBounds::setLbu(const std::array<double, MPC_NU> & lbu)
+void ActuationBounds::setLbu(const std::array<double, {{ model_name.upper() }}_NU> & lbu)
 {
   for (size_t i = 0; i < lbu.size(); ++i) {
     setLbu(i, lbu[i]);
@@ -332,11 +332,11 @@ void ActuationBounds::setLbu(const std::array<double, MPC_NU> & lbu)
 
 void ActuationBounds::setLbu(const int index, const double value)
 {
-  CHECK_MPC_INDEX(index, MPC_NU);
+  CHECK_MPC_INDEX(index, {{ model_name.upper() }}_NU);
   lbu[index] = value;
 }
 
-void ActuationBounds::setUbu(const std::array<double, MPC_NU> & ubu)
+void ActuationBounds::setUbu(const std::array<double, {{ model_name.upper() }}_NU> & ubu)
 {
   for (size_t i = 0; i < ubu.size(); ++i) {
     setUbu(i, ubu[i]);
@@ -345,7 +345,7 @@ void ActuationBounds::setUbu(const std::array<double, MPC_NU> & ubu)
 
 void ActuationBounds::setUbu(const int index, const double value)
 {
-  CHECK_MPC_INDEX(index, MPC_NU);
+  CHECK_MPC_INDEX(index, {{ model_name.upper() }}_NU);
   ubu[index] = value;
 }
 
@@ -359,13 +359,13 @@ double * StateBounds::getLbx() {return lbx.data();}
 
 const double * StateBounds::getLbx() const {return lbx.data();}
 
-std::array<double, MPC_NBX> StateBounds::getLbxArray() const {return lbx;}
+std::array<double, {{ model_name.upper() }}_NBX> StateBounds::getLbxArray() const {return lbx;}
 
 double * StateBounds::getUbx() {return ubx.data();}
 
 const double * StateBounds::getUbx() const {return ubx.data();}
 
-std::array<double, MPC_NBX> StateBounds::getUbxArray() const {return ubx;}
+std::array<double, {{ model_name.upper() }}_NBX> StateBounds::getUbxArray() const {return ubx;}
 
 void StateBounds::setBounds(const StateBounds & bounds)
 {
@@ -378,7 +378,7 @@ void StateBounds::setBounds(const StateBounds & bounds)
   }
 }
 
-void StateBounds::setLbx(const std::array<double, MPC_NBX> & lbx)
+void StateBounds::setLbx(const std::array<double, {{ model_name.upper() }}_NBX> & lbx)
 {
   for (size_t i = 0; i < lbx.size(); ++i) {
     setLbx(i, lbx[i]);
@@ -387,11 +387,11 @@ void StateBounds::setLbx(const std::array<double, MPC_NBX> & lbx)
 
 void StateBounds::setLbx(const int index, const double value)
 {
-  CHECK_MPC_INDEX(index, MPC_NX);
+  CHECK_MPC_INDEX(index, {{ model_name.upper() }}_NX);
   lbx[index] = value;
 }
 
-void StateBounds::setUbx(const std::array<double, MPC_NBX> & ubx)
+void StateBounds::setUbx(const std::array<double, {{ model_name.upper() }}_NBX> & ubx)
 {
   for (size_t i = 0; i < ubx.size(); ++i) {
     setUbx(i, ubx[i]);
@@ -400,7 +400,7 @@ void StateBounds::setUbx(const std::array<double, MPC_NBX> & ubx)
 
 void StateBounds::setUbx(const int index, const double value)
 {
-  CHECK_MPC_INDEX(index, MPC_NX);
+  CHECK_MPC_INDEX(index, {{ model_name.upper() }}_NX);
   ubx[index] = value;
 }
 
@@ -422,10 +422,10 @@ double * Parameters::getData() {return data.data();}
 
 const double * Parameters::getData() const {return data.data();}
 
-std::array<double, MPC_NP> Parameters::getParameters() const
+std::array<double, {{ model_name.upper() }}_NP> Parameters::getParameters() const
 {
-  std::array<double, MPC_NP> params;
-  for (size_t i = 0; i < MPC_NP; ++i) {
+  std::array<double, {{ model_name.upper() }}_NP> params;
+  for (size_t i = 0; i < {{ model_name.upper() }}_NP; ++i) {
     params[i] = data[i];
   }
   return params;
@@ -507,7 +507,7 @@ OnlineParameters::StageParameters OnlineParameters::getParameters(const int stag
   return params;
 }
 
-std::array<double, OnlineParameters::Nstages * MPC_NP> OnlineParameters::getOnlineParameters() const
+std::array<double, OnlineParameters::Nstages * {{ model_name.upper() }}_NP> OnlineParameters::getOnlineParameters() const
 {
   return data;
 }
@@ -595,13 +595,13 @@ double * SoftStateBounds::getLsbx() {return lsbx.data();}
 
 const double * SoftStateBounds::getLsbx() const {return lsbx.data();}
 
-std::array<double, MPC_NSBX> SoftStateBounds::getLsbxArray() const {return lsbx;}
+std::array<double, {{ model_name.upper() }}_NSBX> SoftStateBounds::getLsbxArray() const {return lsbx;}
 
 double * SoftStateBounds::getUsbx() {return usbx.data();}
 
 const double * SoftStateBounds::getUsbx() const {return usbx.data();}
 
-std::array<double, MPC_NSBX> SoftStateBounds::getUsbxArray() const {return usbx;}
+std::array<double, {{ model_name.upper() }}_NSBX> SoftStateBounds::getUsbxArray() const {return usbx;}
 
 void SoftStateBounds::setBounds(const SoftStateBounds & bounds)
 {
@@ -614,7 +614,7 @@ void SoftStateBounds::setBounds(const SoftStateBounds & bounds)
   }
 }
 
-void SoftStateBounds::setLsbx(const std::array<double, MPC_NSBX> & lsbx)
+void SoftStateBounds::setLsbx(const std::array<double, {{ model_name.upper() }}_NSBX> & lsbx)
 {
   for (size_t i = 0; i < lsbx.size(); ++i) {
     setLsbx(i, lsbx[i]);
@@ -623,11 +623,11 @@ void SoftStateBounds::setLsbx(const std::array<double, MPC_NSBX> & lsbx)
 
 void SoftStateBounds::setLsbx(const int index, const double value)
 {
-  CHECK_MPC_INDEX(index, MPC_NSBX);
+  CHECK_MPC_INDEX(index, {{ model_name.upper() }}_NSBX);
   lsbx[index] = value;
 }
 
-void SoftStateBounds::setUsbx(const std::array<double, MPC_NSBX> & usbx)
+void SoftStateBounds::setUsbx(const std::array<double, {{ model_name.upper() }}_NSBX> & usbx)
 {
   for (size_t i = 0; i < usbx.size(); ++i) {
     setUsbx(i, usbx[i]);
@@ -636,7 +636,7 @@ void SoftStateBounds::setUsbx(const std::array<double, MPC_NSBX> & usbx)
 
 void SoftStateBounds::setUsbx(const int index, const double value)
 {
-  CHECK_MPC_INDEX(index, MPC_NSBX);
+  CHECK_MPC_INDEX(index, {{ model_name.upper() }}_NSBX);
   usbx[index] = value;
 }
 
@@ -652,25 +652,25 @@ double * SlackWeights::getZl() {return Zl.data();}
 
 const double * SlackWeights::getZl() const {return Zl.data();}
 
-std::array<double, MPC_NS> SlackWeights::getZlArray() const {return Zl;}
+std::array<double, {{ model_name.upper() }}_NS> SlackWeights::getZlArray() const {return Zl;}
 
 double * SlackWeights::getZu() {return Zu.data();}
 
 const double * SlackWeights::getZu() const {return Zu.data();}
 
-std::array<double, MPC_NS> SlackWeights::getZuArray() const {return Zu;}
+std::array<double, {{ model_name.upper() }}_NS> SlackWeights::getZuArray() const {return Zu;}
 
 double * SlackWeights::getzl() {return zl.data();}
 
 const double * SlackWeights::getzl() const {return zl.data();}
 
-std::array<double, MPC_NS> SlackWeights::getzlArray() const {return zl;}
+std::array<double, {{ model_name.upper() }}_NS> SlackWeights::getzlArray() const {return zl;}
 
 double * SlackWeights::getzu() {return zu.data();}
 
 const double * SlackWeights::getzu() const {return zu.data();}
 
-std::array<double, MPC_NS> SlackWeights::getzuArray() const {return zu;}
+std::array<double, {{ model_name.upper() }}_NS> SlackWeights::getzuArray() const {return zu;}
 
 void SlackWeights::setWeights(const SlackWeights & weights)
 {
@@ -691,7 +691,7 @@ void SlackWeights::setWeights(const SlackWeights & weights)
   }
 }
 
-void SlackWeights::setZl(const std::array<double, MPC_NS> & Zl)
+void SlackWeights::setZl(const std::array<double, {{ model_name.upper() }}_NS> & Zl)
 {
   for (size_t i = 0; i < Zl.size(); ++i) {
     setZl(i, Zl[i]);
@@ -700,11 +700,11 @@ void SlackWeights::setZl(const std::array<double, MPC_NS> & Zl)
 
 void SlackWeights::setZl(const int index, const double value)
 {
-  CHECK_MPC_INDEX(index, MPC_NS);
+  CHECK_MPC_INDEX(index, {{ model_name.upper() }}_NS);
   Zl[index] = value;
 }
 
-void SlackWeights::setZu(const std::array<double, MPC_NS> & Zu)
+void SlackWeights::setZu(const std::array<double, {{ model_name.upper() }}_NS> & Zu)
 {
   for (size_t i = 0; i < Zu.size(); ++i) {
     setZu(i, Zu[i]);
@@ -713,11 +713,11 @@ void SlackWeights::setZu(const std::array<double, MPC_NS> & Zu)
 
 void SlackWeights::setZu(const int index, const double value)
 {
-  CHECK_MPC_INDEX(index, MPC_NS);
+  CHECK_MPC_INDEX(index, {{ model_name.upper() }}_NS);
   Zu[index] = value;
 }
 
-void SlackWeights::setzl(const std::array<double, MPC_NS> & zl)
+void SlackWeights::setzl(const std::array<double, {{ model_name.upper() }}_NS> & zl)
 {
   for (size_t i = 0; i < zl.size(); ++i) {
     setzl(i, zl[i]);
@@ -726,11 +726,11 @@ void SlackWeights::setzl(const std::array<double, MPC_NS> & zl)
 
 void SlackWeights::setzl(const int index, const double value)
 {
-  CHECK_MPC_INDEX(index, MPC_NS);
+  CHECK_MPC_INDEX(index, {{ model_name.upper() }}_NS);
   zl[index] = value;
 }
 
-void SlackWeights::setzu(const std::array<double, MPC_NS> & zu)
+void SlackWeights::setzu(const std::array<double, {{ model_name.upper() }}_NS> & zu)
 {
   for (size_t i = 0; i < zu.size(); ++i) {
     setzu(i, zu[i]);
@@ -739,7 +739,7 @@ void SlackWeights::setzu(const std::array<double, MPC_NS> & zu)
 
 void SlackWeights::setzu(const int index, const double value)
 {
-  CHECK_MPC_INDEX(index, MPC_NS);
+  CHECK_MPC_INDEX(index, {{ model_name.upper() }}_NS);
   zu[index] = value;
 }
 
@@ -755,25 +755,25 @@ double * SlackWeightsEnd::getZlE() {return Zl_e.data();}
 
 const double * SlackWeightsEnd::getZlE() const {return Zl_e.data();}
 
-std::array<double, MPC_NS> SlackWeightsEnd::getZlEArray() const {return Zl_e;}
+std::array<double, {{ model_name.upper() }}_NS> SlackWeightsEnd::getZlEArray() const {return Zl_e;}
 
 double * SlackWeightsEnd::getZuE() {return Zu_e.data();}
 
 const double * SlackWeightsEnd::getZuE() const {return Zu_e.data();}
 
-std::array<double, MPC_NS> SlackWeightsEnd::getZuEArray() const {return Zu_e;}
+std::array<double, {{ model_name.upper() }}_NS> SlackWeightsEnd::getZuEArray() const {return Zu_e;}
 
 double * SlackWeightsEnd::getzlE() {return zl_e.data();}
 
 const double * SlackWeightsEnd::getzlE() const {return zl_e.data();}
 
-std::array<double, MPC_NS> SlackWeightsEnd::getzlEArray() const {return zl_e;}
+std::array<double, {{ model_name.upper() }}_NS> SlackWeightsEnd::getzlEArray() const {return zl_e;}
 
 double * SlackWeightsEnd::getzuE() {return zu_e.data();}
 
 const double * SlackWeightsEnd::getzuE() const {return zu_e.data();}
 
-std::array<double, MPC_NS> SlackWeightsEnd::getzuEArray() const {return zu_e;}
+std::array<double, {{ model_name.upper() }}_NS> SlackWeightsEnd::getzuEArray() const {return zu_e;}
 
 void SlackWeightsEnd::setWeights(const SlackWeightsEnd & weights)
 {
@@ -794,7 +794,7 @@ void SlackWeightsEnd::setWeights(const SlackWeightsEnd & weights)
   }
 }
 
-void SlackWeightsEnd::setZlE(const std::array<double, MPC_NS> & Zl_e)
+void SlackWeightsEnd::setZlE(const std::array<double, {{ model_name.upper() }}_NS> & Zl_e)
 {
   for (size_t i = 0; i < Zl_e.size(); ++i) {
     setZlE(i, Zl_e[i]);
@@ -803,11 +803,11 @@ void SlackWeightsEnd::setZlE(const std::array<double, MPC_NS> & Zl_e)
 
 void SlackWeightsEnd::setZlE(const int index, const double value)
 {
-  CHECK_MPC_INDEX(index, MPC_NS);
+  CHECK_MPC_INDEX(index, {{ model_name.upper() }}_NS);
   Zl_e[index] = value;
 }
 
-void SlackWeightsEnd::setZuE(const std::array<double, MPC_NS> & Zu_e)
+void SlackWeightsEnd::setZuE(const std::array<double, {{ model_name.upper() }}_NS> & Zu_e)
 {
   for (size_t i = 0; i < Zu_e.size(); ++i) {
     setZuE(i, Zu_e[i]);
@@ -816,11 +816,11 @@ void SlackWeightsEnd::setZuE(const std::array<double, MPC_NS> & Zu_e)
 
 void SlackWeightsEnd::setZuE(const int index, const double value)
 {
-  CHECK_MPC_INDEX(index, MPC_NS);
+  CHECK_MPC_INDEX(index, {{ model_name.upper() }}_NS);
   Zu_e[index] = value;
 }
 
-void SlackWeightsEnd::setzlE(const std::array<double, MPC_NS> & zl_e)
+void SlackWeightsEnd::setzlE(const std::array<double, {{ model_name.upper() }}_NS> & zl_e)
 {
   for (size_t i = 0; i < zl_e.size(); ++i) {
     setzlE(i, zl_e[i]);
@@ -829,11 +829,11 @@ void SlackWeightsEnd::setzlE(const std::array<double, MPC_NS> & zl_e)
 
 void SlackWeightsEnd::setzlE(const int index, const double value)
 {
-  CHECK_MPC_INDEX(index, MPC_NS);
+  CHECK_MPC_INDEX(index, {{ model_name.upper() }}_NS);
   zl_e[index] = value;
 }
 
-void SlackWeightsEnd::setzuE(const std::array<double, MPC_NS> & zu_e)
+void SlackWeightsEnd::setzuE(const std::array<double, {{ model_name.upper() }}_NS> & zu_e)
 {
   for (size_t i = 0; i < zu_e.size(); ++i) {
     setzuE(i, zu_e[i]);
@@ -842,7 +842,7 @@ void SlackWeightsEnd::setzuE(const std::array<double, MPC_NS> & zu_e)
 
 void SlackWeightsEnd::setzuE(const int index, const double value)
 {
-  CHECK_MPC_INDEX(index, MPC_NS);
+  CHECK_MPC_INDEX(index, {{ model_name.upper() }}_NS);
   zu_e[index] = value;
 }
 
@@ -856,13 +856,13 @@ double * NonlinearConstraintBounds::getLh() {return lh.data();}
 
 const double * NonlinearConstraintBounds::getLh() const {return lh.data();}
 
-std::array<double, MPC_NH> NonlinearConstraintBounds::getLhArray() const {return lh;}
+std::array<double, {{ model_name.upper() }}_NH> NonlinearConstraintBounds::getLhArray() const {return lh;}
 
 double * NonlinearConstraintBounds::getUh() {return uh.data();}
 
 const double * NonlinearConstraintBounds::getUh() const {return uh.data();}
 
-std::array<double, MPC_NH> NonlinearConstraintBounds::getUhArray() const {return uh;}
+std::array<double, {{ model_name.upper() }}_NH> NonlinearConstraintBounds::getUhArray() const {return uh;}
 
 void NonlinearConstraintBounds::setBounds(const NonlinearConstraintBounds & bounds)
 {
@@ -875,7 +875,7 @@ void NonlinearConstraintBounds::setBounds(const NonlinearConstraintBounds & boun
   }
 }
 
-void NonlinearConstraintBounds::setLh(const std::array<double, MPC_NH> & lh)
+void NonlinearConstraintBounds::setLh(const std::array<double, {{ model_name.upper() }}_NH> & lh)
 {
   for (size_t i = 0; i < lh.size(); ++i) {
     setLh(static_cast<int>(i), lh[i]);
@@ -884,11 +884,11 @@ void NonlinearConstraintBounds::setLh(const std::array<double, MPC_NH> & lh)
 
 void NonlinearConstraintBounds::setLh(const int index, const double value)
 {
-  CHECK_MPC_INDEX(index, MPC_NH);
+  CHECK_MPC_INDEX(index, {{ model_name.upper() }}_NH);
   lh[index] = value;
 }
 
-void NonlinearConstraintBounds::setUh(const std::array<double, MPC_NH> & uh)
+void NonlinearConstraintBounds::setUh(const std::array<double, {{ model_name.upper() }}_NH> & uh)
 {
   for (size_t i = 0; i < uh.size(); ++i) {
     setUh(static_cast<int>(i), uh[i]);
@@ -897,7 +897,7 @@ void NonlinearConstraintBounds::setUh(const std::array<double, MPC_NH> & uh)
 
 void NonlinearConstraintBounds::setUh(const int index, const double value)
 {
-  CHECK_MPC_INDEX(index, MPC_NH);
+  CHECK_MPC_INDEX(index, {{ model_name.upper() }}_NH);
   uh[index] = value;
 }
 
@@ -911,13 +911,13 @@ double * SoftNonlinearConstraintBounds::getLsh() {return lsh.data();}
 
 const double * SoftNonlinearConstraintBounds::getLsh() const {return lsh.data();}
 
-std::array<double, MPC_NSH> SoftNonlinearConstraintBounds::getLshArray() const {return lsh;}
+std::array<double, {{ model_name.upper() }}_NSH> SoftNonlinearConstraintBounds::getLshArray() const {return lsh;}
 
 double * SoftNonlinearConstraintBounds::getUsh() {return ush.data();}
 
 const double * SoftNonlinearConstraintBounds::getUsh() const {return ush.data();}
 
-std::array<double, MPC_NSH> SoftNonlinearConstraintBounds::getUshArray() const {return ush;}
+std::array<double, {{ model_name.upper() }}_NSH> SoftNonlinearConstraintBounds::getUshArray() const {return ush;}
 
 void SoftNonlinearConstraintBounds::setBounds(const SoftNonlinearConstraintBounds & bounds)
 {
@@ -930,7 +930,7 @@ void SoftNonlinearConstraintBounds::setBounds(const SoftNonlinearConstraintBound
   }
 }
 
-void SoftNonlinearConstraintBounds::setLsh(const std::array<double, MPC_NSH> & lsh)
+void SoftNonlinearConstraintBounds::setLsh(const std::array<double, {{ model_name.upper() }}_NSH> & lsh)
 {
   for (size_t i = 0; i < lsh.size(); ++i) {
     setLsh(static_cast<int>(i), lsh[i]);
@@ -939,11 +939,11 @@ void SoftNonlinearConstraintBounds::setLsh(const std::array<double, MPC_NSH> & l
 
 void SoftNonlinearConstraintBounds::setLsh(const int index, const double value)
 {
-  CHECK_MPC_INDEX(index, MPC_NSH);
+  CHECK_MPC_INDEX(index, {{ model_name.upper() }}_NSH);
   lsh[index] = value;
 }
 
-void SoftNonlinearConstraintBounds::setUsh(const std::array<double, MPC_NSH> & ush)
+void SoftNonlinearConstraintBounds::setUsh(const std::array<double, {{ model_name.upper() }}_NSH> & ush)
 {
   for (size_t i = 0; i < ush.size(); ++i) {
     setUsh(static_cast<int>(i), ush[i]);
@@ -952,7 +952,7 @@ void SoftNonlinearConstraintBounds::setUsh(const std::array<double, MPC_NSH> & u
 
 void SoftNonlinearConstraintBounds::setUsh(const int index, const double value)
 {
-  CHECK_MPC_INDEX(index, MPC_NSH);
+  CHECK_MPC_INDEX(index, {{ model_name.upper() }}_NSH);
   ush[index] = value;
 }
 

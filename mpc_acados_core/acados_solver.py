@@ -313,8 +313,9 @@ class AcadosMPCSolverBase:
             solver_options.regularize_method = solver_definition.solver.regularize_method
 
         # Create solver
-        base_export_dir = solver_definition.solver.export_dir + 'mpc_generated_code/'
-        ocp.code_export_directory = base_export_dir + 'mpc_generated_code'
+        gen_dir = self.acados_model.name + '_generated_code'
+        base_export_dir = solver_definition.solver.export_dir + gen_dir + '/'
+        ocp.code_export_directory = base_export_dir + gen_dir
         ocp.json_file = base_export_dir + 'acados_ocp.json'
 
         self.solver = AcadosOcpSolver(
@@ -352,8 +353,9 @@ class AcadosMPCSolverBase:
         # time horizon
         acados_sim.solver_options.T = solver_definition.mpc.tf / solver_definition.mpc.N_horizon
 
-        base_export_dir = solver_definition.solver.export_dir + 'mpc_generated_code/'
-        acados_sim.code_export_directory = base_export_dir + 'mpc_generated_code'
+        gen_dir = self.acados_model.name + '_generated_code'
+        base_export_dir = solver_definition.solver.export_dir + gen_dir + '/'
+        acados_sim.code_export_directory = base_export_dir + gen_dir
         json_file = acados_sim.code_export_directory + 'acados_sim.json'
         self.acados_integrator = AcadosSimSolver(
             acados_sim,

@@ -39,9 +39,9 @@
 #ifndef ACADOS_MPC_ACADOS_MPC_DATATYPE_HPP_
 #define ACADOS_MPC_ACADOS_MPC_DATATYPE_HPP_
 
-#include <mpc_generated_code/acados_sim_solver_mpc.h>
-#include <mpc_generated_code/acados_solver_mpc.h>
-#include <mpc_generated_code/mpc_model/mpc_model.h>
+#include <{{ model_name }}_generated_code/acados_sim_solver_{{ model_name }}.h>
+#include <{{ model_name }}_generated_code/acados_solver_{{ model_name }}.h>
+#include <{{ model_name }}_generated_code/{{ model_name }}_model/{{ model_name }}_model.h>
 
 #include <array>
 #include <stdexcept>
@@ -55,9 +55,9 @@ namespace acados_mpc
  */
 struct State
 {
-  static constexpr size_t Nx = MPC_NX;
-  std::array<double, MPC_NX> data;
-  static const std::size_t size = MPC_NX;
+  static constexpr size_t Nx = {{ model_name.upper() }}_NX;
+  std::array<double, {{ model_name.upper() }}_NX> data;
+  static const std::size_t size = {{ model_name.upper() }}_NX;
 {%- for param in state_parameters %}
   static constexpr size_t {{ param.name }}_offset = {{ param.offset }};
   static constexpr size_t {{ param.name }}_length = {{ param.size }};
@@ -99,9 +99,9 @@ struct State
  */
 struct Actuation
 {
-  static constexpr size_t Nu = MPC_NU;
-  std::array<double, MPC_NU> data;
-  static const std::size_t size = MPC_NU;
+  static constexpr size_t Nu = {{ model_name.upper() }}_NU;
+  std::array<double, {{ model_name.upper() }}_NU> data;
+  static const std::size_t size = {{ model_name.upper() }}_NU;
 {%- for param in actuation_parameters %}
   static constexpr size_t {{ param.name }}_offset = {{ param.offset }};
   static constexpr size_t {{ param.name }}_length = {{ param.size }};
@@ -143,9 +143,9 @@ struct Actuation
  */
 struct Reference
 {
-  static constexpr size_t Nyref = MPC_NY;
-  std::array<double, MPC_N * MPC_NY> data;
-  static const std::size_t size = MPC_N * MPC_NY;
+  static constexpr size_t Nyref = {{ model_name.upper() }}_NY;
+  std::array<double, {{ model_name.upper() }}_N * {{ model_name.upper() }}_NY> data;
+  static const std::size_t size = {{ model_name.upper() }}_N * {{ model_name.upper() }}_NY;
 
   /**
    * @brief Constructor
@@ -188,8 +188,8 @@ struct Reference
 
 struct ReferenceEnd
 {
-  std::array<double, MPC_NYN> data;
-  static const std::size_t size = MPC_NYN;
+  std::array<double, {{ model_name.upper() }}_NYN> data;
+  static const std::size_t size = {{ model_name.upper() }}_NYN;
 
   /**
    * @brief Constructor
@@ -226,11 +226,11 @@ struct ReferenceEnd
  */
 struct Gains
 {
-  static constexpr size_t Nq = MPC_NYN;
-  static constexpr size_t Nqe = MPC_NYN;
-  static constexpr size_t Nr = (MPC_NY - MPC_NYN);
-  std::array<double, MPC_NY * MPC_NY> W;
-  std::array<double, MPC_NYN * MPC_NYN> We;
+  static constexpr size_t Nq = {{ model_name.upper() }}_NYN;
+  static constexpr size_t Nqe = {{ model_name.upper() }}_NYN;
+  static constexpr size_t Nr = ({{ model_name.upper() }}_NY - {{ model_name.upper() }}_NYN);
+  std::array<double, {{ model_name.upper() }}_NY * {{ model_name.upper() }}_NY> W;
+  std::array<double, {{ model_name.upper() }}_NYN * {{ model_name.upper() }}_NYN> We;
 
   /**
    * @brief Constructor
@@ -363,9 +363,9 @@ struct Gains
  */
 struct ActuationBounds
 {
-  static constexpr size_t Nu = MPC_NU;
-  std::array<double, MPC_NU> lbu;
-  std::array<double, MPC_NU> ubu;
+  static constexpr size_t Nu = {{ model_name.upper() }}_NU;
+  std::array<double, {{ model_name.upper() }}_NU> lbu;
+  std::array<double, {{ model_name.upper() }}_NU> ubu;
 
   /**
    * @brief Constructor
@@ -389,9 +389,9 @@ struct ActuationBounds
   /**
    * @brief Get the lbu array
    *
-   * @return std::array<double, MPC_NU> lbu.
+   * @return std::array<double, {{ model_name.upper() }}_NU> lbu.
    */
-  std::array<double, MPC_NU> getLbuArray() const;
+  std::array<double, {{ model_name.upper() }}_NU> getLbuArray() const;
 
   /**
    * @brief Get the ubu array
@@ -410,9 +410,9 @@ struct ActuationBounds
   /**
    * @brief Get the ubu array
    *
-   * @return std::array<double, MPC_NU> ubu.
+   * @return std::array<double, {{ model_name.upper() }}_NU> ubu.
    */
-  std::array<double, MPC_NU> getUbuArray() const;
+  std::array<double, {{ model_name.upper() }}_NU> getUbuArray() const;
 
   /**
    * @brief Set the bounds
@@ -426,7 +426,7 @@ struct ActuationBounds
    *
    * @param lbu lbu.
    */
-  void setLbu(const std::array<double, MPC_NU> & lbu);
+  void setLbu(const std::array<double, {{ model_name.upper() }}_NU> & lbu);
 
   /**
    * @brief Set the lbu at index
@@ -441,7 +441,7 @@ struct ActuationBounds
    *
    * @param ubu ubu.
    */
-  void setUbu(const std::array<double, MPC_NU> & ubu);
+  void setUbu(const std::array<double, {{ model_name.upper() }}_NU> & ubu);
 
   /**
    * @brief Set the ubu at index
@@ -459,9 +459,9 @@ struct ActuationBounds
  */
 struct StateBounds
 {
-  static constexpr size_t Nx = MPC_NBX;
-  std::array<double, MPC_NBX> lbx;
-  std::array<double, MPC_NBX> ubx;
+  static constexpr size_t Nx = {{ model_name.upper() }}_NBX;
+  std::array<double, {{ model_name.upper() }}_NBX> lbx;
+  std::array<double, {{ model_name.upper() }}_NBX> ubx;
 
   /**
    * @brief Constructor
@@ -485,9 +485,9 @@ struct StateBounds
   /**
    * @brief Get the lbx array
    *
-   * @return std::array<double, MPC_NBX> lbx.
+   * @return std::array<double, {{ model_name.upper() }}_NBX> lbx.
    */
-  std::array<double, MPC_NBX> getLbxArray() const;
+  std::array<double, {{ model_name.upper() }}_NBX> getLbxArray() const;
 
   /**
    * @brief Get the ubx array
@@ -506,9 +506,9 @@ struct StateBounds
   /**
    * @brief Get the ubx array
    *
-   * @return std::array<double, MPC_NBX> ubx.
+   * @return std::array<double, {{ model_name.upper() }}_NBX> ubx.
    */
-  std::array<double, MPC_NBX> getUbxArray() const;
+  std::array<double, {{ model_name.upper() }}_NBX> getUbxArray() const;
 
   /**
    * @brief Set the bounds
@@ -522,7 +522,7 @@ struct StateBounds
    *
    * @param lbx lbx.
    */
-  void setLbx(const std::array<double, MPC_NBX> & lbx);
+  void setLbx(const std::array<double, {{ model_name.upper() }}_NBX> & lbx);
 
   /**
    * @brief Set the lbx at index
@@ -537,7 +537,7 @@ struct StateBounds
    *
    * @param ubx ubx.
    */
-  void setUbx(const std::array<double, MPC_NBX> & ubx);
+  void setUbx(const std::array<double, {{ model_name.upper() }}_NBX> & ubx);
 
   /**
    * @brief Set the ubx at index
@@ -555,9 +555,9 @@ struct StateBounds
  */
 struct Parameters
 {
-  static constexpr size_t Np = MPC_NP;
-  std::array<double, MPC_NP> data;
-  static const std::size_t size = MPC_NP;
+  static constexpr size_t Np = {{ model_name.upper() }}_NP;
+  std::array<double, {{ model_name.upper() }}_NP> data;
+  static const std::size_t size = {{ model_name.upper() }}_NP;
 {%- for param in online_parameters %}
   static constexpr size_t {{ param.name }}_offset = {{ param.offset }};
   static constexpr size_t {{ param.name }}_length = {{ param.size }};
@@ -585,9 +585,9 @@ struct Parameters
   /**
    * @brief Get the stage parameters
    *
-   * @return std::array<double, MPC_NP> Copy of the stage parameters.
+   * @return std::array<double, {{ model_name.upper() }}_NP> Copy of the stage parameters.
    */
-  std::array<double, MPC_NP> getParameters() const;
+  std::array<double, {{ model_name.upper() }}_NP> getParameters() const;
 
   /**
    * @brief Copy parameters from another stage parameter object.
@@ -630,10 +630,10 @@ struct Parameters
 struct OnlineParameters
 {
   using StageParameters = Parameters;
-  static constexpr size_t Np = MPC_NP;
-  static constexpr size_t Nstages = MPC_N + static_cast<size_t>(1);
-  std::array<double, Nstages * MPC_NP> data;
-  static const std::size_t size = Nstages * MPC_NP;
+  static constexpr size_t Np = {{ model_name.upper() }}_NP;
+  static constexpr size_t Nstages = {{ model_name.upper() }}_N + static_cast<size_t>(1);
+  std::array<double, Nstages * {{ model_name.upper() }}_NP> data;
+  static const std::size_t size = Nstages * {{ model_name.upper() }}_NP;
 {%- for param in online_parameters %}
   static constexpr size_t {{ param.name }}_offset = Parameters::{{ param.name }}_offset;
   static constexpr size_t {{ param.name }}_length = Parameters::{{ param.name }}_length;
@@ -685,9 +685,9 @@ struct OnlineParameters
   /**
    * @brief Get all online parameters flattened by stage
    *
-   * @return std::array<double, Nstages * MPC_NP> Copy of online parameters.
+   * @return std::array<double, Nstages * {{ model_name.upper() }}_NP> Copy of online parameters.
    */
-  std::array<double, Nstages * MPC_NP> getOnlineParameters() const;
+  std::array<double, Nstages * {{ model_name.upper() }}_NP> getOnlineParameters() const;
 
   /**
    * @brief Copy all online parameters.
@@ -748,9 +748,9 @@ struct OnlineParameters
  */
 struct SoftStateBounds
 {
-  static constexpr size_t Nsbx = MPC_NSBX;
-  std::array<double, MPC_NSBX> lsbx;
-  std::array<double, MPC_NSBX> usbx;
+  static constexpr size_t Nsbx = {{ model_name.upper() }}_NSBX;
+  std::array<double, {{ model_name.upper() }}_NSBX> lsbx;
+  std::array<double, {{ model_name.upper() }}_NSBX> usbx;
 
   /**
    * @brief Constructor
@@ -774,9 +774,9 @@ struct SoftStateBounds
   /**
    * @brief Get the lsbx array
    *
-   * @return std::array<double, MPC_NSBX> lsbx.
+   * @return std::array<double, {{ model_name.upper() }}_NSBX> lsbx.
    */
-  std::array<double, MPC_NSBX> getLsbxArray() const;
+  std::array<double, {{ model_name.upper() }}_NSBX> getLsbxArray() const;
 
   /**
    * @brief Get the usbx array
@@ -795,9 +795,9 @@ struct SoftStateBounds
   /**
    * @brief Get the usbx array
    *
-   * @return std::array<double, MPC_NSBX> usbx.
+   * @return std::array<double, {{ model_name.upper() }}_NSBX> usbx.
    */
-  std::array<double, MPC_NSBX> getUsbxArray() const;
+  std::array<double, {{ model_name.upper() }}_NSBX> getUsbxArray() const;
 
   /**
    * @brief Set the bounds
@@ -811,7 +811,7 @@ struct SoftStateBounds
    *
    * @param lsbx lsbx.
    */
-  void setLsbx(const std::array<double, MPC_NSBX> & lsbx);
+  void setLsbx(const std::array<double, {{ model_name.upper() }}_NSBX> & lsbx);
 
   /**
    * @brief Set the lsbx at index
@@ -826,7 +826,7 @@ struct SoftStateBounds
    *
    * @param usbx usbx.
    */
-  void setUsbx(const std::array<double, MPC_NSBX> & usbx);
+  void setUsbx(const std::array<double, {{ model_name.upper() }}_NSBX> & usbx);
 
   /**
    * @brief Set the usbx at index
@@ -844,11 +844,11 @@ struct SoftStateBounds
  */
 struct SlackWeights
 {
-  static constexpr size_t Ns = MPC_NS;
-  std::array<double, MPC_NS> Zl;  // Diagonal Hessian weights for lower slack variables
-  std::array<double, MPC_NS> Zu;  // Diagonal Hessian weights for upper slack variables
-  std::array<double, MPC_NS> zl;  // Linear weights for lower slack variables
-  std::array<double, MPC_NS> zu;  // Linear weights for upper slack variables
+  static constexpr size_t Ns = {{ model_name.upper() }}_NS;
+  std::array<double, {{ model_name.upper() }}_NS> Zl;  // Diagonal Hessian weights for lower slack variables
+  std::array<double, {{ model_name.upper() }}_NS> Zu;  // Diagonal Hessian weights for upper slack variables
+  std::array<double, {{ model_name.upper() }}_NS> zl;  // Linear weights for lower slack variables
+  std::array<double, {{ model_name.upper() }}_NS> zu;  // Linear weights for upper slack variables
 
   /**
    * @brief Constructor
@@ -872,9 +872,9 @@ struct SlackWeights
   /**
    * @brief Get the Zl array
    *
-   * @return std::array<double, MPC_NS> Zl.
+   * @return std::array<double, {{ model_name.upper() }}_NS> Zl.
    */
-  std::array<double, MPC_NS> getZlArray() const;
+  std::array<double, {{ model_name.upper() }}_NS> getZlArray() const;
 
   /**
    * @brief Get the Zu array
@@ -893,9 +893,9 @@ struct SlackWeights
   /**
    * @brief Get the Zu array
    *
-   * @return std::array<double, MPC_NS> Zu.
+   * @return std::array<double, {{ model_name.upper() }}_NS> Zu.
    */
-  std::array<double, MPC_NS> getZuArray() const;
+  std::array<double, {{ model_name.upper() }}_NS> getZuArray() const;
 
   /**
    * @brief Get the zl array
@@ -914,9 +914,9 @@ struct SlackWeights
   /**
    * @brief Get the zl array
    *
-   * @return std::array<double, MPC_NS> zl.
+   * @return std::array<double, {{ model_name.upper() }}_NS> zl.
    */
-  std::array<double, MPC_NS> getzlArray() const;
+  std::array<double, {{ model_name.upper() }}_NS> getzlArray() const;
 
   /**
    * @brief Get the zu array
@@ -935,9 +935,9 @@ struct SlackWeights
   /**
    * @brief Get the zu array
    *
-   * @return std::array<double, MPC_NS> zu.
+   * @return std::array<double, {{ model_name.upper() }}_NS> zu.
    */
-  std::array<double, MPC_NS> getzuArray() const;
+  std::array<double, {{ model_name.upper() }}_NS> getzuArray() const;
 
   /**
    * @brief Set the weights
@@ -951,7 +951,7 @@ struct SlackWeights
    *
    * @param Zl Zl.
    */
-  void setZl(const std::array<double, MPC_NS> & Zl);
+  void setZl(const std::array<double, {{ model_name.upper() }}_NS> & Zl);
 
   /**
    * @brief Set the Zl at index
@@ -966,7 +966,7 @@ struct SlackWeights
    *
    * @param Zu Zu.
    */
-  void setZu(const std::array<double, MPC_NS> & Zu);
+  void setZu(const std::array<double, {{ model_name.upper() }}_NS> & Zu);
 
   /**
    * @brief Set the Zu at index
@@ -981,7 +981,7 @@ struct SlackWeights
    *
    * @param zl zl.
    */
-  void setzl(const std::array<double, MPC_NS> & zl);
+  void setzl(const std::array<double, {{ model_name.upper() }}_NS> & zl);
 
   /**
    * @brief Set the zl at index
@@ -996,7 +996,7 @@ struct SlackWeights
    *
    * @param zu zu.
    */
-  void setzu(const std::array<double, MPC_NS> & zu);
+  void setzu(const std::array<double, {{ model_name.upper() }}_NS> & zu);
 
   /**
    * @brief Set the zu at index
@@ -1014,11 +1014,11 @@ struct SlackWeights
  */
 struct SlackWeightsEnd
 {
-  static constexpr size_t Ns_e = MPC_NS;
-  std::array<double, MPC_NS> Zl_e;  // Diagonal Hessian weights for lower slack variables
-  std::array<double, MPC_NS> Zu_e;  // Diagonal Hessian weights for upper slack variables
-  std::array<double, MPC_NS> zl_e;  // Linear weights for lower slack variables
-  std::array<double, MPC_NS> zu_e;  // Linear weights for upper slack variables
+  static constexpr size_t Ns_e = {{ model_name.upper() }}_NS;
+  std::array<double, {{ model_name.upper() }}_NS> Zl_e;  // Diagonal Hessian weights for lower slack variables
+  std::array<double, {{ model_name.upper() }}_NS> Zu_e;  // Diagonal Hessian weights for upper slack variables
+  std::array<double, {{ model_name.upper() }}_NS> zl_e;  // Linear weights for lower slack variables
+  std::array<double, {{ model_name.upper() }}_NS> zu_e;  // Linear weights for upper slack variables
 
   /**
    * @brief Constructor
@@ -1042,9 +1042,9 @@ struct SlackWeightsEnd
   /**
    * @brief Get the Zl_e array
    *
-   * @return std::array<double, MPC_NS> Zl_e.
+   * @return std::array<double, {{ model_name.upper() }}_NS> Zl_e.
    */
-  std::array<double, MPC_NS> getZlEArray() const;
+  std::array<double, {{ model_name.upper() }}_NS> getZlEArray() const;
 
   /**
    * @brief Get the Zu_e array
@@ -1063,9 +1063,9 @@ struct SlackWeightsEnd
   /**
    * @brief Get the Zu_e array
    *
-   * @return std::array<double, MPC_NS> Zu_e.
+   * @return std::array<double, {{ model_name.upper() }}_NS> Zu_e.
    */
-  std::array<double, MPC_NS> getZuEArray() const;
+  std::array<double, {{ model_name.upper() }}_NS> getZuEArray() const;
 
   /**
    * @brief Get the zl_e array
@@ -1084,9 +1084,9 @@ struct SlackWeightsEnd
   /**
    * @brief Get the zl_e array
    *
-   * @return std::array<double, MPC_NS> zl_e.
+   * @return std::array<double, {{ model_name.upper() }}_NS> zl_e.
    */
-  std::array<double, MPC_NS> getzlEArray() const;
+  std::array<double, {{ model_name.upper() }}_NS> getzlEArray() const;
 
   /**
    * @brief Get the zu_e array
@@ -1105,9 +1105,9 @@ struct SlackWeightsEnd
   /**
    * @brief Get the zu_e array
    *
-   * @return std::array<double, MPC_NS> zu_e.
+   * @return std::array<double, {{ model_name.upper() }}_NS> zu_e.
    */
-  std::array<double, MPC_NS> getzuEArray() const;
+  std::array<double, {{ model_name.upper() }}_NS> getzuEArray() const;
 
   /**
    * @brief Set the weights
@@ -1121,7 +1121,7 @@ struct SlackWeightsEnd
    *
    * @param Zl_e Zl_e.
    */
-  void setZlE(const std::array<double, MPC_NS> & Zl_e);
+  void setZlE(const std::array<double, {{ model_name.upper() }}_NS> & Zl_e);
 
   /**
    * @brief Set the Zl_e at index
@@ -1136,7 +1136,7 @@ struct SlackWeightsEnd
    *
    * @param Zu_e Zu_e.
    */
-  void setZuE(const std::array<double, MPC_NS> & Zu_e);
+  void setZuE(const std::array<double, {{ model_name.upper() }}_NS> & Zu_e);
 
   /**
    * @brief Set the Zu_e at index
@@ -1151,7 +1151,7 @@ struct SlackWeightsEnd
    *
    * @param zl_e zl_e.
    */
-  void setzlE(const std::array<double, MPC_NS> & zl_e);
+  void setzlE(const std::array<double, {{ model_name.upper() }}_NS> & zl_e);
 
   /**
    * @brief Set the zl_e at index
@@ -1166,7 +1166,7 @@ struct SlackWeightsEnd
    *
    * @param zu_e zu_e.
    */
-  void setzuE(const std::array<double, MPC_NS> & zu_e);
+  void setzuE(const std::array<double, {{ model_name.upper() }}_NS> & zu_e);
 
   /**
    * @brief Set the zu_e at index
@@ -1185,9 +1185,9 @@ struct SlackWeightsEnd
  */
 struct NonlinearConstraintBounds
 {
-  static constexpr size_t Nh = MPC_NH;
-  std::array<double, MPC_NH> lh;
-  std::array<double, MPC_NH> uh;
+  static constexpr size_t Nh = {{ model_name.upper() }}_NH;
+  std::array<double, {{ model_name.upper() }}_NH> lh;
+  std::array<double, {{ model_name.upper() }}_NH> uh;
 
   /**
    * @brief Constructor
@@ -1211,9 +1211,9 @@ struct NonlinearConstraintBounds
   /**
    * @brief Get the lh array
    *
-   * @return std::array<double, MPC_NH> lh.
+   * @return std::array<double, {{ model_name.upper() }}_NH> lh.
    */
-  std::array<double, MPC_NH> getLhArray() const;
+  std::array<double, {{ model_name.upper() }}_NH> getLhArray() const;
 
   /**
    * @brief Get the uh array
@@ -1232,9 +1232,9 @@ struct NonlinearConstraintBounds
   /**
    * @brief Get the uh array
    *
-   * @return std::array<double, MPC_NH> uh.
+   * @return std::array<double, {{ model_name.upper() }}_NH> uh.
    */
-  std::array<double, MPC_NH> getUhArray() const;
+  std::array<double, {{ model_name.upper() }}_NH> getUhArray() const;
 
   /**
    * @brief Set the bounds
@@ -1248,7 +1248,7 @@ struct NonlinearConstraintBounds
    *
    * @param lh lh.
    */
-  void setLh(const std::array<double, MPC_NH> & lh);
+  void setLh(const std::array<double, {{ model_name.upper() }}_NH> & lh);
 
   /**
    * @brief Set the lh at index
@@ -1263,7 +1263,7 @@ struct NonlinearConstraintBounds
    *
    * @param uh uh.
    */
-  void setUh(const std::array<double, MPC_NH> & uh);
+  void setUh(const std::array<double, {{ model_name.upper() }}_NH> & uh);
 
   /**
    * @brief Set the uh at index
@@ -1282,9 +1282,9 @@ struct NonlinearConstraintBounds
  */
 struct SoftNonlinearConstraintBounds
 {
-  static constexpr size_t Nsh = MPC_NSH;
-  std::array<double, MPC_NSH> lsh;
-  std::array<double, MPC_NSH> ush;
+  static constexpr size_t Nsh = {{ model_name.upper() }}_NSH;
+  std::array<double, {{ model_name.upper() }}_NSH> lsh;
+  std::array<double, {{ model_name.upper() }}_NSH> ush;
 
   /**
    * @brief Constructor
@@ -1308,9 +1308,9 @@ struct SoftNonlinearConstraintBounds
   /**
    * @brief Get the lsh array
    *
-   * @return std::array<double, MPC_NSH> lsh.
+   * @return std::array<double, {{ model_name.upper() }}_NSH> lsh.
    */
-  std::array<double, MPC_NSH> getLshArray() const;
+  std::array<double, {{ model_name.upper() }}_NSH> getLshArray() const;
 
   /**
    * @brief Get the ush array
@@ -1329,9 +1329,9 @@ struct SoftNonlinearConstraintBounds
   /**
    * @brief Get the ush array
    *
-   * @return std::array<double, MPC_NSH> ush.
+   * @return std::array<double, {{ model_name.upper() }}_NSH> ush.
    */
-  std::array<double, MPC_NSH> getUshArray() const;
+  std::array<double, {{ model_name.upper() }}_NSH> getUshArray() const;
 
   /**
    * @brief Set the bounds
@@ -1345,7 +1345,7 @@ struct SoftNonlinearConstraintBounds
    *
    * @param lsh lsh.
    */
-  void setLsh(const std::array<double, MPC_NSH> & lsh);
+  void setLsh(const std::array<double, {{ model_name.upper() }}_NSH> & lsh);
 
   /**
    * @brief Set the lsh at index
@@ -1360,7 +1360,7 @@ struct SoftNonlinearConstraintBounds
    *
    * @param ush ush.
    */
-  void setUsh(const std::array<double, MPC_NSH> & ush);
+  void setUsh(const std::array<double, {{ model_name.upper() }}_NSH> & ush);
 
   /**
    * @brief Set the ush at index
