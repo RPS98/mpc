@@ -163,6 +163,15 @@ class SolverConfig:
     # large startup transients or sharp barrier costs) where HPIPM otherwise
     # returns ``ACADOS_MINSTEP``.
     regularize_method: str = ''
+    # Optional iteration/warm-start overrides; 0 keeps the acados default.
+    # ``nlp_solver_max_iter`` bounds full-SQP iterations (ignored by SQP_RTI),
+    # ``qp_solver_iter_max`` bounds HPIPM interior-point iterations, and
+    # ``qp_solver_warm_start`` (0/1/2) warm-starts the QP from the previous duals.
+    nlp_solver_max_iter: int = 0
+    qp_solver_iter_max: int = 0
+    qp_solver_warm_start: int = 0
+    # Convergence tolerance applied to all four acados tolerances; 0 keeps defaults.
+    nlp_solver_tol: float = 0.0
 
     @staticmethod
     def from_dict(data: dict) -> 'SolverConfig':
@@ -184,7 +193,11 @@ class SolverConfig:
             nlp_solver_type=data.get('nlp_solver_type', 'SQP_RTI'),
             hessian_approx=data.get('hessian_approx', 'GAUSS_NEWTON'),
             integrator_type=data.get('integrator_type', 'ERK'),
-            regularize_method=data.get('regularize_method', '')
+            regularize_method=data.get('regularize_method', ''),
+            nlp_solver_max_iter=int(data.get('nlp_solver_max_iter', 0)),
+            qp_solver_iter_max=int(data.get('qp_solver_iter_max', 0)),
+            qp_solver_warm_start=int(data.get('qp_solver_warm_start', 0)),
+            nlp_solver_tol=float(data.get('nlp_solver_tol', 0.0))
         )
 
 

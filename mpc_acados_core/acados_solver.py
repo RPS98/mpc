@@ -312,6 +312,16 @@ class AcadosMPCSolverBase:
         if solver_definition.solver.regularize_method:
             solver_options.regularize_method = solver_definition.solver.regularize_method
 
+        # Optional iteration/warm-start overrides (0 keeps the acados default).
+        if solver_definition.solver.nlp_solver_max_iter > 0:
+            solver_options.nlp_solver_max_iter = solver_definition.solver.nlp_solver_max_iter
+        if solver_definition.solver.qp_solver_iter_max > 0:
+            solver_options.qp_solver_iter_max = solver_definition.solver.qp_solver_iter_max
+        if solver_definition.solver.qp_solver_warm_start > 0:
+            solver_options.qp_solver_warm_start = solver_definition.solver.qp_solver_warm_start
+        if solver_definition.solver.nlp_solver_tol > 0.0:
+            solver_options.tol = solver_definition.solver.nlp_solver_tol
+
         # Create solver
         gen_dir = self.acados_model.name + '_generated_code'
         base_export_dir = solver_definition.solver.export_dir + gen_dir + '/'
