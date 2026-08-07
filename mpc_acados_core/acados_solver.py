@@ -322,11 +322,13 @@ class AcadosMPCSolverBase:
         if solver_definition.solver.nlp_solver_tol > 0.0:
             solver_options.tol = solver_definition.solver.nlp_solver_tol
 
-        # Create solver
+        # Create solver. Generated files and C symbols are named after the ocp object; the
+        # json is written inside code_export_directory (json_file must be a bare filename).
         gen_dir = self.acados_model.name + '_generated_code'
         base_export_dir = solver_definition.solver.export_dir + gen_dir + '/'
+        ocp.name = self.acados_model.name
         ocp.code_export_directory = base_export_dir + gen_dir
-        ocp.json_file = base_export_dir + 'acados_ocp.json'
+        ocp.json_file = 'acados_ocp.json'
 
         self.solver = AcadosOcpSolver(
             ocp,
@@ -365,11 +367,11 @@ class AcadosMPCSolverBase:
 
         gen_dir = self.acados_model.name + '_generated_code'
         base_export_dir = solver_definition.solver.export_dir + gen_dir + '/'
+        acados_sim.name = self.acados_model.name
         acados_sim.code_export_directory = base_export_dir + gen_dir
-        json_file = acados_sim.code_export_directory + 'acados_sim.json'
         self.acados_integrator = AcadosSimSolver(
             acados_sim,
-            json_file=json_file,
+            json_file='acados_sim.json',
             generate=solver_definition.integrator.generate_c_code and generate_code,
             verbose=solver_definition.solver.verbose
         )

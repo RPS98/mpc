@@ -44,7 +44,7 @@ import os
 from typing import Type, Union
 
 import numpy as np
-from acados_template import AcadosOcpSolver
+from acados_template import AcadosOcp, AcadosOcpSolver
 
 from mpc_acados_core.mpc_datatype import (
     ActuationBounds,
@@ -141,16 +141,16 @@ class MPCBase:
 
     @staticmethod
     def _heal_code_export_directory(ocp_json_file: str) -> None:
-        """Rewrite a stale ``code_export_directory`` to a sibling generated dir.
+        """Rewrite a stale ``code_export_directory`` to the json's own directory.
 
         Acados bakes ``code_export_directory`` (and ``json_file``) into the OCP
-        JSON as absolute paths at generation time. When the generated tree is
-        relocated (checked into VCS, copied by CMake, moved to another
-        machine, …), loading fails with ``OSError: …libacados_ocp_solver_*.so:
-        cannot open shared object file``. This helper rewrites the path to
-        ``<dir(ocp_json_file)>/mpc_generated_code`` — the layout produced by
-        :class:`AcadosMPCSolverBase` — whenever the stored path is missing on
-        disk. Idempotent: if the stored path already exists, nothing changes.
+        JSON as absolute paths at generation time, and writes the json INSIDE
+        the generated-code directory. When the generated tree is relocated
+        (checked into VCS, copied by CMake, mounted at another path, …), loading
+        fails with ``OSError: …libacados_ocp_solver_*.so: cannot open shared
+        object file``. This helper points the stored path back at the directory
+        holding the json whenever it is missing on disk. Idempotent: if the
+        stored path already exists, nothing changes.
         """
         try:
             with open(ocp_json_file, 'r') as f:
@@ -163,12 +163,7 @@ class MPCBase:
             return  # Stored path is valid; nothing to do.
 
         json_dir = os.path.dirname(os.path.abspath(ocp_json_file))
-        candidate = os.path.join(json_dir, 'mpc_generated_code')
-        if not os.path.isdir(candidate):
-            # Nothing we can do; let AcadosOcpSolver raise the original error.
-            return
-
-        data['code_export_directory'] = candidate
+        data['code_export_directory'] = json_dir
         data['json_file'] = os.path.abspath(ocp_json_file)
 
         tmp_path = ocp_json_file + '.tmp'
@@ -192,17 +187,20 @@ class MPCBase:
         # ``mpc_generated_code/`` directory when available.
         self._heal_code_export_directory(ocp_json_file)
 
-        # Initialize the AcadosOcpSolver
+        # Rebuild the OCP formulation from the generation-time JSON and attach the prebuilt
+        # solver library as-is (no re-generation, no re-build, no reuse check: the healed
+        # export path differs from the generation-time one by design).
+        ocp = AcadosOcp.from_json(ocp_json_file)
         self.acados_ocp_solver = AcadosOcpSolver(
-            None,
-            json_file=ocp_json_file,
+            ocp,
             build=False,
-            generate=False)
+            generate=False,
+            check_reuse_possible=False)
 
         # Get dimensions
         self.N = self.acados_ocp_solver.N
 
-        # Get time parameters from JSON file (acados_ocp is None when loaded from JSON)
+        # Get time parameters from the JSON file
         with open(ocp_json_file, 'r') as f:
             ocp_json = json.load(f)
         self.tf = ocp_json['solver_options']['tf']
