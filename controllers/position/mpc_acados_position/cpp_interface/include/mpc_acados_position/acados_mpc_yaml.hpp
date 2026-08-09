@@ -187,68 +187,66 @@ inline void readMpcYaml(const std::string& file_path, MpcYamlConfig& config) {
   const YAML::Node constraints_cfg = mpc_cfg["constraints"];
 
   // Online parameters (optional, strict size validation when present)
-  config.mass =
-      detail::yamlVectorOptional<Parameters::mass_length>(
-          parameters_cfg["mass"], "mpc.parameters.mass");
-  config.desired_position =
-      detail::yamlVectorOptional<Parameters::desired_position_length>(
-          parameters_cfg["desired_position"], "mpc.parameters.desired_position");
-  config.desired_velocity =
-      detail::yamlVectorOptional<Parameters::desired_velocity_length>(
-          parameters_cfg["desired_velocity"], "mpc.parameters.desired_velocity");
-  config.desired_orientation =
-      detail::yamlVectorOptional<Parameters::desired_orientation_length>(
-          parameters_cfg["desired_orientation"], "mpc.parameters.desired_orientation");
-  config.external_force =
-      detail::yamlVectorOptional<Parameters::external_force_length>(
-          parameters_cfg["external_force"], "mpc.parameters.external_force");
+  config.mass = detail::yamlVectorOptional<Parameters::mass_length>(parameters_cfg["mass"],
+                                                                    "mpc.parameters.mass");
+  config.desired_position = detail::yamlVectorOptional<Parameters::desired_position_length>(
+      parameters_cfg["desired_position"], "mpc.parameters.desired_position");
+  config.desired_velocity = detail::yamlVectorOptional<Parameters::desired_velocity_length>(
+      parameters_cfg["desired_velocity"], "mpc.parameters.desired_velocity");
+  config.desired_orientation = detail::yamlVectorOptional<Parameters::desired_orientation_length>(
+      parameters_cfg["desired_orientation"], "mpc.parameters.desired_orientation");
+  config.external_force = detail::yamlVectorOptional<Parameters::external_force_length>(
+      parameters_cfg["external_force"], "mpc.parameters.external_force");
   config.Q =
-      detail::yamlVectorOptional<Parameters::Q_length>(
-          parameters_cfg["Q"], "mpc.parameters.Q");
+      detail::yamlVectorOptional<Parameters::Q_length>(parameters_cfg["Q"], "mpc.parameters.Q");
   config.Qe =
-      detail::yamlVectorOptional<Parameters::Qe_length>(
-          parameters_cfg["Qe"], "mpc.parameters.Qe");
+      detail::yamlVectorOptional<Parameters::Qe_length>(parameters_cfg["Qe"], "mpc.parameters.Qe");
   config.R =
-      detail::yamlVectorOptional<Parameters::R_length>(
-          parameters_cfg["R"], "mpc.parameters.R");
-  config.p_anchor =
-      detail::yamlVectorOptional<Parameters::p_anchor_length>(
-          parameters_cfg["p_anchor"], "mpc.parameters.p_anchor");
-  config.w_cte =
-      detail::yamlVectorOptional<Parameters::w_cte_length>(
-          parameters_cfg["w_cte"], "mpc.parameters.w_cte");
+      detail::yamlVectorOptional<Parameters::R_length>(parameters_cfg["R"], "mpc.parameters.R");
+  config.p_anchor = detail::yamlVectorOptional<Parameters::p_anchor_length>(
+      parameters_cfg["p_anchor"], "mpc.parameters.p_anchor");
+  config.w_cte = detail::yamlVectorOptional<Parameters::w_cte_length>(parameters_cfg["w_cte"],
+                                                                      "mpc.parameters.w_cte");
 
   // Actuation bounds — required
-  config.lbu = detail::yamlArrayRequired<ActuationBounds::Nu>(
-      constraints_cfg["lbu"], "mpc.constraints.lbu");
-  config.ubu = detail::yamlArrayRequired<ActuationBounds::Nu>(
-      constraints_cfg["ubu"], "mpc.constraints.ubu");
+  config.lbu =
+      detail::yamlArrayRequired<ActuationBounds::Nu>(constraints_cfg["lbu"], "mpc.constraints.lbu");
+  config.ubu =
+      detail::yamlArrayRequired<ActuationBounds::Nu>(constraints_cfg["ubu"], "mpc.constraints.ubu");
 
   // Optional bounds and slack weights
-  config.lbx = detail::yamlVectorOptional<StateBounds::Nx>(constraints_cfg["lbx"], "mpc.constraints.lbx");
-  config.ubx = detail::yamlVectorOptional<StateBounds::Nx>(constraints_cfg["ubx"], "mpc.constraints.ubx");
-  config.lsbx = detail::yamlVectorOptional<SoftStateBounds::Nsbx>(
-      constraints_cfg["lsbx"], "mpc.constraints.lsbx");
-  config.usbx = detail::yamlVectorOptional<SoftStateBounds::Nsbx>(
-      constraints_cfg["usbx"], "mpc.constraints.usbx");
-  config.lh = detail::yamlVectorOptional<NonlinearConstraintBounds::Nh>(constraints_cfg["lh"], "mpc.constraints.lh");
-  config.uh = detail::yamlVectorOptional<NonlinearConstraintBounds::Nh>(constraints_cfg["uh"], "mpc.constraints.uh");
-  config.lsh = detail::yamlVectorOptional<SoftNonlinearConstraintBounds::Nsh>(
+  config.lbx =
+      detail::yamlVectorOptional<StateBounds::Nx>(constraints_cfg["lbx"], "mpc.constraints.lbx");
+  config.ubx =
+      detail::yamlVectorOptional<StateBounds::Nx>(constraints_cfg["ubx"], "mpc.constraints.ubx");
+  config.lsbx = detail::yamlVectorOptional<SoftStateBounds::Nsbx>(constraints_cfg["lsbx"],
+                                                                  "mpc.constraints.lsbx");
+  config.usbx = detail::yamlVectorOptional<SoftStateBounds::Nsbx>(constraints_cfg["usbx"],
+                                                                  "mpc.constraints.usbx");
+  config.lh   = detail::yamlVectorOptional<NonlinearConstraintBounds::Nh>(constraints_cfg["lh"],
+                                                                          "mpc.constraints.lh");
+  config.uh   = detail::yamlVectorOptional<NonlinearConstraintBounds::Nh>(constraints_cfg["uh"],
+                                                                          "mpc.constraints.uh");
+  config.lsh  = detail::yamlVectorOptional<SoftNonlinearConstraintBounds::Nsh>(
       constraints_cfg["lsh"], "mpc.constraints.lsh");
   config.ush = detail::yamlVectorOptional<SoftNonlinearConstraintBounds::Nsh>(
       constraints_cfg["ush"], "mpc.constraints.ush");
-  config.Zl = detail::yamlVectorOptional<SlackWeights::Ns>(constraints_cfg["Zl"], "mpc.constraints.Zl");
-  config.Zu = detail::yamlVectorOptional<SlackWeights::Ns>(constraints_cfg["Zu"], "mpc.constraints.Zu");
-  config.zl = detail::yamlVectorOptional<SlackWeights::Ns>(constraints_cfg["zl"], "mpc.constraints.zl");
-  config.zu = detail::yamlVectorOptional<SlackWeights::Ns>(constraints_cfg["zu"], "mpc.constraints.zu");
-  config.Zl_e = detail::yamlVectorOptional<SlackWeightsEnd::Ns_e>(
-      constraints_cfg["Zl_e"], "mpc.constraints.Zl_e");
-  config.Zu_e = detail::yamlVectorOptional<SlackWeightsEnd::Ns_e>(
-      constraints_cfg["Zu_e"], "mpc.constraints.Zu_e");
-  config.zl_e = detail::yamlVectorOptional<SlackWeightsEnd::Ns_e>(
-      constraints_cfg["zl_e"], "mpc.constraints.zl_e");
-  config.zu_e = detail::yamlVectorOptional<SlackWeightsEnd::Ns_e>(
-      constraints_cfg["zu_e"], "mpc.constraints.zu_e");
+  config.Zl =
+      detail::yamlVectorOptional<SlackWeights::Ns>(constraints_cfg["Zl"], "mpc.constraints.Zl");
+  config.Zu =
+      detail::yamlVectorOptional<SlackWeights::Ns>(constraints_cfg["Zu"], "mpc.constraints.Zu");
+  config.zl =
+      detail::yamlVectorOptional<SlackWeights::Ns>(constraints_cfg["zl"], "mpc.constraints.zl");
+  config.zu =
+      detail::yamlVectorOptional<SlackWeights::Ns>(constraints_cfg["zu"], "mpc.constraints.zu");
+  config.Zl_e = detail::yamlVectorOptional<SlackWeightsEnd::Ns_e>(constraints_cfg["Zl_e"],
+                                                                  "mpc.constraints.Zl_e");
+  config.Zu_e = detail::yamlVectorOptional<SlackWeightsEnd::Ns_e>(constraints_cfg["Zu_e"],
+                                                                  "mpc.constraints.Zu_e");
+  config.zl_e = detail::yamlVectorOptional<SlackWeightsEnd::Ns_e>(constraints_cfg["zl_e"],
+                                                                  "mpc.constraints.zl_e");
+  config.zu_e = detail::yamlVectorOptional<SlackWeightsEnd::Ns_e>(constraints_cfg["zu_e"],
+                                                                  "mpc.constraints.zu_e");
 }
 
 /**
@@ -285,45 +283,48 @@ inline void configureMpcFromYaml(MPC& mpc, const std::string& file_path) {
 
   // Online parameters
   if (!config.mass.empty()) {
-    const auto mass = detail::vectorToArray<Parameters::mass_length>(
-        config.mass, "mpc.parameters.mass");
+    const auto mass =
+        detail::vectorToArray<Parameters::mass_length>(config.mass, "mpc.parameters.mass");
     mpc.getParameters()->setMass(mass[0]);
   }
   if (!config.desired_position.empty()) {
-    mpc.getParameters()->setDesiredPosition(detail::vectorToArray<Parameters::desired_position_length>(
-        config.desired_position, "mpc.parameters.desired_position"));
+    mpc.getParameters()->setDesiredPosition(
+        detail::vectorToArray<Parameters::desired_position_length>(
+            config.desired_position, "mpc.parameters.desired_position"));
   }
   if (!config.desired_velocity.empty()) {
-    mpc.getParameters()->setDesiredVelocity(detail::vectorToArray<Parameters::desired_velocity_length>(
-        config.desired_velocity, "mpc.parameters.desired_velocity"));
+    mpc.getParameters()->setDesiredVelocity(
+        detail::vectorToArray<Parameters::desired_velocity_length>(
+            config.desired_velocity, "mpc.parameters.desired_velocity"));
   }
   if (!config.desired_orientation.empty()) {
-    mpc.getParameters()->setDesiredOrientation(detail::vectorToArray<Parameters::desired_orientation_length>(
-        config.desired_orientation, "mpc.parameters.desired_orientation"));
+    mpc.getParameters()->setDesiredOrientation(
+        detail::vectorToArray<Parameters::desired_orientation_length>(
+            config.desired_orientation, "mpc.parameters.desired_orientation"));
   }
   if (!config.external_force.empty()) {
     mpc.getParameters()->setExternalForce(detail::vectorToArray<Parameters::external_force_length>(
         config.external_force, "mpc.parameters.external_force"));
   }
   if (!config.Q.empty()) {
-    mpc.getParameters()->setQ(detail::vectorToArray<Parameters::Q_length>(
-        config.Q, "mpc.parameters.Q"));
+    mpc.getParameters()->setQ(
+        detail::vectorToArray<Parameters::Q_length>(config.Q, "mpc.parameters.Q"));
   }
   if (!config.Qe.empty()) {
-    mpc.getParameters()->setQe(detail::vectorToArray<Parameters::Qe_length>(
-        config.Qe, "mpc.parameters.Qe"));
+    mpc.getParameters()->setQe(
+        detail::vectorToArray<Parameters::Qe_length>(config.Qe, "mpc.parameters.Qe"));
   }
   if (!config.R.empty()) {
-    mpc.getParameters()->setR(detail::vectorToArray<Parameters::R_length>(
-        config.R, "mpc.parameters.R"));
+    mpc.getParameters()->setR(
+        detail::vectorToArray<Parameters::R_length>(config.R, "mpc.parameters.R"));
   }
   if (!config.p_anchor.empty()) {
     mpc.getParameters()->setPAnchor(detail::vectorToArray<Parameters::p_anchor_length>(
         config.p_anchor, "mpc.parameters.p_anchor"));
   }
   if (!config.w_cte.empty()) {
-    const auto w_cte = detail::vectorToArray<Parameters::w_cte_length>(
-        config.w_cte, "mpc.parameters.w_cte");
+    const auto w_cte =
+        detail::vectorToArray<Parameters::w_cte_length>(config.w_cte, "mpc.parameters.w_cte");
     mpc.getParameters()->setWCte(w_cte[0]);
   }
 
@@ -394,12 +395,12 @@ inline void configureMpcFromYaml(MPC& mpc, const std::string& file_path) {
   // Nonlinear constraint bounds
   if constexpr (NonlinearConstraintBounds::Nh > 0) {
     if (!config.lh.empty()) {
-      mpc.getNonlinearConstraintBounds()->setLh(detail::vectorToArray<NonlinearConstraintBounds::Nh>(
-          config.lh, "mpc.constraints.lh"));
+      mpc.getNonlinearConstraintBounds()->setLh(
+          detail::vectorToArray<NonlinearConstraintBounds::Nh>(config.lh, "mpc.constraints.lh"));
     }
     if (!config.uh.empty()) {
-      mpc.getNonlinearConstraintBounds()->setUh(detail::vectorToArray<NonlinearConstraintBounds::Nh>(
-          config.uh, "mpc.constraints.uh"));
+      mpc.getNonlinearConstraintBounds()->setUh(
+          detail::vectorToArray<NonlinearConstraintBounds::Nh>(config.uh, "mpc.constraints.uh"));
     }
   }
 
@@ -408,12 +409,12 @@ inline void configureMpcFromYaml(MPC& mpc, const std::string& file_path) {
     if (!config.lsh.empty()) {
       mpc.getSoftNonlinearConstraintBounds()->setLsh(
           detail::vectorToArray<SoftNonlinearConstraintBounds::Nsh>(config.lsh,
-                                                                     "mpc.constraints.lsh"));
+                                                                    "mpc.constraints.lsh"));
     }
     if (!config.ush.empty()) {
       mpc.getSoftNonlinearConstraintBounds()->setUsh(
           detail::vectorToArray<SoftNonlinearConstraintBounds::Nsh>(config.ush,
-                                                                     "mpc.constraints.ush"));
+                                                                    "mpc.constraints.ush"));
     }
   }
 
@@ -433,7 +434,8 @@ inline void configureMpcFromYaml(MPC& mpc, const std::string& file_path) {
     if (!config.Zl.empty() || !config.Zu.empty() || !config.zl.empty() || !config.zu.empty()) {
       mpc.updateSlackWeights();
     }
-    if (!config.Zl_e.empty() || !config.Zu_e.empty() || !config.zl_e.empty() || !config.zu_e.empty()) {
+    if (!config.Zl_e.empty() || !config.Zu_e.empty() || !config.zl_e.empty() ||
+        !config.zu_e.empty()) {
       mpc.updateSlackWeightsEnd();
     }
   }
@@ -452,4 +454,3 @@ inline void configureMpcFromYaml(MPC& mpc, const std::string& file_path) {
 }  // namespace acados_mpc
 
 #endif  // ACADOS_MPC_ACADOS_MPC_YAML_HPP_
-

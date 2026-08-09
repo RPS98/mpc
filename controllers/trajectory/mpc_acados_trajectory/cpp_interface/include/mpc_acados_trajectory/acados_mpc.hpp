@@ -141,15 +141,21 @@ private:
   void setSolverParameters();
 
   inline void validateStatus(const int status) {
-    if (status) {
-      std::cerr << "acados_create() returned status " << status << std::endl;
+    // Print only on status transitions: a persistent failure at solve rate
+    // would otherwise flood stderr (GBs in long closed loops).
+    if (status != last_reported_status_) {
+      if (status) {
+        std::cerr << "MPC solver status changed to " << status << std::endl;
+      }
+      last_reported_status_ = status;
     }
   }
 
 private:
   AcadosSolverPointers acados_pointers_;
 
-  int status_ = 0;
+  int status_               = 0;
+  int last_reported_status_ = 0;
   // Initial guess for state
   bool guess_initialized_ = false;
   std::array<double, MPC_N> prediction_time_steps_{};

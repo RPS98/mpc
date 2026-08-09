@@ -154,11 +154,19 @@ TEST(acadosMpc, testAcadosDatatypes) {
   EXPECT_NO_THROW(gains.getQ());
   EXPECT_NO_THROW(gains.getQEnd());
   EXPECT_NO_THROW(gains.getR());
-  EXPECT_NO_THROW(gains.setW(0, 0.0));
-  EXPECT_NO_THROW(gains.setWe(0, 0.0));
-  EXPECT_NO_THROW(gains.setQ(0, 0.0));
-  EXPECT_NO_THROW(gains.setR(0, 0.0));
-  EXPECT_NO_THROW(gains.setQEnd(0, 0.0));
+  if constexpr (Reference::Nyref > 0) {
+    EXPECT_NO_THROW(gains.setW(0, 0.0));
+  }
+  if constexpr (Gains::Nq > 0) {
+    EXPECT_NO_THROW(gains.setQ(0, 0.0));
+  }
+  if constexpr (Gains::Nr > 0) {
+    EXPECT_NO_THROW(gains.setR(0, 0.0));
+  }
+  if constexpr (Gains::Nqe > 0) {
+    EXPECT_NO_THROW(gains.setWe(0, 0.0));
+    EXPECT_NO_THROW(gains.setQEnd(0, 0.0));
+  }
 
   EXPECT_NO_THROW(ActuationBounds());
   auto actuation_bounds = ActuationBounds();

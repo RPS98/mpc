@@ -33,6 +33,7 @@
 
 #include <acados_c/external_function_interface.h>
 #include <acados_c/ocp_nlp_interface.h>
+#include <acados_c/sim_interface.h>
 #include <mpc_generated_code/acados_sim_solver_mpc.h>
 #include <mpc_generated_code/acados_solver_mpc.h>
 #include <mpc_generated_code/mpc_model/mpc_model.h>
@@ -62,6 +63,16 @@ public:
    */
   int solve(MPCData* data);
 
+  /**
+   * @brief Override the integrator step size T [s] used by solve() (defaults to
+   * the value baked into the generated solver), so a caller can sub-step the
+   * plant at a finer resolution than the MPC horizon dt.
+   */
+  void setTimeStep(double T) {
+    sim_in_set(mpc_acados_get_sim_config(capsule_), mpc_acados_get_sim_dims(capsule_), sim_in_, "T",
+               &T);
+  }
+
 private:
   void initializeSolver();
 
@@ -73,8 +84,8 @@ private:
 
 private:
   mpc_sim_solver_capsule* capsule_ = nullptr;
-  sim_in* sim_in_ = nullptr;
-  sim_out* sim_out_ = nullptr;
+  sim_in* sim_in_                  = nullptr;
+  sim_out* sim_out_                = nullptr;
 
   int status_ = 0;
 };
@@ -82,4 +93,3 @@ private:
 }  // namespace acados_mpc
 
 #endif  // MPC_ACADOS_POSITION_ACADOS_SIM_SOLVER_HPP_
-

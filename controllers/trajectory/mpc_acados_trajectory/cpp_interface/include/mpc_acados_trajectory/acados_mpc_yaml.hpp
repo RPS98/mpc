@@ -220,9 +220,9 @@ inline void readMpcYaml(const std::string& file_path, MpcYamlConfig& config) {
   config.usbx = detail::yamlVectorOptional<SoftStateBounds::Nsbx>(constraints_cfg["usbx"],
                                                                   "mpc.constraints.usbx");
   config.lh   = detail::yamlVectorOptional<NonlinearConstraintBounds::Nh>(constraints_cfg["lh"],
-                                                                        "mpc.constraints.lh");
+                                                                          "mpc.constraints.lh");
   config.uh   = detail::yamlVectorOptional<NonlinearConstraintBounds::Nh>(constraints_cfg["uh"],
-                                                                        "mpc.constraints.uh");
+                                                                          "mpc.constraints.uh");
   config.lsh  = detail::yamlVectorOptional<SoftNonlinearConstraintBounds::Nsh>(
       constraints_cfg["lsh"], "mpc.constraints.lsh");
   config.ush = detail::yamlVectorOptional<SoftNonlinearConstraintBounds::Nsh>(
