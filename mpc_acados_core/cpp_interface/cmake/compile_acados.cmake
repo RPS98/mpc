@@ -43,9 +43,13 @@ if(NOT DEFINED ENV{ACADOS_SOURCE_DIR})
   set(ENV{ACADOS_SOURCE_DIR} "${acados_SOURCE_DIR}")
 endif()
 
-# Check if acados is already built if folder ${acados_SOURCE_DIR}/build exists
+# Check whether acados is already usable. Keying this on the installed library rather than
+# on a build/ directory also accepts an install-only tree (a prefix holding just lib/,
+# include/, bin/t_renderer and interfaces/), which is what a container image or a system
+# package ships; the build/ probe would instead try to compile acados inside a read-only
+# prefix and fail there.
 set(ACADOS_BUILD_DIR "$ENV{ACADOS_SOURCE_DIR}/build")
-if(NOT EXISTS "${ACADOS_BUILD_DIR}")
+if(NOT EXISTS "$ENV{ACADOS_SOURCE_DIR}/lib/libacados.so")
   MESSAGE(STATUS "Building acados at ${ACADOS_BUILD_DIR}")
   file(MAKE_DIRECTORY "${ACADOS_BUILD_DIR}")
 
