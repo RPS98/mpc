@@ -12,4 +12,5 @@ sim_config:
   path_facing: true
 controller:
   solver_definition_path: 'solver_definition_mpc_position.yaml'
-  ocp_json_file_path: 'mpc_interface/mpc_generated_code/acados_ocp.json'
+  # acados >= 0.6.0 writes the json INSIDE code_export_directory.
+  ocp_json_file_path: 'mpc_interface/mpc_generated_code/mpc_generated_code/acados_ocp.json'
