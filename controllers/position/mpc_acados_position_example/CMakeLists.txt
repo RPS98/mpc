@@ -56,5 +56,8 @@ if(NOT DEFINED MPC_ACADOS_CORE_DIR)
     CACHE PATH "Path to mpc_acados_core/cpp_interface")
 endif()
 
+# The generated interface carries a gtest; CTest is what lets it run.
+include(CTest)
+
 add_subdirectory(mpc_interface)
 add_subdirectory(examples)

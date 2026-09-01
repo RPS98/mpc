@@ -38,6 +38,8 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
+#include <limits>
 #include <memory>
 
 #include "mpc_acados_trajectory/acados_mpc.hpp"
@@ -83,6 +85,32 @@ TEST(acadosMpc, testAcadosMpc) {
   EXPECT_NO_THROW(mpc.updateSlackWeightsEnd());
   EXPECT_NO_THROW(mpc.updateNonlinearConstraintBounds());
   EXPECT_NO_THROW(mpc.updateSoftNonlinearConstraintBounds());
+}
+
+TEST(acadosMpc, testUpdateTimeStep) {
+  auto mpc               = MPC();
+  const double generated = mpc.getPredictionTimeStep();
+
+  // The step the caller asks for is the step the solver reports, and the horizon follows it.
+  // Reporting the new step while integrating the old one is the failure this guards: setting
+  // "Ts" alone leaves the dynamics on the generated step until ocp_nlp_precompute runs again.
+  const double halved = generated / 2.0;
+  EXPECT_NO_THROW(mpc.updateTimeStep(halved));
+  EXPECT_DOUBLE_EQ(mpc.getPredictionTimeStep(), halved);
+  EXPECT_DOUBLE_EQ(mpc.getPredictionTimeHorizon(), halved * MPC_N);
+  EXPECT_NO_THROW(mpc.solve());
+
+  // A step that is not a positive finite number is refused, not silently allocated.
+  EXPECT_THROW(mpc.updateTimeStep(0.0), std::invalid_argument);
+  EXPECT_THROW(mpc.updateTimeStep(-halved), std::invalid_argument);
+  EXPECT_THROW(mpc.updateTimeStep(std::numeric_limits<double>::quiet_NaN()), std::invalid_argument);
+  EXPECT_DOUBLE_EQ(mpc.getPredictionTimeStep(), halved);
+
+  // The per-stage overload takes a non-uniform horizon and reports its first stage.
+  std::array<double, MPC_N> steps{};
+  steps.fill(generated);
+  EXPECT_NO_THROW(mpc.updateTimeStep(steps));
+  EXPECT_DOUBLE_EQ(mpc.getPredictionTimeStep(), generated);
 }
 
 TEST(acadosMpc, testAcadosDatatypes) {

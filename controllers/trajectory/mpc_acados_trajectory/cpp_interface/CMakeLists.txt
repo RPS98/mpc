@@ -67,3 +67,20 @@ target_link_libraries(mpc_acados_trajectory
 )
 
 target_compile_features(mpc_acados_trajectory PUBLIC cxx_std_17)
+
+# The generated gtest, built only when the consumer asks for tests. Without this the file is
+# written on every generation and compiled by nobody, so a change to the interface template
+# is never exercised.
+if(BUILD_TESTING AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/acados_mpc_gtest.cpp")
+  find_package(GTest QUIET)
+  if(GTest_FOUND)
+    include(GoogleTest)
+    add_executable(mpc_acados_trajectory_gtest tests/acados_mpc_gtest.cpp)
+    target_link_libraries(mpc_acados_trajectory_gtest
+      PRIVATE mpc_acados_trajectory::mpc_acados_trajectory GTest::gtest_main)
+    gtest_discover_tests(mpc_acados_trajectory_gtest)
+  else()
+    message(STATUS
+      "mpc_acados_trajectory: GTest not found, skipping mpc_acados_trajectory_gtest")
+  endif()
+endif()

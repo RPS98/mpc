@@ -43,7 +43,7 @@ if [ "${CLEAN}" -eq 1 ]; then
   rm -rf build
 fi
 
-cmake -S . -B build
+cmake -S . -B build -DBUILD_TESTING=ON
 cmake --build build -j
 
 echo "[build] done. Run ./run_cpp_example.sh or ./run_py_example.sh"
