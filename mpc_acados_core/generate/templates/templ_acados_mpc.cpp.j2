@@ -192,7 +192,7 @@ void MPC::updateStateBounds() {
     return;
   }
 
-  for (int i = 1; i < {{ model_name.upper() }}_N; i++) {
+  for (int i = 1; i <= {{ model_name.upper() }}_N; i++) {
     status_ = ocp_nlp_constraints_model_set(
         acados_pointers_.nlp_config, acados_pointers_.nlp_dims,
         acados_pointers_.nlp_in, acados_pointers_.nlp_out, i, "lbx",

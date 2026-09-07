@@ -134,6 +134,33 @@ std::vector<double> yamlVectorOptional(const YAML::Node& node, const std::string
 }  // namespace detail
 
 /**
+ * @brief Warn about cost gains the YAML did not carry.
+ *
+ * Every online parameter is optional, so a gain the config forgets -- or spells with an old
+ * name -- is never applied and the controller runs with whatever that weight happens to be
+ * instead of failing. Geometry and reference parameters are excluded: the control loop fills
+ * those in flight.
+ */
+inline void warnOnMissingGains(const MpcYamlConfig& config) {
+  std::vector<std::string> missing;
+{%- for param in online_parameters %}
+{%- if param.name.startswith('gain') %}
+  if (config.{{ param.name }}.empty()) missing.emplace_back("{{ param.name }}");
+{%- endif %}
+{%- endfor %}
+  if (missing.empty()) {
+    return;
+  }
+  std::cerr << "[mpc_yaml] WARNING: mpc.parameters is missing cost gain(s): ";
+  for (size_t i = 0; i < missing.size(); ++i) {
+    std::cerr << (i ? ", " : "") << missing[i];
+  }
+  std::cerr << ". They keep the value already staged in the solver, which is rarely what a "
+               "config means to say -- check for a typo or a renamed key."
+            << std::endl;
+}
+
+/**
  * @brief Read MPC configuration from a YAML file into an MpcYamlConfig struct.
  *
  * Expected YAML structure:
@@ -176,6 +203,8 @@ inline void readMpcYaml(const std::string& file_path, MpcYamlConfig& config) {
       detail::yamlVectorOptional<Parameters::{{ param.name }}_length>(
           parameters_cfg["{{ param.name }}"], "mpc.parameters.{{ param.name }}");
 {%- endfor %}
+
+  warnOnMissingGains(config);
 
   // Actuation bounds — required
   config.lbu = detail::yamlArrayRequired<ActuationBounds::Nu>(

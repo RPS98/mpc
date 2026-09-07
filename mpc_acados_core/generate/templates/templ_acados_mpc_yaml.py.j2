@@ -36,6 +36,7 @@ __license__ = 'BSD-3-Clause'
 
 # THIS CODE HAS BEEN AUTOMATICALLY GENERATED USING {{ template_file }}
 
+import warnings
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 
@@ -149,6 +150,24 @@ def _apply_optional_vector(
     setter(vector)
 
 
+def _warn_on_missing_gains(config: 'MpcYamlConfig') -> None:
+    """Warn about cost gains the YAML did not carry.
+
+    Every online parameter is optional, so a gain the config forgets -- or spells with an old
+    name -- is never applied and the controller runs with whatever that weight happens to be
+    instead of failing. Geometry and reference parameters are excluded: the control loop fills
+    those in flight.
+    """
+    missing = [name for name, value in vars(config).items()
+               if name.startswith('gain') and value is None]
+    if missing:
+        warnings.warn(
+            'mpc.parameters is missing cost gain(s): ' + ', '.join(missing) +
+            '. They keep the value already staged in the solver, which is rarely what a '
+            'config means to say -- check for a typo or a renamed key.',
+            RuntimeWarning, stacklevel=3)
+
+
 def read_mpc_yaml(file_path: str) -> MpcYamlConfig:
     """Read MPC configuration from YAML.
 
@@ -184,6 +203,8 @@ def read_mpc_yaml(file_path: str) -> MpcYamlConfig:
         OnlineParameters.{{ param.name }}_length,
         'mpc.parameters.{{ param.name }}')
 {%- endfor %}
+
+    _warn_on_missing_gains(config)
 
     config.lbu = _yaml_array_required(constraints_cfg, 'lbu', 'mpc.constraints.lbu')
     config.ubu = _yaml_array_required(constraints_cfg, 'ubu', 'mpc.constraints.ubu')
