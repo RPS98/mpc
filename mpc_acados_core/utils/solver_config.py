@@ -172,6 +172,9 @@ class SolverConfig:
     qp_solver_warm_start: int = 0
     # Convergence tolerance applied to all four acados tolerances; 0 keeps defaults.
     nlp_solver_tol: float = 0.0
+    # Integrator substeps
+    sim_method_num_steps: int = 0
+    sim_method_num_stages: int = 0
 
     @staticmethod
     def from_dict(data: dict) -> 'SolverConfig':
@@ -197,7 +200,9 @@ class SolverConfig:
             nlp_solver_max_iter=int(data.get('nlp_solver_max_iter', 0)),
             qp_solver_iter_max=int(data.get('qp_solver_iter_max', 0)),
             qp_solver_warm_start=int(data.get('qp_solver_warm_start', 0)),
-            nlp_solver_tol=float(data.get('nlp_solver_tol', 0.0))
+            nlp_solver_tol=float(data.get('nlp_solver_tol', 0.0)),
+            sim_method_num_steps=int(data.get('sim_method_num_steps', 0)),
+            sim_method_num_stages=int(data.get('sim_method_num_stages', 0))
         )
 
 

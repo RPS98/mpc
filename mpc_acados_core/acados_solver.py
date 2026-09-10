@@ -322,6 +322,14 @@ class AcadosMPCSolverBase:
         if solver_definition.solver.nlp_solver_tol > 0.0:
             solver_options.tol = solver_definition.solver.nlp_solver_tol
 
+        # Integrator substeps and stages (0 keeps the acados default).
+        if solver_definition.solver.sim_method_num_steps > 0:
+            solver_options.sim_method_num_steps = \
+                solver_definition.solver.sim_method_num_steps
+        if solver_definition.solver.sim_method_num_stages > 0:
+            solver_options.sim_method_num_stages = \
+                solver_definition.solver.sim_method_num_stages
+
         # Create solver. Generated files and C symbols are named after the ocp object; the
         # json is written inside code_export_directory (json_file must be a bare filename).
         gen_dir = self.acados_model.name + '_generated_code'

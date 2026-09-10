@@ -14,6 +14,8 @@ solver:
   hessian_approx: EXACT
   regularize_method: MIRROR
   integrator_type: ERK
+  sim_method_num_steps: 0
+  sim_method_num_stages: 0
 integrator:
   generate_c_code: true
   integrator_type: ERK
