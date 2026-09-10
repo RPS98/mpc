@@ -152,7 +152,7 @@ private:
     // Print only on status transitions: a persistent failure at solve rate
     // would otherwise flood stderr (GBs in long closed loops).
     if (status != last_reported_status_) {
-      if (status) {
+      if (status != 0 && status != ACADOS_MAXITER) {
         std::cerr << "MPC solver status changed to " << status << std::endl;
       }
       last_reported_status_ = status;

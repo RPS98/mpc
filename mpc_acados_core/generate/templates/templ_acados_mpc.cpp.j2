@@ -126,10 +126,6 @@ int MPC::solve() {
                   acados_pointers_.nlp_out, 0, "u",
                   mpc_data_.actuation.data.data());
 
-  if (status_ != 0) {
-    std::cerr << "MPC solver returned status " << status_ << std::endl;
-  }
-
   return status_;
 }
 
