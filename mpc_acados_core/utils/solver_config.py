@@ -64,29 +64,40 @@ class ConstraintsDefinition:
             
     """
     # Bounds on u (defines J_bu)
-    idxbu: np.ndarray = np.array([])  # Indices of bounds on u at intermediate shooting nodes (0 to N-1)
+    # Indices of bounds on u at intermediate shooting nodes (0 to N-1)
+    idxbu: np.ndarray = field(default_factory=lambda: np.array([]))
 
     # Initial-state equality (node 0). When empty, the full state vector is
     # fixed to x(k) (acados ``constraints.x0``).
-    idxbx_0: np.ndarray = np.array([])  # Indices of the initial-state equality at node 0
+    # Indices of the initial-state equality at node 0
+    idxbx_0: np.ndarray = field(default_factory=lambda: np.array([]))
 
     # Bounds on x (defines J_bx and J_bx_e)
-    idxbx: np.ndarray = np.array([])  # Indices of bounds on x at shooting nodes (1 to N)
+    # Indices of bounds on x at shooting nodes (1 to N)
+    idxbx: np.ndarray = field(default_factory=lambda: np.array([]))
 
     # Soft bounds on x within the indices of bounds on x at stages
-    idxsbx: np.ndarray = np.array([])  # Indices of soft bounds on x at shooting nodes (1 to N)
+    # Indices of soft bounds on x at shooting nodes (1 to N)
+    idxsbx: np.ndarray = field(default_factory=lambda: np.array([]))
     #   Bounds on slacks corresponding to soft bounds on x
-    lsbx: np.ndarray = np.array([])  # Lower bounds on slacks at shooting nodes (1 to N)
-    usbx: np.ndarray = np.array([])  # Upper bounds on slacks at shooting nodes (1 to N)
+    # Lower bounds on slacks at shooting nodes (1 to N)
+    lsbx: np.ndarray = field(default_factory=lambda: np.array([]))
+    # Upper bounds on slacks at shooting nodes (1 to N)
+    usbx: np.ndarray = field(default_factory=lambda: np.array([]))
 
     # Nonlinear constraints within the nonlinear inequalities
-    lh: np.ndarray = np.array([])  # Lower bounds on nonlinear constraints at shooting nodes (1 to N)
-    uh: np.ndarray = np.array([])  # Upper bounds on nonlinear constraints at shooting nodes (1 to N)
+    # Lower bounds on nonlinear constraints at shooting nodes (1 to N)
+    lh: np.ndarray = field(default_factory=lambda: np.array([]))
+    # Upper bounds on nonlinear constraints at shooting nodes (1 to N)
+    uh: np.ndarray = field(default_factory=lambda: np.array([]))
 
     # Soft nonlinear constraints within the indices of nonlinear constraints
-    idxsh: np.ndarray = np.array([])  # Indices of soft nonlinear constraints at shooting nodes (1 to N)
-    lsh: np.ndarray = np.array([])  # Lower bounds on nonlinear slacks at shooting nodes (1 to N)
-    ush: np.ndarray = np.array([])  # Upper bounds on nonlinear slacks at shooting nodes (1 to N)
+    # Indices of soft nonlinear constraints at shooting nodes (1 to N)
+    idxsh: np.ndarray = field(default_factory=lambda: np.array([]))
+    # Lower bounds on nonlinear slacks at shooting nodes (1 to N)
+    lsh: np.ndarray = field(default_factory=lambda: np.array([]))
+    # Upper bounds on nonlinear slacks at shooting nodes (1 to N)
+    ush: np.ndarray = field(default_factory=lambda: np.array([]))
     
     @staticmethod
     def from_dict(constraints_dict: dict) -> 'ConstraintsDefinition':
