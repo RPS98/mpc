@@ -107,10 +107,11 @@ def apply_rotation(q: ca.SX, v: ca.SX) -> ca.SX:
     :rtype: ca.SX
         vz_rotated].
     """
-    qw = q[0]
-    qx = q[1]
-    qy = q[2]
-    qz = q[3]
+    q_norm = normalize_quaternion(q)
+    qw = q_norm[0]
+    qx = q_norm[1]
+    qy = q_norm[2]
+    qz = q_norm[3]
 
     vx = v[0]
     vy = v[1]
@@ -119,7 +120,7 @@ def apply_rotation(q: ca.SX, v: ca.SX) -> ca.SX:
     q_conj = ca.vertcat(qw, -qx, -qy, -qz)
 
     v_rotated = quaternion_multiply(
-        quaternion_multiply(q, ca.vertcat(0, vx, vy, vz)),
+        quaternion_multiply(q_norm, ca.vertcat(0, vx, vy, vz)),
         q_conj)
 
     return ca.vertcat(v_rotated[1], v_rotated[2], v_rotated[3])
@@ -138,10 +139,11 @@ def apply_inverse_rotation(q: ca.SX, v: ca.SX) -> ca.SX:
     :return: The rotated vector [vx_rotated, vy_rotated, vz_rotated].
     :rtype: ca.SX
     """
-    qw = q[0]
-    qx = q[1]
-    qy = q[2]
-    qz = q[3]
+    q_norm = normalize_quaternion(q)
+    qw = q_norm[0]
+    qx = q_norm[1]
+    qy = q_norm[2]
+    qz = q_norm[3]
 
     vx = v[0]
     vy = v[1]
@@ -151,7 +153,7 @@ def apply_inverse_rotation(q: ca.SX, v: ca.SX) -> ca.SX:
 
     v_rotated = quaternion_multiply(
         quaternion_multiply(q_conj, ca.vertcat(0, vx, vy, vz)),
-        q)
+        q_norm)
 
     return ca.vertcat(v_rotated[1], v_rotated[2], v_rotated[3])
 
@@ -223,7 +225,7 @@ def normalize_quaternion(q: ca.SX) -> ca.SX:
     :return: The normalized quaternion.
     :rtype: ca.SX
     """
-    q_norm = ca.sqrt(q[0] ** 2 + q[1] ** 2 + q[2] ** 2 + q[3] ** 2)
+    q_norm = ca.sqrt(ca.sumsqr(q) + 1.0e-12)
     return q / q_norm
 
 
@@ -246,26 +248,53 @@ def quaternion_to_euler(q: ca.SX) -> ca.SX:
     qz = q_normed[3]
 
     # --- Roll (x-axis rotation) ---
-    # sinr_cosp = 2 * (qw * qx + qy * qz)
     sinr_cosp = 2 * (qw * qx + qy * qz)
-    # cosr_cosp = 1 - 2 * (qx^2 + qy^2)
     cosr_cosp = 1 - 2 * (qx * qx + qy * qy)
-    # roll = atan2(sinr_cosp, cosr_cosp)
     roll = ca.atan2(sinr_cosp, cosr_cosp)
 
     # --- Pitch (y-axis rotation) ---
-    # sinp = 2 * (qw * qy - qz * qx)
     sinp = 2 * (qw * qy - qz * qx)
-    # pitch = asin(sinp)
     pitch = ca.asin(sinp)
 
     # --- Yaw (z-axis rotation) ---
-    # siny_cosp = 2 * (qw * qz + qx * qy)
     siny_cosp = 2 * (qw * qz + qx * qy)
-    # cosy_cosp = 1 - 2 * (qy^2 + qz^2)
     cosy_cosp = 1 - 2 * (qy * qy + qz * qz)
-    # yaw = atan2(siny_cosp, cosy_cosp)
     yaw = ca.atan2(siny_cosp, cosy_cosp)
 
     # Return the Euler angles in the order [roll, pitch, yaw]
     return ca.vertcat(roll, pitch, yaw)
+
+
+def euler_to_quaternion(roll: ca.SX, pitch: ca.SX, yaw: ca.SX) -> ca.SX:
+    """
+    Convert Euler angles to a quaternion.
+
+    :param roll: Roll angle [rad].
+    :type roll: ca.SX
+    :param pitch: Pitch angle [rad].
+    :type pitch: ca.SX
+    :param yaw: Yaw angle [rad].
+    :type yaw: ca.SX
+    :return: The unit quaternion [qw, qx, qy, qz]; identity when its norm vanishes.
+    :rtype: ca.SX
+    """
+    roll_half = roll * 0.5
+    pitch_half = pitch * 0.5
+    yaw_half = yaw * 0.5
+
+    sr = ca.sin(roll_half)
+    cr = ca.cos(roll_half)
+    sp = ca.sin(pitch_half)
+    cp = ca.cos(pitch_half)
+    sy = ca.sin(yaw_half)
+    cy = ca.cos(yaw_half)
+
+    w = cr * cp * cy + sr * sp * sy
+    x = sr * cp * cy - cr * sp * sy
+    y = cr * sp * cy + sr * cp * sy
+    z = cr * cp * sy - sr * sp * cy
+
+    q = ca.vertcat(w, x, y, z)
+    q_norm = ca.norm_2(q)
+    eps = 1e-8
+    return ca.if_else(q_norm > eps, q / q_norm, ca.vertcat(1.0, 0.0, 0.0, 0.0))

@@ -37,7 +37,8 @@ from .quaternion_utils import (
     quaternion_inverse,
     quaternion_error,
     normalize_quaternion,
-    quaternion_to_euler
+    quaternion_to_euler,
+    euler_to_quaternion
 )
 from .yaml_to_dict import yaml_to_dict
 
@@ -50,5 +51,6 @@ __all__ = [
     'quaternion_error',
     'normalize_quaternion',
     'quaternion_to_euler',
+    'euler_to_quaternion',
     'yaml_to_dict'
 ]
